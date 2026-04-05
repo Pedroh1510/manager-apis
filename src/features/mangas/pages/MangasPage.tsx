@@ -68,13 +68,19 @@ export function MangasListPage() {
 
 	function handleAddConfirm() {
 		if (!newManga.plugin || !newManga.mangaFromPlugin) return;
-		addManga.mutate({
-			title: newManga.localTitle,
-			titleInPlugin: newManga.mangaFromPlugin.title,
-			idPlugin: newManga.plugin.id
-		});
-		setStep('list');
-		setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
+		addManga.mutate(
+			{
+				title: newManga.localTitle,
+				titleInPlugin: newManga.mangaFromPlugin.title,
+				idPlugin: newManga.plugin.id
+			},
+			{
+				onSuccess: () => {
+					setStep('list');
+					setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
+				}
+			}
+		);
 	}
 
 	return (
@@ -220,8 +226,8 @@ export function MangasListPage() {
 						<p className='text-sm text-gray-500'>Nenhum manga disponível.</p>
 					)}
 					<ul className='max-h-96 space-y-2 overflow-y-auto'>
-						{availableMangas.map((manga, idx) => (
-							<li key={idx}>
+						{availableMangas.map((manga) => (
+							<li key={manga.title}>
 								<button
 									onClick={() => handleMangaFromPluginSelected(manga)}
 									className='w-full rounded-md border border-gray-200 px-4 py-3 text-left text-sm hover:bg-gray-50'
