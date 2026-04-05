@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MangasListPage } from './MangasPage'
 import * as mangasHook from '../hooks/useMangas'
 import * as pluginsHook from '../hooks/usePlugins'
-import * as apiService from '../services/api'
 
 vi.mock('../hooks/useMangas')
 vi.mock('../hooks/usePlugins')

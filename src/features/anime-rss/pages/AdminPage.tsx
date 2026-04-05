@@ -5,7 +5,7 @@ import { useTorrents } from '../hooks/useTorrents';
 import type { Torrent } from '../services/types';
 
 export function AnimeRssAdminPage() {
-	const { torrents, concludedTorrents, stopTorrent, deleteTorrent, deleteAll } =
+	const { torrents, stopTorrent, deleteTorrent, deleteAll } =
 		useTorrents();
 	const [pendingDelete, setPendingDelete] = useState<Torrent | null>(null);
 	const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
