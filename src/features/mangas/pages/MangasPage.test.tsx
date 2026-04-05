@@ -85,4 +85,27 @@ describe('MangasListPage', () => {
     render(<MangasListPage />, { wrapper })
     expect(screen.getByRole('button', { name: /adicionar manga/i })).toBeInTheDocument()
   })
+
+  it('shows plugin filter input in select-plugin step', () => {
+    render(<MangasListPage />, { wrapper })
+    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
+    expect(screen.getByPlaceholderText(/filtrar plugin/i)).toBeInTheDocument()
+  })
+
+  it('filters plugins in select-plugin step', () => {
+    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
+      data: [
+        { id: 'tcb', name: 'TCB Scans' },
+        { id: 'other', name: 'Other Source' },
+      ],
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+    } as ReturnType<typeof pluginsHook.usePlugins>)
+    render(<MangasListPage />, { wrapper })
+    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
+    fireEvent.change(screen.getByPlaceholderText(/filtrar plugin/i), { target: { value: 'TCB' } })
+    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Other Source' })).not.toBeInTheDocument()
+  })
 })

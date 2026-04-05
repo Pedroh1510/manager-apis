@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MangasAdminPage } from './AdminPage'
@@ -53,5 +53,31 @@ describe('MangasAdminPage', () => {
   it('renders credentials form', () => {
     render(<MangasAdminPage />, { wrapper })
     expect(screen.getByLabelText(/user.?agent/i)).toBeInTheDocument()
+  })
+
+  it('filters plugin list without error', () => {
+    render(<MangasAdminPage />, { wrapper })
+    const filterInput = screen.getByPlaceholderText(/filtrar plugin/i)
+    fireEvent.change(filterInput, { target: { value: 'TCB' } })
+    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
+  })
+
+  it('hides plugins that do not match filter', () => {
+    render(<MangasAdminPage />, { wrapper })
+    const filterInput = screen.getByPlaceholderText(/filtrar plugin/i)
+    fireEvent.change(filterInput, { target: { value: 'xyz' } })
+    expect(screen.queryByRole('option', { name: 'TCB Scans' })).not.toBeInTheDocument()
+  })
+
+  it('does not throw when plugin has no name or id', () => {
+    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
+      data: [{ id: undefined as unknown as string, name: undefined as unknown as string }],
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+    } as ReturnType<typeof pluginsHook.usePlugins>)
+    render(<MangasAdminPage />, { wrapper })
+    const filterInput = screen.getByPlaceholderText(/filtrar plugin/i)
+    expect(() => fireEvent.change(filterInput, { target: { value: 'a' } })).not.toThrow()
   })
 })

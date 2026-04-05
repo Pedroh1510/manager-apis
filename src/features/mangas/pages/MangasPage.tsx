@@ -6,6 +6,9 @@ import { usePlugins } from '../hooks/usePlugins';
 import { fetchMangasByPlugin } from '../services/api';
 import type { MangaListItem, MangaFromPlugin, Plugin } from '../services/types';
 
+const toPlugins = (list: Plugin[] | undefined) =>
+	(list ?? []).filter((p): p is Plugin => p != null);
+
 type Step = 'list' | 'select-plugin' | 'select-manga' | 'confirm-add';
 
 interface NewMangaForm {
@@ -25,6 +28,7 @@ export function MangasListPage() {
 	);
 
 	const [step, setStep] = useState<Step>('list');
+	const [pluginFilter, setPluginFilter] = useState('');
 	const [newManga, setNewManga] = useState<NewMangaForm>({
 		plugin: null,
 		mangaFromPlugin: null,
@@ -106,7 +110,7 @@ export function MangasListPage() {
 								className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 							>
 								<option value=''>Todos</option>
-								{plugins?.map((p) => (
+								{toPlugins(plugins).map((p) => (
 									<option key={p.id} value={p.id}>
 										{p.name}
 									</option>
@@ -149,24 +153,61 @@ export function MangasListPage() {
 				<div className='rounded-lg border bg-white p-6 shadow-sm'>
 					<h2 className='mb-4 text-lg font-semibold'>Selecione um Plugin</h2>
 					{loadingMangas && <LoadingSpinner />}
-					<ul className='space-y-2'>
-						{plugins?.map((plugin) => (
-							<li key={plugin.id}>
-								<button
-									onClick={() => handlePluginSelected(plugin)}
-									className='w-full rounded-md border border-gray-200 px-4 py-3 text-left text-sm hover:bg-gray-50'
-								>
-									{plugin.name}
-								</button>
-							</li>
-						))}
-					</ul>
-					<button
-						onClick={() => setStep('list')}
-						className='mt-4 text-sm text-gray-500 hover:underline'
-					>
-						Cancelar
-					</button>
+					<div className='mb-4'>
+						<label
+							htmlFor='new-manga-plugin'
+							className='mb-1 block text-sm font-medium text-gray-700'
+						>
+							Plugin
+						</label>
+						<input
+							type='text'
+							placeholder='Filtrar plugin...'
+							value={pluginFilter}
+							onChange={(e) => setPluginFilter(e.target.value)}
+							className='mb-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						/>
+						<select
+							id='new-manga-plugin'
+							value={newManga.plugin?.id ?? ''}
+							onChange={(e) => {
+								const plugin =
+									toPlugins(plugins).find((p) => p.id === e.target.value) ??
+									null;
+								setNewManga((prev) => ({ ...prev, plugin }));
+							}}
+							className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						>
+							<option value=''>Selecione um plugin</option>
+							{toPlugins(plugins)
+								.filter((p) =>
+									!pluginFilter ||
+									(p.name ?? p.id ?? '').toLowerCase().includes(pluginFilter.toLowerCase())
+								)
+								.map((p) => (
+									<option key={p.id} value={p.id}>
+										{p.name}
+									</option>
+								))}
+						</select>
+					</div>
+					<div className='flex gap-3'>
+						<button
+							onClick={() =>
+								newManga.plugin && handlePluginSelected(newManga.plugin)
+							}
+							disabled={!newManga.plugin || loadingMangas}
+							className='rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50'
+						>
+							Próximo
+						</button>
+						<button
+							onClick={() => setStep('list')}
+							className='text-sm text-gray-500 hover:underline'
+						>
+							Cancelar
+						</button>
+					</div>
 				</div>
 			)}
 

@@ -31,6 +31,7 @@ export interface AddMangaPayload {
 export interface UpdateCookiePayload {
 	idPlugin: string;
 	cookie: string;
+	userAgent?: string;
 }
 
 export interface UpdateCredentialsPayload {

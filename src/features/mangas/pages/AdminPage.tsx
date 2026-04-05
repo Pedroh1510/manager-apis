@@ -9,6 +9,7 @@ export function MangasAdminPage() {
 		useAdminActions();
 
 	const [selectedPlugin, setSelectedPlugin] = useState('');
+	const [pluginFilter, setPluginFilter] = useState('');
 	const [cookie, setCookie] = useState('');
 	const [userAgent, setUserAgent] = useState('');
 	const [credentialsJson, setCredentialsJson] = useState('{}');
@@ -16,7 +17,11 @@ export function MangasAdminPage() {
 	function handleCookieSubmit(e: FormEvent) {
 		e.preventDefault();
 		if (!selectedPlugin) return;
-		updateCookie.mutate({ idPlugin: selectedPlugin, cookie });
+		updateCookie.mutate({
+			idPlugin: selectedPlugin,
+			cookie,
+			...(userAgent ? { userAgent } : {})
+		});
 	}
 
 	function handleCredentialsSubmit(e: FormEvent) {
@@ -30,10 +35,16 @@ export function MangasAdminPage() {
 		}
 		updateCredentials.mutate({
 			idPlugin: selectedPlugin,
-			userAgent,
 			credentials
 		});
 	}
+
+	const filteredPlugins = (plugins ?? [])
+		.filter((p): p is NonNullable<typeof p> => p != null)
+		.filter((p) =>
+			!pluginFilter ||
+			(p.name ?? p.id ?? '').toLowerCase().includes(pluginFilter.toLowerCase())
+		);
 
 	if (isLoading) return <LoadingSpinner />;
 
@@ -50,16 +61,23 @@ export function MangasAdminPage() {
 				>
 					Plugin
 				</label>
+				<input
+					type='text'
+					placeholder='Filtrar plugin...'
+					value={pluginFilter}
+					onChange={(e) => setPluginFilter(e.target.value)}
+					className='mb-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+				/>
 				<select
 					id='plugin-select'
 					value={selectedPlugin}
 					onChange={(e) => setSelectedPlugin(e.target.value)}
-					className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 				>
 					<option value=''>Selecione um plugin</option>
-					{plugins?.map((p) => (
+					{filteredPlugins.map((p) => (
 						<option key={p.id} value={p.id}>
-							{p.name}
+							{p.name ?? p.id}
 						</option>
 					))}
 				</select>
@@ -107,6 +125,22 @@ export function MangasAdminPage() {
 						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 					/>
 				</div>
+				<div className='mb-4'>
+					<label
+						htmlFor='user-agent-input'
+						className='mb-1 block text-sm font-medium text-gray-700'
+					>
+						User-Agent
+					</label>
+					<input
+						id='user-agent-input'
+						type='text'
+						value={userAgent}
+						onChange={(e) => setUserAgent(e.target.value)}
+						placeholder='Mozilla/5.0 ...'
+						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					/>
+				</div>
 				<button
 					type='submit'
 					disabled={!selectedPlugin || !cookie || updateCookie.isPending}
@@ -126,22 +160,6 @@ export function MangasAdminPage() {
 				<h2 className='mb-4 text-lg font-semibold text-gray-800'>
 					Atualizar Credenciais
 				</h2>
-				<div className='mb-4'>
-					<label
-						htmlFor='user-agent-input'
-						className='mb-1 block text-sm font-medium text-gray-700'
-					>
-						User-Agent
-					</label>
-					<input
-						id='user-agent-input'
-						type='text'
-						value={userAgent}
-						onChange={(e) => setUserAgent(e.target.value)}
-						placeholder='Mozilla/5.0 ...'
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-					/>
-				</div>
 				<div className='mb-4'>
 					<label
 						htmlFor='credentials-input'
