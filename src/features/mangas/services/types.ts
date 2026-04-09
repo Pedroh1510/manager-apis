@@ -1,6 +1,7 @@
 export interface MangasStatusResponse {
-	status: string;
-	[key: string]: unknown;
+	version: string;
+	maxConnections: number;
+	openedConnections: number;
 }
 
 export interface Plugin {

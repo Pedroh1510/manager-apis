@@ -21,7 +21,8 @@ describe('MangasStatusPage', () => {
 
   it('shows online badge when service responds', () => {
     vi.mocked(hooks.useMangasStatus).mockReturnValue({
-      isLoading: false, isSuccess: true, isError: false, data: { status: 'ok' }, error: null,
+      isLoading: false, isSuccess: true, isError: false,
+      data: { version: '16.2', maxConnections: 100, openedConnections: 3 }, error: null,
     } as ReturnType<typeof hooks.useMangasStatus>)
     render(<MangasStatusPage />, { wrapper })
     expect(screen.getByText('Online')).toBeInTheDocument()

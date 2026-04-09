@@ -1,6 +1,19 @@
+export interface AnimeStatusDatabase {
+	version: string;
+	maxConnections: number;
+	activeConnections: number;
+	error?: string;
+}
+
+export interface AnimeStatusQbittorrent {
+	version: string;
+	apiVersion: string;
+	error?: string;
+}
+
 export interface AnimeStatusResponse {
-	status: string;
-	[key: string]: unknown;
+	database: AnimeStatusDatabase | { error: string };
+	qbittorrent: AnimeStatusQbittorrent | { error: string };
 }
 
 export interface RssItem {
