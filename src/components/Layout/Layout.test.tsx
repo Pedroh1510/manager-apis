@@ -31,13 +31,26 @@ describe('Layout', () => {
     expect(screen.getByText('Mangas Manager')).toBeInTheDocument()
   })
 
-  it('renders navigation links for Anime RSS', () => {
+  it('renders exactly one global Status link pointing to /status', () => {
     render(
       <MemoryRouter>
         <Layout />
       </MemoryRouter>
     )
-    const statusLinks = screen.getAllByRole('link', { name: /status/i })
-    expect(statusLinks.length).toBeGreaterThan(0)
+    const statusLinks = screen.getAllByRole('link', { name: /^status$/i })
+    expect(statusLinks).toHaveLength(1)
+    expect(statusLinks[0]).toHaveAttribute('href', '/status')
+  })
+
+  it('does not render per-project status links', () => {
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    const allLinks = screen.getAllByRole('link')
+    const hrefs = allLinks.map(l => l.getAttribute('href'))
+    expect(hrefs).not.toContain('/anime-rss/status')
+    expect(hrefs).not.toContain('/mangas/status')
   })
 })
