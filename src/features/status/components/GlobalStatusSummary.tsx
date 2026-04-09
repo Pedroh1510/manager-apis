@@ -12,8 +12,8 @@ interface GlobalStatusSummaryProps {
 
 export function GlobalStatusSummary({ projects }: GlobalStatusSummaryProps) {
   const anyLoading = projects.some(p => p.isLoading)
-  const allOnline = projects.every(p => !p.isLoading && p.isSuccess)
-  const offlineCount = projects.filter(p => !p.isLoading && !p.isSuccess).length
+  const allOnline = !anyLoading && projects.every(p => p.isSuccess)
+  const offlineCount = anyLoading ? 0 : projects.filter(p => !p.isSuccess).length
 
   const overallStatus = anyLoading ? 'loading' : allOnline ? 'online' : 'offline'
   const message = anyLoading
