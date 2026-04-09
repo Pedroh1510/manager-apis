@@ -28,7 +28,10 @@ describe('AnimeRssStatusPage', () => {
       isLoading: false,
       isSuccess: true,
       isError: false,
-      data: { status: 'ok' },
+      data: {
+        database: { version: '16.2', maxConnections: 100, activeConnections: 3 },
+        qbittorrent: { version: 'v5.1.4', apiVersion: '2.11.4' },
+      },
       error: null,
     } as ReturnType<typeof hooks.useAnimeStatus>)
     render(<AnimeRssStatusPage />, { wrapper })
