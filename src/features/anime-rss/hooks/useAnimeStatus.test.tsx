@@ -16,10 +16,14 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('useAnimeStatus', () => {
   it('returns status data on success', async () => {
-    vi.mocked(api.fetchAnimeStatus).mockResolvedValue({ status: 'ok' })
+    const mockData = {
+      database: { version: '1.0', maxConnections: 10, activeConnections: 1 },
+      qbittorrent: { version: '4.0', apiVersion: '2.0' },
+    }
+    vi.mocked(api.fetchAnimeStatus).mockResolvedValue(mockData)
     const { result } = renderHook(() => useAnimeStatus(), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual({ status: 'ok' })
+    expect(result.current.data).toEqual(mockData)
   })
 
   it('returns error state on failure', async () => {
