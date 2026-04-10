@@ -16,9 +16,9 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('useMangasStatus', () => {
   it('returns status data on success', async () => {
-    vi.mocked(api.fetchMangasStatus).mockResolvedValue({ status: 'ok' })
+    vi.mocked(api.fetchMangasStatus).mockResolvedValue({ version: '1.0', maxConnections: 10, openedConnections: 2 })
     const { result } = renderHook(() => useMangasStatus(), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data).toEqual({ status: 'ok' })
+    expect(result.current.data).toEqual({ version: '1.0', maxConnections: 10, openedConnections: 2 })
   })
 })
