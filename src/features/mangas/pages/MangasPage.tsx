@@ -78,6 +78,7 @@ export function MangasListPage() {
 			{
 				onSuccess: () => {
 					setStep('list');
+					setListPluginFilter('');
 					setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
 				}
 			}
@@ -113,6 +114,7 @@ export function MangasListPage() {
 							<input
 								type='text'
 								placeholder='Filtrar plugin...'
+								aria-label='Filtrar nome do plugin'
 								value={listPluginFilter}
 								onChange={(e) => setListPluginFilter(e.target.value)}
 								className='mb-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -221,7 +223,7 @@ export function MangasListPage() {
 							Próximo
 						</button>
 						<button
-							onClick={() => setStep('list')}
+							onClick={() => { setStep('list'); setListPluginFilter(''); }}
 							className='text-sm text-gray-500 hover:underline'
 						>
 							Cancelar
@@ -313,7 +315,7 @@ export function MangasListPage() {
 								{addManga.isPending ? 'Adicionando...' : 'Adicionar'}
 							</button>
 							<button
-								onClick={() => setStep('list')}
+								onClick={() => { setStep('list'); setListPluginFilter(''); }}
 								className='rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
 							>
 								Cancelar
