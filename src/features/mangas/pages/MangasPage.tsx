@@ -23,6 +23,7 @@ export function MangasListPage() {
 
 	const [filterTitle, setFilterTitle] = useState('');
 	const [filterPlugin, setFilterPlugin] = useState('');
+	const [listPluginFilter, setListPluginFilter] = useState('');
 	const [pendingDelete, setPendingDelete] = useState<MangaListItem | null>(
 		null
 	);
@@ -109,6 +110,13 @@ export function MangasListPage() {
 							<label htmlFor='filter-plugin' className='text-sm text-gray-600'>
 								Filtrar por plugin
 							</label>
+							<input
+								type='text'
+								placeholder='Filtrar plugin...'
+								value={listPluginFilter}
+								onChange={(e) => setListPluginFilter(e.target.value)}
+								className='mb-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+							/>
 							<select
 								id='filter-plugin'
 								value={filterPlugin}
@@ -116,11 +124,16 @@ export function MangasListPage() {
 								className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 							>
 								<option value=''>Todos</option>
-								{toPlugins(plugins).map((p) => (
-									<option key={p.id} value={p.id}>
-										{p.name}
-									</option>
-								))}
+								{toPlugins(plugins)
+									.filter((p) =>
+										!listPluginFilter ||
+										(p.name ?? p.id ?? '').toLowerCase().includes(listPluginFilter.toLowerCase())
+									)
+									.map((p) => (
+										<option key={p.id} value={p.id}>
+											{p.name ?? p.id}
+										</option>
+									))}
 							</select>
 						</div>
 					</div>

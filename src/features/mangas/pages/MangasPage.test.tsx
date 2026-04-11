@@ -179,6 +179,29 @@ describe('MangasListPage', () => {
     expect(screen.getByPlaceholderText(/filtrar por título/i)).toBeInTheDocument()
   })
 
+  it('renders a text input to filter plugin options in the list view', () => {
+    render(<MangasListPage />, { wrapper })
+    // should find the list-view filter input (not inside the wizard)
+    expect(screen.getByPlaceholderText('Filtrar plugin...')).toBeInTheDocument()
+  })
+
+  it('filters plugin select options by text input in list view', () => {
+    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
+      data: [
+        { id: 'tcb', name: 'TCB Scans' },
+        { id: 'other', name: 'Other Source' },
+      ],
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+    } as ReturnType<typeof pluginsHook.usePlugins>)
+    render(<MangasListPage />, { wrapper })
+    const filterInput = screen.getByPlaceholderText('Filtrar plugin...')
+    fireEvent.change(filterInput, { target: { value: 'TCB' } })
+    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Other Source' })).not.toBeInTheDocument()
+  })
+
   it('renders available mangas with title as key (no duplicate key warnings)', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
       { title: 'Manga X' },
