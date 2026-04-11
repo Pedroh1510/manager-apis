@@ -23,6 +23,7 @@ export function MangasListPage() {
 
 	const [filterTitle, setFilterTitle] = useState('');
 	const [filterPlugin, setFilterPlugin] = useState('');
+	const [listPluginFilter, setListPluginFilter] = useState('');
 	const [pendingDelete, setPendingDelete] = useState<MangaListItem | null>(
 		null
 	);
@@ -77,6 +78,7 @@ export function MangasListPage() {
 			{
 				onSuccess: () => {
 					setStep('list');
+					setListPluginFilter('');
 					setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
 				}
 			}
@@ -109,6 +111,14 @@ export function MangasListPage() {
 							<label htmlFor='filter-plugin' className='text-sm text-gray-600'>
 								Filtrar por plugin
 							</label>
+							<input
+								type='text'
+								placeholder='Filtrar plugin...'
+								aria-label='Filtrar nome do plugin'
+								value={listPluginFilter}
+								onChange={(e) => setListPluginFilter(e.target.value)}
+								className='mb-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+							/>
 							<select
 								id='filter-plugin'
 								value={filterPlugin}
@@ -116,11 +126,16 @@ export function MangasListPage() {
 								className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 							>
 								<option value=''>Todos</option>
-								{toPlugins(plugins).map((p) => (
-									<option key={p.id} value={p.id}>
-										{p.name}
-									</option>
-								))}
+								{toPlugins(plugins)
+									.filter((p) =>
+										!listPluginFilter ||
+										(p.name ?? p.id ?? '').toLowerCase().includes(listPluginFilter.toLowerCase())
+									)
+									.map((p) => (
+										<option key={p.id} value={p.id}>
+											{p.name ?? p.id}
+										</option>
+									))}
 							</select>
 						</div>
 					</div>
@@ -192,7 +207,7 @@ export function MangasListPage() {
 								)
 								.map((p) => (
 									<option key={p.id} value={p.id}>
-										{p.name}
+										{p.name || p.id}
 									</option>
 								))}
 						</select>
@@ -208,7 +223,7 @@ export function MangasListPage() {
 							Próximo
 						</button>
 						<button
-							onClick={() => setStep('list')}
+							onClick={() => { setStep('list'); setListPluginFilter(''); }}
 							className='text-sm text-gray-500 hover:underline'
 						>
 							Cancelar
@@ -300,7 +315,7 @@ export function MangasListPage() {
 								{addManga.isPending ? 'Adicionando...' : 'Adicionar'}
 							</button>
 							<button
-								onClick={() => setStep('list')}
+								onClick={() => { setStep('list'); setListPluginFilter(''); }}
 								className='rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
 							>
 								Cancelar
