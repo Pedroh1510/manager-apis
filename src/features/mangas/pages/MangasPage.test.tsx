@@ -202,6 +202,24 @@ describe('MangasListPage', () => {
     expect(screen.queryByRole('option', { name: 'Other Source' })).not.toBeInTheDocument()
   })
 
+  it('shows plugin id as fallback when plugin name is empty in add manga wizard', () => {
+    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
+      data: [
+        { id: 'tcb', name: 'TCB Scans' },
+        { id: 'no-name-plugin', name: '' },
+      ],
+      isLoading: false,
+      isSuccess: true,
+      isError: false,
+    } as ReturnType<typeof pluginsHook.usePlugins>)
+    render(<MangasListPage />, { wrapper })
+    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
+    // plugin with empty name should display its id
+    expect(screen.getByRole('option', { name: 'no-name-plugin' })).toBeInTheDocument()
+    // plugin with name should still display name
+    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
+  })
+
   it('renders available mangas with title as key (no duplicate key warnings)', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
       { title: 'Manga X' },
