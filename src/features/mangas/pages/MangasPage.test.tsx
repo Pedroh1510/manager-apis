@@ -220,6 +220,25 @@ describe('MangasListPage', () => {
     expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
   })
 
+  it('filters mangas by title in select-manga step', async () => {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
+      { title: 'Naruto' },
+      { title: 'One Piece' },
+    ])
+    render(<MangasListPage />, { wrapper })
+    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByPlaceholderText(/filtrar manga/i), {
+      target: { value: 'Naruto' },
+    })
+
+    expect(screen.getByText('Naruto')).toBeInTheDocument()
+    expect(screen.queryByText('One Piece')).not.toBeInTheDocument()
+  })
+
   it('renders available mangas with title as key (no duplicate key warnings)', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
       { title: 'Manga X' },

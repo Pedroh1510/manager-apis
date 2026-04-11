@@ -37,6 +37,7 @@ export function MangasListPage() {
 	});
 	const [availableMangas, setAvailableMangas] = useState<MangaFromPlugin[]>([]);
 	const [loadingMangas, setLoadingMangas] = useState(false);
+	const [mangaTitleFilter, setMangaTitleFilter] = useState('');
 
 	const filteredMangas = (mangas.data ?? []).filter((m) => {
 		const matchTitle = m.title
@@ -49,6 +50,7 @@ export function MangasListPage() {
 	async function handlePluginSelected(plugin: Plugin) {
 		setNewManga((prev) => ({ ...prev, plugin }));
 		setLoadingMangas(true);
+		setMangaTitleFilter('');
 		try {
 			const list = await fetchMangasByPlugin(plugin.id);
 			setAvailableMangas(list);
@@ -237,11 +239,23 @@ export function MangasListPage() {
 					<h2 className='mb-4 text-lg font-semibold'>
 						Selecione um Manga ({newManga.plugin?.name})
 					</h2>
+					<input
+						type='text'
+						placeholder='Filtrar manga por título...'
+						value={mangaTitleFilter}
+						onChange={(e) => setMangaTitleFilter(e.target.value)}
+						className='mb-4 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					/>
 					{availableMangas.length === 0 && (
 						<p className='text-sm text-gray-500'>Nenhum manga disponível.</p>
 					)}
 					<ul className='max-h-96 space-y-2 overflow-y-auto'>
-						{availableMangas.map((manga) => (
+						{availableMangas
+							.filter((m) =>
+								!mangaTitleFilter ||
+								m.title.toLowerCase().includes(mangaTitleFilter.toLowerCase())
+							)
+							.map((manga) => (
 							<li key={manga.title}>
 								<button
 									onClick={() => handleMangaFromPluginSelected(manga)}
@@ -250,7 +264,8 @@ export function MangasListPage() {
 									{manga.title}
 								</button>
 							</li>
-						))}
+						))
+					}
 					</ul>
 					<button
 						onClick={() => setStep('select-plugin')}
