@@ -29,8 +29,8 @@ beforeEach(() => {
   vi.mocked(mangasHook.useMangas).mockReturnValue({
     mangas: {
       data: [
-        { title: 'Naruto', titleInPlugin: 'Naruto', idPlugin: 'tcb' },
-        { title: 'One Piece', titleInPlugin: 'One Piece', idPlugin: 'tcb' },
+        { idManga: 1, title: 'Naruto', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+        { idManga: 2, title: 'One Piece', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
       ],
       isLoading: false,
       isSuccess: true,
@@ -55,26 +55,6 @@ describe('MangasListPage', () => {
     })
     expect(screen.getByText('Naruto')).toBeInTheDocument()
     expect(screen.queryByText('One Piece')).not.toBeInTheDocument()
-  })
-
-  it('filters mangas by plugin', () => {
-    vi.mocked(mangasHook.useMangas).mockReturnValue({
-      mangas: {
-        data: [
-          { title: 'Naruto', titleInPlugin: 'Naruto', idPlugin: 'tcb' },
-          { title: 'Bleach', titleInPlugin: 'Bleach', idPlugin: 'other' },
-        ],
-        isLoading: false, isSuccess: true, isError: false,
-      } as any,
-      deleteManga: mockDeleteMutation as any,
-      addManga: mockAddMutation as any,
-    })
-    render(<MangasListPage />, { wrapper })
-    fireEvent.change(screen.getByLabelText(/filtrar por plugin/i), {
-      target: { value: 'tcb' },
-    })
-    expect(screen.getByText('Naruto')).toBeInTheDocument()
-    expect(screen.queryByText('Bleach')).not.toBeInTheDocument()
   })
 
   it('opens confirm dialog when clicking delete', () => {
@@ -113,8 +93,8 @@ describe('MangasListPage', () => {
 
   it('does NOT reset to list step before addManga succeeds', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { title: 'Manga A' },
-      { title: 'Manga B' },
+      { id: 'a1', title: 'Manga A' },
+      { id: 'b1', title: 'Manga B' },
     ])
     render(<MangasListPage />, { wrapper })
 
@@ -138,7 +118,12 @@ describe('MangasListPage', () => {
 
     // mutate was called with correct payload AND onSuccess callback
     expect(mockAddMutation.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Manga A', titleInPlugin: 'Manga A', idPlugin: 'tcb' }),
+      expect.objectContaining({
+        title: 'Manga A',
+        idPlugin: 'tcb',
+        idMangaPlugin: 'a1',
+        titlePlugin: 'Manga A',
+      }),
       expect.objectContaining({ onSuccess: expect.any(Function) })
     )
 
@@ -156,7 +141,7 @@ describe('MangasListPage', () => {
       deleteManga: mockDeleteMutation as any,
       addManga: { mutate: mutateSpy, isPending: false, isSuccess: false } as any,
     })
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ title: 'Manga A' }])
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ id: 'a1', title: 'Manga A' }])
 
     render(<MangasListPage />, { wrapper })
     fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
@@ -179,29 +164,6 @@ describe('MangasListPage', () => {
     expect(screen.getByPlaceholderText(/filtrar por título/i)).toBeInTheDocument()
   })
 
-  it('renders a text input to filter plugin options in the list view', () => {
-    render(<MangasListPage />, { wrapper })
-    // should find the list-view filter input (not inside the wizard)
-    expect(screen.getByPlaceholderText('Filtrar plugin...')).toBeInTheDocument()
-  })
-
-  it('filters plugin select options by text input in list view', () => {
-    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
-      data: [
-        { id: 'tcb', name: 'TCB Scans' },
-        { id: 'other', name: 'Other Source' },
-      ],
-      isLoading: false,
-      isSuccess: true,
-      isError: false,
-    } as ReturnType<typeof pluginsHook.usePlugins>)
-    render(<MangasListPage />, { wrapper })
-    const filterInput = screen.getByPlaceholderText('Filtrar plugin...')
-    fireEvent.change(filterInput, { target: { value: 'TCB' } })
-    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Other Source' })).not.toBeInTheDocument()
-  })
-
   it('shows plugin id as fallback when plugin name is empty in add manga wizard', () => {
     vi.mocked(pluginsHook.usePlugins).mockReturnValue({
       data: [
@@ -222,8 +184,8 @@ describe('MangasListPage', () => {
 
   it('filters mangas by title in select-manga step', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { title: 'Naruto' },
-      { title: 'One Piece' },
+      { id: 'n1', title: 'Naruto' },
+      { id: 'op1', title: 'One Piece' },
     ])
     render(<MangasListPage />, { wrapper })
     fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
@@ -241,8 +203,8 @@ describe('MangasListPage', () => {
 
   it('renders available mangas with title as key (no duplicate key warnings)', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { title: 'Manga X' },
-      { title: 'Manga Y' },
+      { id: 'x1', title: 'Manga X' },
+      { id: 'y1', title: 'Manga Y' },
     ])
     render(<MangasListPage />, { wrapper })
     fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
@@ -254,9 +216,9 @@ describe('MangasListPage', () => {
 
   it('deduplicates mangas with the same title from the API', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { title: 'Naruto' },
-      { title: 'One Piece' },
-      { title: 'Naruto' }, // duplicate
+      { id: 'n1', title: 'Naruto' },
+      { id: 'op1', title: 'One Piece' },
+      { id: 'n1', title: 'Naruto' }, // duplicate
     ])
     render(<MangasListPage />, { wrapper })
     fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
@@ -270,8 +232,8 @@ describe('MangasListPage', () => {
 
   it('shows no-results message when filter matches nothing in select-manga step', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { title: 'Naruto' },
-      { title: 'One Piece' },
+      { id: 'n1', title: 'Naruto' },
+      { id: 'op1', title: 'One Piece' },
     ])
     render(<MangasListPage />, { wrapper })
     fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))

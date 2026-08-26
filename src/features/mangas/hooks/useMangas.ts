@@ -2,9 +2,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
 	fetchMangaList,
 	deleteManga as deleteMangaApi,
-	addManga as addMangaApi
+	addManga as addMangaApi,
+	linkConnector as linkConnectorApi
 } from '../services/api';
-import type { AddMangaPayload } from '../services/types';
+import type { CreateMangaWithConnectorPayload } from '../services/types';
 
 export function useMangas() {
 	const queryClient = useQueryClient();
@@ -17,12 +18,20 @@ export function useMangas() {
 	});
 
 	const deleteManga = useMutation({
-		mutationFn: deleteMangaApi,
+		mutationFn: (idManga: number) => deleteMangaApi(idManga),
 		onSuccess: invalidate
 	});
 
 	const addManga = useMutation({
-		mutationFn: (payload: AddMangaPayload) => addMangaApi(payload),
+		mutationFn: async (payload: CreateMangaWithConnectorPayload) => {
+			const { idManga } = await addMangaApi({ title: payload.title });
+			await linkConnectorApi(idManga, {
+				idPlugin: payload.idPlugin,
+				idMangaPlugin: payload.idMangaPlugin,
+				titlePlugin: payload.titlePlugin
+			});
+			return idManga;
+		},
 		onSuccess: invalidate
 	});
 

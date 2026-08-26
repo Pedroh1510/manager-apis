@@ -5,6 +5,7 @@ import type {
 	MangaListItem,
 	MangaFromPlugin,
 	AddMangaPayload,
+	LinkConnectorPayload,
 	UpdateCookiePayload,
 	UpdateCredentialsPayload
 } from './types';
@@ -40,8 +41,8 @@ export async function fetchMangaList(): Promise<MangaListItem[]> {
 	return data;
 }
 
-export async function deleteManga(title: string): Promise<void> {
-	await mangasHttp.delete('/mangas/adm/delete', { params: { title } });
+export async function deleteManga(idManga: number): Promise<void> {
+	await mangasHttp.delete(`/mangas/adm/${idManga}`);
 }
 
 export async function fetchMangasByPlugin(
@@ -53,6 +54,19 @@ export async function fetchMangasByPlugin(
 	return data;
 }
 
-export async function addManga(payload: AddMangaPayload): Promise<void> {
-	await mangasHttp.post('/mangas/adm', payload);
+export async function addManga(
+	payload: AddMangaPayload
+): Promise<{ idManga: number }> {
+	const { data } = await mangasHttp.post<{ idManga: number }>(
+		'/mangas/adm',
+		payload
+	);
+	return data;
+}
+
+export async function linkConnector(
+	idManga: number,
+	payload: LinkConnectorPayload
+): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/${idManga}/connectors`, payload);
 }
