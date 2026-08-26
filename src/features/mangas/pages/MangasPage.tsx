@@ -22,8 +22,6 @@ export function MangasListPage() {
 	const { data: plugins } = usePlugins();
 
 	const [filterTitle, setFilterTitle] = useState('');
-	const [filterPlugin, setFilterPlugin] = useState('');
-	const [listPluginFilter, setListPluginFilter] = useState('');
 	const [pendingDelete, setPendingDelete] = useState<MangaListItem | null>(
 		null
 	);
@@ -44,13 +42,9 @@ export function MangasListPage() {
 		m.title.toLowerCase().includes(mangaTitleFilter.toLowerCase())
 	);
 
-	const filteredMangas = (mangas.data ?? []).filter((m) => {
-		const matchTitle = m.title
-			.toLowerCase()
-			.includes(filterTitle.toLowerCase());
-		const matchPlugin = filterPlugin === '' || m.idPlugin === filterPlugin;
-		return matchTitle && matchPlugin;
-	});
+	const filteredMangas = (mangas.data ?? []).filter((m) =>
+		m.title.toLowerCase().includes(filterTitle.toLowerCase())
+	);
 
 	async function handlePluginSelected(plugin: Plugin) {
 		setNewManga((prev) => ({ ...prev, plugin }));
@@ -85,13 +79,13 @@ export function MangasListPage() {
 		addManga.mutate(
 			{
 				title: newManga.localTitle,
-				titleInPlugin: newManga.mangaFromPlugin.title,
-				idPlugin: newManga.plugin.id
+				idPlugin: newManga.plugin.id,
+				idMangaPlugin: newManga.mangaFromPlugin.id,
+				titlePlugin: newManga.mangaFromPlugin.title
 			},
 			{
 				onSuccess: () => {
 					setStep('list');
-					setListPluginFilter('');
 					setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
 				}
 			}
@@ -120,37 +114,6 @@ export function MangasListPage() {
 							onChange={(e) => setFilterTitle(e.target.value)}
 							className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 						/>
-						<div className='flex items-center gap-2'>
-							<label htmlFor='filter-plugin' className='text-sm text-gray-600'>
-								Filtrar por plugin
-							</label>
-							<input
-								type='text'
-								placeholder='Filtrar plugin...'
-								aria-label='Filtrar nome do plugin'
-								value={listPluginFilter}
-								onChange={(e) => setListPluginFilter(e.target.value)}
-								className='mb-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-							/>
-							<select
-								id='filter-plugin'
-								value={filterPlugin}
-								onChange={(e) => setFilterPlugin(e.target.value)}
-								className='rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-							>
-								<option value=''>Todos</option>
-								{toPlugins(plugins)
-									.filter((p) =>
-										!listPluginFilter ||
-										(p.name ?? p.id ?? '').toLowerCase().includes(listPluginFilter.toLowerCase())
-									)
-									.map((p) => (
-										<option key={p.id} value={p.id}>
-											{p.name ?? p.id}
-										</option>
-									))}
-							</select>
-						</div>
 					</div>
 
 					{mangas.isLoading && <LoadingSpinner />}
@@ -162,14 +125,11 @@ export function MangasListPage() {
 					<ul className='space-y-2'>
 						{filteredMangas.map((manga) => (
 							<li
-								key={manga.title}
+								key={manga.idManga}
 								className='flex items-center justify-between rounded-lg border bg-white p-4 shadow-sm'
 							>
 								<div>
 									<p className='font-medium text-gray-900'>{manga.title}</p>
-									<p className='text-xs text-gray-500'>
-										Plugin: {manga.idPlugin}
-									</p>
 								</div>
 								<button
 									onClick={() => setPendingDelete(manga)}
@@ -236,7 +196,7 @@ export function MangasListPage() {
 							Próximo
 						</button>
 						<button
-							onClick={() => { setStep('list'); setListPluginFilter(''); }}
+							onClick={() => { setStep('list'); }}
 							className='text-sm text-gray-500 hover:underline'
 						>
 							Cancelar
@@ -335,7 +295,7 @@ export function MangasListPage() {
 								{addManga.isPending ? 'Adicionando...' : 'Adicionar'}
 							</button>
 							<button
-								onClick={() => { setStep('list'); setListPluginFilter(''); }}
+								onClick={() => { setStep('list'); }}
 								className='rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50'
 							>
 								Cancelar
@@ -349,7 +309,7 @@ export function MangasListPage() {
 				title='Deletar manga'
 				message={`Tem certeza que deseja deletar "${pendingDelete?.title}"?`}
 				onConfirm={() => {
-					if (pendingDelete) deleteManga.mutate(pendingDelete.title);
+					if (pendingDelete) deleteManga.mutate(pendingDelete.idManga);
 					setPendingDelete(null);
 				}}
 				onCancel={() => setPendingDelete(null)}

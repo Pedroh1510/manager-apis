@@ -11,23 +11,41 @@ export interface Plugin {
 }
 
 export interface MangaListItem {
+	idManga: number;
 	title: string;
-	titleInPlugin: string;
-	idPlugin: string;
+	createdAt: string;
+	updatedAt: string;
 	[key: string]: unknown;
 }
 
 export interface MangaFromPlugin {
+	id: string;
 	title: string;
-	link?: string;
+	[key: string]: unknown;
+}
+
+export interface MangaConnector {
+	idMangaConnector: number;
+	idPlugin: string;
+	idMangaPlugin: string;
+	titlePlugin: string;
+	isActive: boolean;
 	[key: string]: unknown;
 }
 
 export interface AddMangaPayload {
 	title: string;
-	titleInPlugin: string;
-	idPlugin: string;
 }
+
+export interface LinkConnectorPayload {
+	idPlugin: string;
+	idMangaPlugin: string;
+	titlePlugin: string;
+}
+
+export interface CreateMangaWithConnectorPayload
+	extends AddMangaPayload,
+		LinkConnectorPayload {}
 
 export interface UpdateCookiePayload {
 	idPlugin: string;
@@ -37,6 +55,6 @@ export interface UpdateCookiePayload {
 
 export interface UpdateCredentialsPayload {
 	idPlugin: string;
-	userAgent?: string;
-	credentials: Record<string, unknown>;
+	login: string;
+	password: string;
 }

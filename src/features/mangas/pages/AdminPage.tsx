@@ -12,7 +12,8 @@ export function MangasAdminPage() {
 	const [pluginFilter, setPluginFilter] = useState('');
 	const [cookie, setCookie] = useState('');
 	const [userAgent, setUserAgent] = useState('');
-	const [credentialsJson, setCredentialsJson] = useState('{}');
+	const [login, setLogin] = useState('');
+	const [password, setPassword] = useState('');
 
 	function handleCookieSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -27,15 +28,10 @@ export function MangasAdminPage() {
 	function handleCredentialsSubmit(e: FormEvent) {
 		e.preventDefault();
 		if (!selectedPlugin) return;
-		let credentials: Record<string, unknown> = {};
-		try {
-			credentials = JSON.parse(credentialsJson);
-		} catch {
-			return;
-		}
 		updateCredentials.mutate({
 			idPlugin: selectedPlugin,
-			credentials
+			login,
+			password
 		});
 	}
 
@@ -162,22 +158,39 @@ export function MangasAdminPage() {
 				</h2>
 				<div className='mb-4'>
 					<label
-						htmlFor='credentials-input'
+						htmlFor='login-input'
 						className='mb-1 block text-sm font-medium text-gray-700'
 					>
-						Credenciais (JSON)
+						Login
 					</label>
-					<textarea
-						id='credentials-input'
-						value={credentialsJson}
-						onChange={(e) => setCredentialsJson(e.target.value)}
-						rows={4}
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500'
+					<input
+						id='login-input'
+						type='text'
+						value={login}
+						onChange={(e) => setLogin(e.target.value)}
+						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					/>
+				</div>
+				<div className='mb-4'>
+					<label
+						htmlFor='password-input'
+						className='mb-1 block text-sm font-medium text-gray-700'
+					>
+						Senha
+					</label>
+					<input
+						id='password-input'
+						type='password'
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 					/>
 				</div>
 				<button
 					type='submit'
-					disabled={!selectedPlugin || updateCredentials.isPending}
+					disabled={
+						!selectedPlugin || !login || !password || updateCredentials.isPending
+					}
 					className='rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50'
 				>
 					{updateCredentials.isPending ? 'Salvando...' : 'Salvar Credenciais'}

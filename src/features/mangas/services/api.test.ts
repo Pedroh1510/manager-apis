@@ -9,13 +9,15 @@ import {
 	fetchMangaList,
 	deleteManga,
 	fetchMangasByPlugin,
-	addManga
+	addManga,
+	linkConnector
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
 	mangasHttp: {
 		get: vi.fn(),
 		post: vi.fn(),
+		patch: vi.fn(),
 		delete: vi.fn()
 	}
 }));
@@ -60,13 +62,13 @@ describe('updateCredentials', () => {
 		mockPost.mockResolvedValue({ data: {} });
 		await updateCredentials({
 			idPlugin: 'tcb',
-			userAgent: 'Mozilla/5.0',
-			credentials: {}
+			login: 'user',
+			password: 'secret'
 		});
 		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/credentials', {
 			idPlugin: 'tcb',
-			userAgent: 'Mozilla/5.0',
-			credentials: {}
+			login: 'user',
+			password: 'secret'
 		});
 	});
 });
@@ -91,12 +93,10 @@ describe('fetchMangaList', () => {
 });
 
 describe('deleteManga', () => {
-	it('calls DELETE /mangas/adm/delete with title param', async () => {
+	it('calls DELETE /mangas/adm/:idManga', async () => {
 		mockDelete.mockResolvedValue({ data: {} });
-		await deleteManga('Naruto');
-		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/delete', {
-			params: { title: 'Naruto' }
-		});
+		await deleteManga(42);
+		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/42');
 	});
 });
 
@@ -109,17 +109,26 @@ describe('fetchMangasByPlugin', () => {
 });
 
 describe('addManga', () => {
-	it('calls POST /mangas/adm with manga data', async () => {
+	it('calls POST /mangas/adm with title only and returns idManga', async () => {
+		mockPost.mockResolvedValue({ data: { idManga: 7 } });
+		const result = await addManga({ title: 'Naruto' });
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm', { title: 'Naruto' });
+		expect(result).toEqual({ idManga: 7 });
+	});
+});
+
+describe('linkConnector', () => {
+	it('calls POST /mangas/adm/:idManga/connectors with payload', async () => {
 		mockPost.mockResolvedValue({ data: {} });
-		await addManga({
-			title: 'Naruto',
-			titleInPlugin: 'Naruto',
-			idPlugin: 'tcb'
+		await linkConnector(7, {
+			idPlugin: 'tcb',
+			idMangaPlugin: 'abc',
+			titlePlugin: 'Naruto'
 		});
-		expect(mockPost).toHaveBeenCalledWith('/mangas/adm', {
-			title: 'Naruto',
-			titleInPlugin: 'Naruto',
-			idPlugin: 'tcb'
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/7/connectors', {
+			idPlugin: 'tcb',
+			idMangaPlugin: 'abc',
+			titlePlugin: 'Naruto'
 		});
 	});
 });
