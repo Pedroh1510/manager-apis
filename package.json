@@ -3,7 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11.0.0"
+  },
   "scripts": {
+    "rebuild:approved": "npm rebuild fsevents --foreground-scripts --ignore-scripts=false",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
