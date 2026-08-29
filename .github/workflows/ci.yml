@@ -14,10 +14,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - run: npm ci
+
+      - run: npm run rebuild:approved
 
       - run: npm run lint
 
@@ -29,10 +31,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - run: npm ci
+
+      - run: npm run rebuild:approved
 
       - run: npm run test:run
 
@@ -44,9 +48,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - run: npm ci
+
+      - run: npm run rebuild:approved
 
       - run: npm run build
