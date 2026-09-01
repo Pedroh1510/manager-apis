@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { getPreferredTheme, setTheme, type Theme } from '../../lib/theme'
+import { Button } from '../ui/Button'
 
 const navItems = [
   {
@@ -17,13 +20,21 @@ const navItems = [
   },
 ]
 
-const activeCls = 'bg-blue-600 text-white'
-const inactiveCls = 'text-gray-300 hover:bg-gray-700 hover:text-white'
+const activeCls = 'bg-accent-muted text-accent border-l-2 border-accent'
+const inactiveCls = 'text-text-muted hover:bg-surface-raised hover:text-text border-l-2 border-transparent'
 
 export function Sidebar() {
+  const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme())
+
+  function toggleTheme() {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    setThemeState(next)
+  }
+
   return (
-    <nav className='flex h-full w-60 flex-col bg-gray-900 px-4 py-6 text-white'>
-      <h1 className='mb-8 text-xl font-bold'>Manager APIs</h1>
+    <nav className='flex h-full w-60 flex-col border-r border-border bg-surface px-4 py-6'>
+      <h1 className='mb-8 text-xl font-semibold tracking-tight text-text'>Manager APIs</h1>
       <NavLink
         to='/status'
         className={({ isActive }) =>
@@ -34,7 +45,7 @@ export function Sidebar() {
       </NavLink>
       {navItems.map(({ section, links }) => (
         <div key={section} className='mb-6'>
-          <p className='mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400'>
+          <p className='mb-2 text-xs font-semibold uppercase tracking-wider text-text-subtle'>
             {section}
           </p>
           <ul className='space-y-1'>
@@ -53,6 +64,11 @@ export function Sidebar() {
           </ul>
         </div>
       ))}
+      <div className='mt-auto'>
+        <Button variant='ghost' className='w-full' onClick={toggleTheme}>
+          {theme === 'dark' ? 'Claro' : 'Escuro'}
+        </Button>
+      </div>
     </nav>
   )
 }

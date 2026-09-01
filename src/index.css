@@ -1,3 +1,54 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+	/* superfícies — do fundo pro elemento mais "elevado" */
+	--color-canvas: 250 250 249;
+	--color-surface: 255 255 255;
+	--color-surface-raised: 250 250 249;
+	--color-border: 231 229 228;
+
+	/* texto */
+	--color-text: 28 25 23;
+	--color-text-muted: 87 83 78;
+	--color-text-subtle: 168 162 158;
+
+	/* accent — único, "luxury" */
+	--color-accent: 79 70 229;
+	--color-accent-muted: 224 222 253;
+
+	/* status semântico — separado do accent */
+	--color-success: 22 101 52;
+	--color-success-bg: 220 252 231;
+	--color-danger: 153 27 27;
+	--color-danger-bg: 254 226 226;
+	--color-warning: 146 64 14;
+	--color-warning-bg: 254 243 199;
+}
+
+.dark {
+	--color-canvas: 10 10 11;
+	--color-surface: 20 20 23;
+	--color-surface-raised: 30 30 34;
+	--color-border: 44 44 50;
+
+	--color-text: 237 237 238;
+	--color-text-muted: 161 161 168;
+	--color-text-subtle: 96 96 102;
+
+	--color-accent: 129 140 248;
+	--color-accent-muted: 49 46 87;
+
+	--color-success: 74 222 128;
+	--color-success-bg: 20 40 28;
+	--color-danger: 248 113 113;
+	--color-danger-bg: 45 20 20;
+	--color-warning: 251 191 36;
+	--color-warning-bg: 45 34 12;
+}
+
+body {
+	background-color: rgb(var(--color-canvas));
+	color: rgb(var(--color-text));
+}

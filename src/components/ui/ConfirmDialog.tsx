@@ -1,3 +1,5 @@
+import { Button } from './Button';
+
 interface ConfirmDialogProps {
 	open: boolean;
 	title: string;
@@ -20,29 +22,23 @@ export function ConfirmDialog({
 			role='dialog'
 			aria-modal='true'
 			aria-labelledby='confirm-dialog-title'
-			className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
+			className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 transition-opacity'
 		>
-			<div className='w-full max-w-sm rounded-lg bg-white p-6 shadow-xl'>
+			<div className='w-full max-w-sm rounded-lg border border-border bg-surface-raised p-6 shadow-overlay'>
 				<h2
 					id='confirm-dialog-title'
-					className='mb-2 text-lg font-semibold text-gray-900'
+					className='mb-2 text-lg font-semibold text-text'
 				>
 					{title}
 				</h2>
-				<p className='mb-6 text-sm text-gray-600'>{message}</p>
+				<p className='mb-6 text-sm text-text-muted'>{message}</p>
 				<div className='flex justify-end gap-3'>
-					<button
-						onClick={onCancel}
-						className='rounded-md border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50'
-					>
+					<Button variant='secondary' onClick={onCancel}>
 						Cancelar
-					</button>
-					<button
-						onClick={onConfirm}
-						className='rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700'
-					>
+					</Button>
+					<Button variant='danger' onClick={onConfirm}>
 						Confirmar
-					</button>
+					</Button>
 				</div>
 			</div>
 		</div>

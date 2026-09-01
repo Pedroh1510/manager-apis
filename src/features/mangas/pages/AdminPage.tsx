@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
+import { Button } from '../../../components/ui/Button';
 import { usePlugins } from '../hooks/usePlugins';
 import { useAdminActions } from '../hooks/useAdminActions';
+
+const inputCls =
+	'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-accent';
+const labelCls = 'mb-1 block text-sm font-medium text-text-muted';
 
 export function MangasAdminPage() {
 	const { data: plugins, isLoading } = usePlugins();
@@ -46,15 +51,12 @@ export function MangasAdminPage() {
 
 	return (
 		<div className='space-y-8'>
-			<h1 className='text-2xl font-bold text-gray-900'>
+			<h1 className='text-3xl font-semibold tracking-tight text-text'>
 				Mangas Manager — Configurações / ADM
 			</h1>
 
 			<div>
-				<label
-					htmlFor='plugin-select'
-					className='mb-1 block text-sm font-medium text-gray-700'
-				>
+				<label htmlFor='plugin-select' className={labelCls}>
 					Plugin
 				</label>
 				<input
@@ -62,13 +64,13 @@ export function MangasAdminPage() {
 					placeholder='Filtrar plugin...'
 					value={pluginFilter}
 					onChange={(e) => setPluginFilter(e.target.value)}
-					className='mb-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					className={`mb-1 block ${inputCls}`}
 				/>
 				<select
 					id='plugin-select'
 					value={selectedPlugin}
 					onChange={(e) => setSelectedPlugin(e.target.value)}
-					className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+					className={inputCls}
 				>
 					<option value=''>Selecione um plugin</option>
 					{filteredPlugins.map((p) => (
@@ -80,19 +82,19 @@ export function MangasAdminPage() {
 			</div>
 
 			<div>
-				<button
+				<Button
+					variant='primary'
 					onClick={() =>
 						selectedPlugin && updateMangasByPlugin.mutate(selectedPlugin)
 					}
 					disabled={!selectedPlugin || updateMangasByPlugin.isPending}
-					className='rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50'
 				>
 					{updateMangasByPlugin.isPending
 						? 'Atualizando...'
 						: 'Atualizar Mangas'}
-				</button>
+				</Button>
 				{updateMangasByPlugin.isSuccess && (
-					<p className='mt-2 text-sm text-green-600'>
+					<p className='mt-2 text-sm text-success'>
 						Mangas atualizados com sucesso!
 					</p>
 				)}
@@ -100,16 +102,13 @@ export function MangasAdminPage() {
 
 			<form
 				onSubmit={handleCookieSubmit}
-				className='rounded-lg border bg-white p-6 shadow-sm'
+				className='rounded-lg border border-border bg-surface p-6'
 			>
-				<h2 className='mb-4 text-lg font-semibold text-gray-800'>
+				<h2 className='mb-4 text-lg font-semibold text-text'>
 					Atualizar Cookie
 				</h2>
 				<div className='mb-4'>
-					<label
-						htmlFor='cookie-input'
-						className='mb-1 block text-sm font-medium text-gray-700'
-					>
+					<label htmlFor='cookie-input' className={labelCls}>
 						Cookie
 					</label>
 					<input
@@ -118,14 +117,11 @@ export function MangasAdminPage() {
 						value={cookie}
 						onChange={(e) => setCookie(e.target.value)}
 						placeholder='session=abc123; token=xyz'
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className={inputCls}
 					/>
 				</div>
 				<div className='mb-4'>
-					<label
-						htmlFor='user-agent-input'
-						className='mb-1 block text-sm font-medium text-gray-700'
-					>
+					<label htmlFor='user-agent-input' className={labelCls}>
 						User-Agent
 					</label>
 					<input
@@ -134,33 +130,30 @@ export function MangasAdminPage() {
 						value={userAgent}
 						onChange={(e) => setUserAgent(e.target.value)}
 						placeholder='Mozilla/5.0 ...'
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className={inputCls}
 					/>
 				</div>
-				<button
+				<Button
 					type='submit'
+					variant='primary'
 					disabled={!selectedPlugin || !cookie || updateCookie.isPending}
-					className='rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50'
 				>
 					{updateCookie.isPending ? 'Salvando...' : 'Salvar Cookie'}
-				</button>
+				</Button>
 				{updateCookie.isSuccess && (
-					<p className='mt-2 text-sm text-green-600'>Cookie atualizado!</p>
+					<p className='mt-2 text-sm text-success'>Cookie atualizado!</p>
 				)}
 			</form>
 
 			<form
 				onSubmit={handleCredentialsSubmit}
-				className='rounded-lg border bg-white p-6 shadow-sm'
+				className='rounded-lg border border-border bg-surface p-6'
 			>
-				<h2 className='mb-4 text-lg font-semibold text-gray-800'>
+				<h2 className='mb-4 text-lg font-semibold text-text'>
 					Atualizar Credenciais
 				</h2>
 				<div className='mb-4'>
-					<label
-						htmlFor='login-input'
-						className='mb-1 block text-sm font-medium text-gray-700'
-					>
+					<label htmlFor='login-input' className={labelCls}>
 						Login
 					</label>
 					<input
@@ -168,14 +161,11 @@ export function MangasAdminPage() {
 						type='text'
 						value={login}
 						onChange={(e) => setLogin(e.target.value)}
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className={inputCls}
 					/>
 				</div>
 				<div className='mb-4'>
-					<label
-						htmlFor='password-input'
-						className='mb-1 block text-sm font-medium text-gray-700'
-					>
+					<label htmlFor='password-input' className={labelCls}>
 						Senha
 					</label>
 					<input
@@ -183,20 +173,20 @@ export function MangasAdminPage() {
 						type='password'
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
-						className='w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className={inputCls}
 					/>
 				</div>
-				<button
+				<Button
 					type='submit'
+					variant='primary'
 					disabled={
 						!selectedPlugin || !login || !password || updateCredentials.isPending
 					}
-					className='rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50'
 				>
 					{updateCredentials.isPending ? 'Salvando...' : 'Salvar Credenciais'}
-				</button>
+				</Button>
 				{updateCredentials.isSuccess && (
-					<p className='mt-2 text-sm text-green-600'>
+					<p className='mt-2 text-sm text-success'>
 						Credenciais atualizadas!
 					</p>
 				)}

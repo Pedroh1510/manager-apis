@@ -25,7 +25,7 @@ export function GlobalStatusSummary({ projects }: GlobalStatusSummaryProps) {
   return (
     <div className='mb-8 flex items-center gap-3'>
       <StatusBadge status={overallStatus} />
-      {message && <span className='text-sm text-gray-600'>{message}</span>}
+      {message && <span className='text-sm text-text-muted'>{message}</span>}
     </div>
   )
 }

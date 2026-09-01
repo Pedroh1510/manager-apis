@@ -20,11 +20,11 @@ describe('StatusBadge', () => {
 
   it('applies green class for online status', () => {
     render(<StatusBadge status="online" />)
-    expect(screen.getByText('Online')).toHaveClass('bg-green-100')
+    expect(screen.getByText('Online')).toHaveClass('bg-success-bg')
   })
 
   it('applies red class for offline status', () => {
     render(<StatusBadge status="offline" />)
-    expect(screen.getByText('Offline')).toHaveClass('bg-red-100')
+    expect(screen.getByText('Offline')).toHaveClass('bg-danger-bg')
   })
 })
