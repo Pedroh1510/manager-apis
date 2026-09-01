@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
+import { Button } from '../../../components/ui/Button';
 import { useTorrents } from '../hooks/useTorrents';
 import type { Torrent } from '../services/types';
 
@@ -13,66 +14,63 @@ export function AnimeRssAdminPage() {
 	return (
 		<div>
 			<div className='mb-6 flex items-center justify-between'>
-				<h1 className='text-2xl font-bold text-gray-900'>
+				<h1 className='text-3xl font-semibold tracking-tight text-text'>
 					Anime RSS — ADM Torrents
 				</h1>
-				<button
-					onClick={() => setConfirmDeleteAll(true)}
-					className='rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700'
-				>
+				<Button variant='danger' onClick={() => setConfirmDeleteAll(true)}>
 					Deletar Todos os Torrents
-				</button>
+				</Button>
 			</div>
 
 			{torrents.isLoading && <LoadingSpinner />}
 
 			{torrents.data && torrents.data.length === 0 && (
-				<p className='text-sm text-gray-500'>Nenhum torrent ativo.</p>
+				<p className='text-sm text-text-muted'>Nenhum torrent ativo.</p>
 			)}
 
 			{torrents.data && torrents.data.length > 0 && (
-				<div className='overflow-hidden rounded-lg border bg-white shadow-sm'>
-					<table className='min-w-full divide-y divide-gray-200'>
-						<thead className='bg-gray-50'>
+				<div className='overflow-hidden rounded-lg border border-border bg-surface'>
+					<table className='min-w-full divide-y divide-border'>
+						<thead className='bg-surface-raised'>
 							<tr>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
 									Nome
 								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
 									Estado
 								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500'>
+								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
 									Progresso
 								</th>
-								<th className='px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500'>
+								<th className='px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-subtle'>
 									Ações
 								</th>
 							</tr>
 						</thead>
-						<tbody className='divide-y divide-gray-200 bg-white'>
+						<tbody className='divide-y divide-border bg-surface'>
 							{torrents.data.map((torrent) => (
 								<tr key={torrent.hash}>
-									<td className='px-4 py-3 text-sm text-gray-900'>
+									<td className='px-4 py-3 text-sm text-text'>
 										{torrent.name}
 									</td>
-									<td className='px-4 py-3 text-sm text-gray-500'>
+									<td className='px-4 py-3 text-sm text-text-muted'>
 										{torrent.state}
 									</td>
-									<td className='px-4 py-3 text-sm text-gray-500'>
+									<td className='px-4 py-3 text-sm text-text-muted'>
 										{(torrent.progress * 100).toFixed(1)}%
 									</td>
 									<td className='px-4 py-3 text-right'>
 										<button
 											aria-label={`Pausar ${torrent.name}`}
 											onClick={() => stopTorrent.mutate(torrent.hash)}
-											className='mr-2 rounded border border-yellow-400 px-2 py-1 text-xs text-yellow-700 hover:bg-yellow-50'
+											className='mr-2 rounded border border-warning/40 px-2 py-1 text-xs text-warning transition-colors hover:bg-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
 										>
 											Pausar
 										</button>
 										<button
 											aria-label={`Deletar ${torrent.name}`}
 											onClick={() => setPendingDelete(torrent)}
-											className='rounded border border-red-400 px-2 py-1 text-xs text-red-700 hover:bg-red-50'
+											className='rounded border border-danger/40 px-2 py-1 text-xs text-danger transition-colors hover:bg-danger-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
 										>
 											Deletar
 										</button>

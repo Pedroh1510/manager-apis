@@ -10,7 +10,7 @@ export function GlobalStatusPage() {
 
   return (
     <div>
-      <h1 className='mb-6 text-2xl font-bold text-gray-900'>Status</h1>
+      <h1 className='mb-6 text-3xl font-semibold tracking-tight text-text'>Status</h1>
       <GlobalStatusSummary
         projects={[
           { label: 'Anime RSS', isLoading: anime.isLoading, isSuccess: anime.isSuccess },
