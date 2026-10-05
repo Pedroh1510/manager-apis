@@ -182,6 +182,41 @@ describe('MangasListPage', () => {
     expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
   })
 
+  const DOWNLOADING_MESSAGE =
+    'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.'
+
+  function choosePluginAndClickNext() {
+    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+  }
+
+  it('shows the downloading message and stays on the plugin step on 202', async () => {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue(null)
+    render(<MangasListPage />, { wrapper })
+    choosePluginAndClickNext()
+
+    await waitFor(() => expect(screen.getByText(DOWNLOADING_MESSAGE)).toBeInTheDocument())
+    expect(screen.getByText('Selecione um Plugin')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/filtrar manga/i)).not.toBeInTheDocument()
+  })
+
+  it('retries on Próximo and moves to manga selection once the catalog is ready', async () => {
+    vi.mocked(api.fetchMangasByPlugin)
+      .mockReset()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce([{ id: 'n1', title: 'Naruto' }])
+    render(<MangasListPage />, { wrapper })
+    choosePluginAndClickNext()
+    await waitFor(() => expect(screen.getByText(DOWNLOADING_MESSAGE)).toBeInTheDocument())
+
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+
+    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
+    expect(api.fetchMangasByPlugin).toHaveBeenCalledTimes(2)
+    expect(screen.queryByText(DOWNLOADING_MESSAGE)).not.toBeInTheDocument()
+  })
+
   it('filters mangas by title in select-manga step', async () => {
     vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
       { id: 'n1', title: 'Naruto' },

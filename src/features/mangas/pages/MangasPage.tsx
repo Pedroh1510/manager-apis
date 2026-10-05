@@ -14,6 +14,8 @@ const toPlugins = (list: Plugin[] | undefined) =>
 const inputCls =
 	'rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-accent';
 const labelCls = 'mb-1 block text-sm font-medium text-text-muted';
+const CATALOG_DOWNLOADING_MESSAGE =
+	'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.';
 
 type Step = 'list' | 'select-plugin' | 'select-manga' | 'confirm-add';
 
@@ -41,6 +43,7 @@ export function MangasListPage() {
 	});
 	const [availableMangas, setAvailableMangas] = useState<MangaFromPlugin[]>([]);
 	const [loadingMangas, setLoadingMangas] = useState(false);
+	const [catalogDownloading, setCatalogDownloading] = useState(false);
 	const [mangaTitleFilter, setMangaTitleFilter] = useState('');
 
 	const filteredPluginMangas = availableMangas.filter((m) =>
@@ -58,6 +61,8 @@ export function MangasListPage() {
 		setMangaTitleFilter('');
 		try {
 			const list = await fetchMangasByPlugin(plugin.id);
+			setCatalogDownloading(list === null);
+			if (list === null) return;
 			const seen = new Set<string>();
 			const deduped = list.filter((m) => {
 				if (seen.has(m.title)) return false;
@@ -150,6 +155,11 @@ export function MangasListPage() {
 				<Card>
 					<h2 className='mb-4 text-lg font-semibold text-text'>Selecione um Plugin</h2>
 					{loadingMangas && <LoadingSpinner />}
+					{catalogDownloading && (
+						<p role='status' className='mb-4 text-sm text-text-muted'>
+							{CATALOG_DOWNLOADING_MESSAGE}
+						</p>
+					)}
 					<div className='mb-4'>
 						<label htmlFor='new-manga-plugin' className={labelCls}>
 							Plugin
