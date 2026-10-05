@@ -106,6 +106,21 @@ describe('fetchMangasByPlugin', () => {
 		await fetchMangasByPlugin('tcb');
 		expect(mockGet).toHaveBeenCalledWith('/mangas/tcb');
 	});
+
+	it('returns null when the catalog is still downloading', async () => {
+		mockGet.mockResolvedValue({ status: 202, data: '' });
+		expect(await fetchMangasByPlugin('tcb')).toBeNull();
+	});
+
+	it('returns the list when the catalog is ready', async () => {
+		mockGet.mockResolvedValue({
+			status: 200,
+			data: [{ id: '1', title: 'Black Clover' }]
+		});
+		expect(await fetchMangasByPlugin('tcb')).toEqual([
+			{ id: '1', title: 'Black Clover' }
+		]);
+	});
 });
 
 describe('addManga', () => {

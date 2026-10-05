@@ -45,12 +45,16 @@ export async function deleteManga(idManga: number): Promise<void> {
 	await mangasHttp.delete(`/mangas/adm/${idManga}`);
 }
 
+const CATALOG_DOWNLOADING = 202;
+
+/** Returns null while the plugin's catalog is still being downloaded (202). */
 export async function fetchMangasByPlugin(
 	idPlugin: string
-): Promise<MangaFromPlugin[]> {
-	const { data } = await mangasHttp.get<MangaFromPlugin[]>(
+): Promise<MangaFromPlugin[] | null> {
+	const { status, data } = await mangasHttp.get<MangaFromPlugin[]>(
 		`/mangas/${idPlugin}`
 	);
+	if (status === CATALOG_DOWNLOADING) return null;
 	return data;
 }
 
