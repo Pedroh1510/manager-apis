@@ -61,7 +61,7 @@ export function Sidebar() {
         </div>
       ))}
       <div className='mt-auto'>
-        <Button variant='ghost' size='sm' className='w-full justify-start' onClick={toggleTheme}>
+        <Button variant='ghost' size='sm' className='w-full !justify-start' onClick={toggleTheme}>
           {theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
         </Button>
       </div>
