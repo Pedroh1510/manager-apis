@@ -33,6 +33,19 @@ for (const theme of THEMES) {
 			await page.screenshot({ path: `${SHOTS_DIR}/manga-detail-${theme}.png`, fullPage: true });
 		});
 
+		test('status with migrations and queues', async ({ page }) => {
+			await open(page, '/status', theme);
+			await expect(page.getByText('1760000000000_add-connector-priority')).toBeVisible();
+			await expect(page.getByTestId('queue-card-Scan process')).toBeVisible();
+			await page.screenshot({ path: `${SHOTS_DIR}/status-${theme}.png`, fullPage: true });
+		});
+
+		test('queues page', async ({ page }) => {
+			await open(page, '/filas', theme);
+			await expect(page.getByTestId('queue-card-connector-mangeek')).toBeVisible();
+			await page.screenshot({ path: `${SHOTS_DIR}/queues-${theme}.png` });
+		});
+
 		test('add manga drawer', async ({ page }) => {
 			await open(page, '/mangas/list', theme);
 			await page.getByRole('button', { name: 'Adicionar mangá' }).click();

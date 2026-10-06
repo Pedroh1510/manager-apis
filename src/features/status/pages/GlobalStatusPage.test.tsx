@@ -1,30 +1,59 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { screen, within } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GlobalStatusPage } from './GlobalStatusPage'
 import * as animeHooks from '../../../features/anime-rss/hooks/useAnimeStatus'
 import * as mangasHooks from '../../../features/mangas/hooks/useMangasStatus'
+import * as queuesApi from '../../queues/services/api'
+import * as statusApi from '../services/api'
+import { renderWithProviders } from '../../../test/renderWithProviders'
+import { queue } from '../../queues/test/fixtures'
 
 vi.mock('../../../features/anime-rss/hooks/useAnimeStatus')
 vi.mock('../../../features/mangas/hooks/useMangasStatus')
+vi.mock('../../queues/services/api')
+vi.mock('../services/api')
 
-function wrapper({ children }: { children: React.ReactNode }) {
-  return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
-}
+const loading = { isLoading: true, isSuccess: false, isError: false, data: undefined, error: null }
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.mocked(animeHooks.useAnimeStatus).mockReturnValue(loading as ReturnType<typeof animeHooks.useAnimeStatus>)
+  vi.mocked(mangasHooks.useMangasStatus).mockReturnValue(loading as ReturnType<typeof mangasHooks.useMangasStatus>)
+  vi.mocked(queuesApi.fetchMangasQueuesSummary).mockResolvedValue([queue('download')])
+  vi.mocked(queuesApi.fetchRssQueuesSummary).mockResolvedValue([queue('Scan process')])
+  vi.mocked(statusApi.fetchPendingMigrations).mockResolvedValue([])
+})
+
+const section = (name: string) => screen.getByRole('heading', { name, level: 2 }).closest('section') as HTMLElement
 
 describe('GlobalStatusPage', () => {
   it('renders page title and both section headings', () => {
-    vi.mocked(animeHooks.useAnimeStatus).mockReturnValue({
-      isLoading: true, isSuccess: false, isError: false, data: undefined, error: null,
-    } as ReturnType<typeof animeHooks.useAnimeStatus>)
-    vi.mocked(mangasHooks.useMangasStatus).mockReturnValue({
-      isLoading: true, isSuccess: false, isError: false, data: undefined, error: null,
-    } as ReturnType<typeof mangasHooks.useMangasStatus>)
-
-    render(<GlobalStatusPage />, { wrapper })
+    renderWithProviders(<GlobalStatusPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Status' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Anime RSS' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Mangas Manager' })).toBeInTheDocument()
+  })
+
+  it('a failing migrations query does not break the page', async () => {
+    vi.mocked(statusApi.fetchPendingMigrations).mockRejectedValue({ isAxiosError: true, response: { data: 'Something broke!' }, message: 'x' })
+    renderWithProviders(<GlobalStatusPage />)
+
+    expect(await within(section('Mangas Manager')).findByText(/Something broke!/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Anime RSS' })).toBeInTheDocument()
+    expect(await screen.findByTestId('queue-card-download')).toBeInTheDocument()
+  })
+
+  it('shows queues per API and isolates a failing one', async () => {
+    vi.mocked(queuesApi.fetchMangasQueuesSummary).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 503, data: { message: 'Queue backend unavailable' } },
+      message: 'x',
+    })
+    renderWithProviders(<GlobalStatusPage />)
+
+    expect(await within(section('Mangas Manager')).findByText('Filas indisponíveis')).toBeInTheDocument()
+    expect(await within(section('Anime RSS')).findByTestId('queue-card-Scan process')).toBeInTheDocument()
+    expect(within(section('Anime RSS')).queryByText('Filas indisponíveis')).not.toBeInTheDocument()
   })
 })

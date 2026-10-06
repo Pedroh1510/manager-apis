@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from './Button';
 
 interface ConfirmDialogProps {
@@ -6,6 +7,8 @@ interface ConfirmDialogProps {
 	message: string;
 	onConfirm: () => void;
 	onCancel: () => void;
+	/** Extra detail under the message, e.g. the list of items the action touches. */
+	children?: ReactNode;
 }
 
 export function ConfirmDialog({
@@ -13,7 +16,8 @@ export function ConfirmDialog({
 	title,
 	message,
 	onConfirm,
-	onCancel
+	onCancel,
+	children
 }: ConfirmDialogProps) {
 	if (!open) return null;
 
@@ -31,7 +35,8 @@ export function ConfirmDialog({
 				>
 					{title}
 				</h2>
-				<p className='mb-6 text-sm text-text-muted'>{message}</p>
+				<p className='mb-4 text-sm text-text-muted'>{message}</p>
+				{children && <div className='mb-6'>{children}</div>}
 				<div className='flex justify-end gap-3'>
 					<Button variant='secondary' onClick={onCancel}>
 						Cancelar

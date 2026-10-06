@@ -1,28 +1,30 @@
+import type { ReactNode } from 'react'
 import { StatusBadge } from '../../../components/ui/StatusBadge'
 import { useAnimeStatus } from '../../anime-rss/hooks/useAnimeStatus'
 
-export function AnimeRssStatusSection() {
+/** API health card; `children` adds blocks such as queues or migrations below the details. */
+export function AnimeRssStatusSection({ children }: { children?: ReactNode }) {
   const { isLoading, isSuccess, isError, data } = useAnimeStatus()
   const status = isLoading ? 'loading' : isSuccess ? 'online' : 'offline'
   const db = data?.database as Record<string, unknown> | undefined
   const qbt = data?.qbittorrent as Record<string, unknown> | undefined
 
   return (
-    <section>
-      <h2 className='mb-4 text-lg font-semibold text-text'>Anime RSS</h2>
+    <section className='space-y-5 rounded-lg border border-border bg-surface p-4 shadow-raised'>
+      <h2 className='text-sm font-semibold text-text'>Anime RSS</h2>
       <div className='flex items-center gap-3'>
         <span className='text-sm text-text-muted'>API:</span>
         <StatusBadge status={status} />
       </div>
       {isError && (
-        <p className='mt-4 text-sm text-danger'>
+        <p className='text-sm text-danger'>
           Não foi possível conectar à API de RSS.
         </p>
       )}
       {isSuccess && data && (
-        <div className='mt-6 space-y-6'>
+        <div className='space-y-5'>
           <div>
-            <h3 className='mb-3 text-sm font-semibold text-text'>Database</h3>
+            <h3 className='mb-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>Database</h3>
             {db && 'error' in db ? (
               <p className='text-sm text-danger'>{String(db.error)}</p>
             ) : db ? (
@@ -43,7 +45,7 @@ export function AnimeRssStatusSection() {
             ) : null}
           </div>
           <div>
-            <h3 className='mb-3 text-sm font-semibold text-text'>qBittorrent</h3>
+            <h3 className='mb-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>qBittorrent</h3>
             {qbt && 'error' in qbt ? (
               <p className='text-sm text-danger'>{String(qbt.error)}</p>
             ) : qbt ? (
@@ -61,6 +63,7 @@ export function AnimeRssStatusSection() {
           </div>
         </div>
       )}
+      {children}
     </section>
   )
 }

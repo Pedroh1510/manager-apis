@@ -46,6 +46,9 @@ export function Sidebar() {
       <NavLink to='/status' className={linkClass}>
         Status
       </NavLink>
+      <NavLink to='/filas' className={linkClass}>
+        Filas
+      </NavLink>
       {navItems.map(({ section, links }) => (
         <div key={section} className='mt-5'>
           <p className='mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>{section}</p>

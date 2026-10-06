@@ -39,6 +39,33 @@ export const MISSING_CHAPTERS = [
 	{ id: 'b-5', title: 'Capítulo 5', volume: 5, idMangaConnector: 1 }
 ];
 
+const counts = (active: number, waiting: number, delayed: number, failed: number) => ({
+	active,
+	waiting,
+	delayed,
+	failed,
+	completed: 120,
+	paused: 0
+});
+
+export const MANGAS_QUEUES = [
+	{ name: 'background-tasks', counts: counts(1, 0, 2, 0) },
+	{ name: 'connector-mangeek', counts: counts(1, 14, 0, 3) },
+	{ name: 'download', counts: counts(3, 41, 0, 0) }
+];
+
+export const RSS_QUEUES = [
+	{ name: 'Adm Anime', counts: counts(0, 0, 1, 0) },
+	{ name: 'Anime process', counts: counts(0, 0, 1, 0) },
+	{ name: 'Scan process', counts: counts(1, 2, 0, 0) }
+];
+
+export const PENDING_MIGRATIONS = [
+	{ name: '1760000000000_add-connector-priority', path: 'src/infra/migrations/1760000000000_add-connector-priority.cjs', timestamp: 1760000000000 }
+];
+
+const BULL_BOARD_PLACEHOLDER = '<body style="margin:0;font:13px sans-serif;display:grid;place-items:center;height:100vh;background:#f4f5f7;color:#6b7280">bull-board</body>';
+
 export const PLUGINS = [
 	{ id: 'mangeek', name: 'Mangeek' },
 	{ id: 'tcb', name: 'TCB Scans' }
@@ -52,10 +79,23 @@ export async function mockApis(page: Page) {
 	await page.route(`${MANGAS_API}/**`, (route) => {
 		const { pathname } = new URL(route.request().url());
 		if (pathname === '/mangas/adm') return route.fulfill({ json: MANGAS });
+		if (pathname === '/status') return route.fulfill({ json: { version: '16.4', maxConnections: 100, openedConnections: 7 } });
+		if (pathname === '/migrations') return route.fulfill({ json: PENDING_MIGRATIONS });
+		if (pathname === '/queues-summary') return route.fulfill({ json: MANGAS_QUEUES });
+		if (pathname.startsWith('/queues')) return route.fulfill({ contentType: 'text/html', body: BULL_BOARD_PLACEHOLDER });
 		if (pathname === '/mangas/plugins') return route.fulfill({ json: PLUGINS });
 		if (/^\/mangas\/adm\/\d+\/chapters\/missing$/.test(pathname)) return route.fulfill({ json: MISSING_CHAPTERS });
 		if (/^\/mangas\/adm\/\d+\/chapters$/.test(pathname)) return route.fulfill({ json: CHAPTERS });
 		return route.fulfill({ json: {} });
 	});
-	await page.route(`${RSS_API}/**`, (route) => route.fulfill({ json: [] }));
+	await page.route(`${RSS_API}/**`, (route) => {
+		const { pathname } = new URL(route.request().url());
+		if (pathname === '/status')
+			return route.fulfill({
+				json: { database: { version: '16.4', maxConnections: 100, activeConnections: 3 }, qbittorrent: { version: 'v5.0.4', apiVersion: '2.11.2' } }
+			});
+		if (pathname === '/queues-summary') return route.fulfill({ json: RSS_QUEUES });
+		if (pathname.startsWith('/queues')) return route.fulfill({ contentType: 'text/html', body: BULL_BOARD_PLACEHOLDER });
+		return route.fulfill({ json: [] });
+	});
 }
