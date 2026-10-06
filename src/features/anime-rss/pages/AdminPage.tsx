@@ -1,85 +1,91 @@
 import { useState } from 'react';
-import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { Button } from '../../../components/ui/Button';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
+import { PageHeader } from '../../../components/ui/PageHeader';
+import { Table, Td, Th } from '../../../components/ui/Table';
 import { useTorrents } from '../hooks/useTorrents';
 import type { Torrent } from '../services/types';
 
+function ProgressBar({ progress }: { progress: number }) {
+	const percent = Math.round(progress * 1000) / 10;
+	return (
+		<div className='flex items-center gap-2'>
+			<div className='h-1 w-24 overflow-hidden rounded-full bg-surface-raised'>
+				<div className={`h-full rounded-full ${progress >= 1 ? 'bg-success' : 'bg-accent'}`} style={{ width: `${percent}%` }} />
+			</div>
+			<span className='font-mono text-xs tabular-nums text-text-muted'>{percent.toFixed(1)}%</span>
+		</div>
+	);
+}
+
+function TorrentsTable({ torrents, onStop, onDelete }: { torrents: Torrent[]; onStop: (t: Torrent) => void; onDelete: (t: Torrent) => void }) {
+	return (
+		<Table>
+			<thead>
+				<tr>
+					<Th>Nome</Th>
+					<Th className='w-36'>Estado</Th>
+					<Th className='w-44'>Progresso</Th>
+					<Th className='w-40 text-right'>Ações</Th>
+				</tr>
+			</thead>
+			<tbody>
+				{torrents.map((torrent) => (
+					<tr key={torrent.hash} className='group transition-colors hover:bg-surface-raised/60'>
+						<Td className='max-w-0 truncate' title={torrent.name}>
+							{torrent.name}
+						</Td>
+						<Td className='font-mono text-xs text-text-muted'>{torrent.state}</Td>
+						<Td>
+							<ProgressBar progress={torrent.progress} />
+						</Td>
+						<Td className='space-x-1 text-right'>
+							<Button size='sm' variant='ghost' aria-label={`Pausar ${torrent.name}`} onClick={() => onStop(torrent)}>
+								Pausar
+							</Button>
+							<Button
+								size='sm'
+								variant='ghost'
+								aria-label={`Deletar ${torrent.name}`}
+								className='text-danger opacity-70 hover:text-danger group-hover:opacity-100'
+								onClick={() => onDelete(torrent)}
+							>
+								Deletar
+							</Button>
+						</Td>
+					</tr>
+				))}
+			</tbody>
+		</Table>
+	);
+}
+
 export function AnimeRssAdminPage() {
-	const { torrents, stopTorrent, deleteTorrent, deleteAll } =
-		useTorrents();
+	const { torrents, stopTorrent, deleteTorrent, deleteAll } = useTorrents();
 	const [pendingDelete, setPendingDelete] = useState<Torrent | null>(null);
 	const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+	const list = torrents.data ?? [];
 
 	return (
-		<div>
-			<div className='mb-6 flex items-center justify-between'>
-				<h1 className='text-3xl font-semibold tracking-tight text-text'>
-					Anime RSS — ADM Torrents
-				</h1>
-				<Button variant='danger' onClick={() => setConfirmDeleteAll(true)}>
-					Deletar Todos os Torrents
-				</Button>
-			</div>
+		<div className='mx-auto max-w-6xl'>
+			<PageHeader
+				title='Torrents'
+				subtitle={torrents.isSuccess ? `${list.length} torrents no qBittorrent` : 'Anime RSS — qBittorrent'}
+				actions={
+					<Button variant='danger' onClick={() => setConfirmDeleteAll(true)}>
+						Deletar todos os torrents
+					</Button>
+				}
+			/>
 
-			{torrents.isLoading && <LoadingSpinner />}
-
-			{torrents.data && torrents.data.length === 0 && (
-				<p className='text-sm text-text-muted'>Nenhum torrent ativo.</p>
+			{torrents.isLoading && <p className='text-xs text-text-muted'>Carregando torrents…</p>}
+			{torrents.isSuccess && list.length === 0 && (
+				<p className='rounded-lg border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-text-muted'>
+					Nenhum torrent ativo.
+				</p>
 			)}
-
-			{torrents.data && torrents.data.length > 0 && (
-				<div className='overflow-hidden rounded-lg border border-border bg-surface'>
-					<table className='min-w-full divide-y divide-border'>
-						<thead className='bg-surface-raised'>
-							<tr>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
-									Nome
-								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
-									Estado
-								</th>
-								<th className='px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-subtle'>
-									Progresso
-								</th>
-								<th className='px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-subtle'>
-									Ações
-								</th>
-							</tr>
-						</thead>
-						<tbody className='divide-y divide-border bg-surface'>
-							{torrents.data.map((torrent) => (
-								<tr key={torrent.hash}>
-									<td className='px-4 py-3 text-sm text-text'>
-										{torrent.name}
-									</td>
-									<td className='px-4 py-3 text-sm text-text-muted'>
-										{torrent.state}
-									</td>
-									<td className='px-4 py-3 text-sm text-text-muted'>
-										{(torrent.progress * 100).toFixed(1)}%
-									</td>
-									<td className='px-4 py-3 text-right'>
-										<button
-											aria-label={`Pausar ${torrent.name}`}
-											onClick={() => stopTorrent.mutate(torrent.hash)}
-											className='mr-2 rounded border border-warning/40 px-2 py-1 text-xs text-warning transition-colors hover:bg-warning-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
-										>
-											Pausar
-										</button>
-										<button
-											aria-label={`Deletar ${torrent.name}`}
-											onClick={() => setPendingDelete(torrent)}
-											className='rounded border border-danger/40 px-2 py-1 text-xs text-danger transition-colors hover:bg-danger-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
-										>
-											Deletar
-										</button>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+			{list.length > 0 && (
+				<TorrentsTable torrents={list} onStop={(torrent) => stopTorrent.mutate(torrent.hash)} onDelete={setPendingDelete} />
 			)}
 
 			<ConfirmDialog
@@ -92,7 +98,6 @@ export function AnimeRssAdminPage() {
 				}}
 				onCancel={() => setPendingDelete(null)}
 			/>
-
 			<ConfirmDialog
 				open={confirmDeleteAll}
 				title='Deletar todos os torrents'

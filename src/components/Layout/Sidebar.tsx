@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { getPreferredTheme, setTheme, type Theme } from '../../lib/theme'
 import { Button } from '../ui/Button'
 import { FOCUS_RING } from '../ui/focusRing'
@@ -25,9 +25,13 @@ const linkBase = `flex h-7 items-center rounded-md px-2 text-[13px] transition-c
 const activeCls = 'bg-surface-raised font-medium text-text'
 const inactiveCls = 'text-text-muted hover:bg-surface-raised hover:text-text'
 const linkClass = ({ isActive }: { isActive: boolean }) => `${linkBase} ${isActive ? activeCls : inactiveCls}`
+// /mangas/:idManga is reached from the list, so the list stays highlighted there.
+const MANGA_DETAIL_PATH = /^\/mangas\/\d+$/
 
 export function Sidebar() {
   const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme())
+  const { pathname } = useLocation()
+  const isMangaDetail = MANGA_DETAIL_PATH.test(pathname)
 
   function toggleTheme() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
@@ -46,15 +50,24 @@ export function Sidebar() {
       <NavLink to='/status' className={linkClass}>
         Status
       </NavLink>
+      <NavLink to='/filas' className={linkClass}>
+        Filas
+      </NavLink>
       {navItems.map(({ section, links }) => (
         <div key={section} className='mt-5'>
           <p className='mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>{section}</p>
           <ul className='space-y-0.5'>
             {links.map(({ to, label }) => (
               <li key={to}>
-                <NavLink to={to} className={linkClass}>
-                  {label}
-                </NavLink>
+                {to === '/mangas/list' && isMangaDetail ? (
+                  <Link to={to} aria-current='page' className={linkClass({ isActive: true })}>
+                    {label}
+                  </Link>
+                ) : (
+                  <NavLink to={to} className={linkClass}>
+                    {label}
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>

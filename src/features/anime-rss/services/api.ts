@@ -3,7 +3,9 @@ import type {
 	AnimeStatusResponse,
 	RssItem,
 	Torrent,
-	FetchRssParams
+	FetchRssParams,
+	CreateRssItemPayload,
+	RssFeedItem
 } from './types';
 
 export async function fetchAnimeStatus(): Promise<AnimeStatusResponse> {
@@ -36,4 +38,10 @@ export async function deleteTorrent(hash: string): Promise<void> {
 
 export async function deleteAllTorrents(): Promise<void> {
 	await rssHttp.get('/adm/delete');
+}
+
+/** Adds a manual item to the feed; 409 when the title already exists. */
+export async function createRssItem(payload: CreateRssItemPayload): Promise<RssFeedItem> {
+	const { data } = await rssHttp.post<RssFeedItem>('/rss', payload);
+	return data;
 }

@@ -4,7 +4,7 @@ import { Button } from '../../../components/ui/Button';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { Drawer } from '../../../components/ui/Drawer';
 import { Input } from '../../../components/ui/Input';
-import { Table, Td } from '../../../components/ui/Table';
+import { TablePlaceholder } from '../../../components/ui/TablePlaceholder';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { getApiErrorMessage } from '../../../lib/apiError';
 import { AddMangaWizard } from '../components/AddMangaWizard';
@@ -15,7 +15,6 @@ import { filterMangas, useMangaFilters } from '../lib/mangaFilters';
 import type { MangaListItem, Plugin } from '../services/types';
 
 const selectCls = `h-8 rounded-md border border-border bg-surface px-2 text-sm text-text ${FOCUS_RING}`;
-const PLACEHOLDER_ROWS = 6;
 
 function toPluginNames(plugins: Plugin[] | undefined): Record<string, string> {
 	return Object.fromEntries((plugins ?? []).filter(Boolean).map((p) => [p.id, p.name || p.id]));
@@ -131,7 +130,7 @@ interface ListBodyProps {
 }
 
 function ListBody({ mangas, all, visible, hasFilters, onClearFilters, onAdd, table }: ListBodyProps) {
-	if (mangas.isLoading) return <PlaceholderTable />;
+	if (mangas.isLoading) return <TablePlaceholder />;
 	if (mangas.isError) {
 		return (
 			<EmptyState title='Não foi possível carregar os mangás' detail={getApiErrorMessage(mangas.error)}>
@@ -156,22 +155,6 @@ function ListBody({ mangas, all, visible, hasFilters, onClearFilters, onAdd, tab
 		);
 	}
 	return <>{table}</>;
-}
-
-function PlaceholderTable() {
-	return (
-		<Table aria-busy='true'>
-			<tbody>
-				{Array.from({ length: PLACEHOLDER_ROWS }, (_, index) => (
-					<tr key={index} data-testid='placeholder-row'>
-						<Td>
-							<span className='block h-3 w-full animate-pulse rounded-sm bg-surface-raised' />
-						</Td>
-					</tr>
-				))}
-			</tbody>
-		</Table>
-	);
 }
 
 function EmptyState({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {

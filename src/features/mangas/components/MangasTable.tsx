@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { Table, Td, Th } from '../../../components/ui/Table';
 import { Toggle } from '../../../components/ui/Toggle';
@@ -55,7 +57,9 @@ function MangaRow({ manga, pluginNames, pendingMangaId, onSetAllConnectorsActive
 				/>
 			</Td>
 			<Td data-testid='manga-title' className='font-medium'>
-				{manga.title}
+				<Link to={`/mangas/${manga.idManga}`} className={`rounded-sm hover:text-accent hover:underline ${FOCUS_RING}`}>
+					{manga.title}
+				</Link>
 			</Td>
 			<Td>
 				{hasConnectors ? (

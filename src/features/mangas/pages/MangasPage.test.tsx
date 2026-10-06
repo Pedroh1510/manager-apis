@@ -61,6 +61,9 @@ describe('MangasListPage', () => {
     fireEvent.change(screen.getByLabelText('Filtrar por título'), { target: { value: 'naru' } })
     expect(titles()).toEqual(['Naruto'])
     expect(location()).toContain('q=naru')
+    // Substring anywhere in the title, case-insensitive (not only a prefix).
+    fireEvent.change(screen.getByLabelText('Filtrar por título'), { target: { value: 'PIEC' } })
+    expect(titles()).toEqual(['One Piece'])
 
     fireEvent.change(screen.getByLabelText('Filtrar por título'), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText('Conector'), { target: { value: 'mangeek' } })

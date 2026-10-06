@@ -67,3 +67,23 @@ export interface UpdateCredentialsPayload {
 	login: string;
 	password: string;
 }
+
+/** A chapter already registered for a manga (`GET /mangas/adm/:idManga/chapters`). */
+export interface Chapter {
+	idChapter: number;
+	idMangaConnector: number;
+	idChapterPlugin: string;
+	name: string;
+	/** NUMERIC column: the API sends it as a string such as "376.0000". */
+	volume: string | number;
+	downloadedAt: string | null;
+}
+
+/** A chapter a connector knows about that is not registered yet (`.../chapters/missing`). */
+export interface MissingChapter {
+	id: string;
+	title?: string;
+	volume: string | number;
+	idMangaConnector: number;
+	[key: string]: unknown;
+}

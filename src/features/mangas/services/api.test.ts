@@ -12,7 +12,11 @@ import {
 	addManga,
 	linkConnector,
 	setAllConnectorsActive,
-	setConnectorActive
+	setConnectorActive,
+	fetchChapters,
+	fetchMissingChapters,
+	fetchChapterPages,
+	deleteChapter
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
@@ -171,5 +175,24 @@ describe('fetchMangaList keeps the connectors array', () => {
 		const [first] = await fetchMangaList();
 
 		expect(first.connectors).toEqual(connectors);
+	});
+});
+
+describe('chapter endpoints', () => {
+	it('call the chapter routes of a manga', async () => {
+		mockGet.mockResolvedValue({ data: [] });
+		mockDelete.mockResolvedValue({ data: undefined });
+
+		await fetchChapters(1);
+		await fetchMissingChapters(1);
+		await fetchChapterPages(1, 5);
+		await deleteChapter(1, 5);
+
+		expect(mockGet.mock.calls.map(([url]) => url)).toEqual([
+			'/mangas/adm/1/chapters',
+			'/mangas/adm/1/chapters/missing',
+			'/mangas/adm/1/chapters/5/pages'
+		]);
+		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/1/chapters/5');
 	});
 });

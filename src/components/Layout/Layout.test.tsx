@@ -55,6 +55,26 @@ describe('Layout', () => {
     expect(hrefs).not.toContain('/mangas/status')
   })
 
+  it('shows the queues link right after status', () => {
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+    expect(hrefs.slice(0, 2)).toEqual(['/status', '/filas'])
+    expect(screen.getByRole('link', { name: 'Filas' })).toHaveAttribute('href', '/filas')
+  })
+
+  it('highlights Mangas on a manga detail page', () => {
+    render(
+      <MemoryRouter initialEntries={['/mangas/12']}>
+        <Layout />
+      </MemoryRouter>
+    )
+    expect(screen.getByRole('link', { name: 'Mangas' })).toHaveAttribute('aria-current', 'page')
+  })
+
   describe('theme', () => {
     beforeEach(() => {
       localStorage.clear()

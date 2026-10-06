@@ -1,49 +1,79 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AnimeRssAdminPage } from './AdminPage'
-import * as hooks from '../hooks/useTorrents'
+import * as api from '../services/api'
+import { renderWithProviders } from '../../../test/renderWithProviders'
 
-vi.mock('../hooks/useTorrents')
+vi.mock('../services/api')
 
-const mockMutation = { mutate: vi.fn(), isPending: false }
+const NARUTO = { hash: 'abc', name: 'Naruto EP1', state: 'downloading', progress: 0.5, size: 1024, dlspeed: 100 }
+const failure = { isAxiosError: true, response: { data: { message: 'qbittorrent offline' } }, message: 'x' }
 
-function mockTorrents(torrents: ReturnType<typeof hooks.useTorrents>['torrents']['data']) {
-  vi.mocked(hooks.useTorrents).mockReturnValue({
-    torrents: { data: torrents, isLoading: false, isSuccess: true, isError: false } as any,
-    concludedTorrents: { data: [], isLoading: false } as any,
-    stopTorrent: mockMutation as any,
-    deleteTorrent: mockMutation as any,
-    deleteAll: mockMutation as any,
-  })
-}
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.mocked(api.fetchTorrents).mockResolvedValue([NARUTO])
+  vi.mocked(api.fetchConcludedTorrents).mockResolvedValue([])
+})
 
-function wrapper({ children }: { children: React.ReactNode }) {
-  return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
-}
+const confirm = () => fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirmar' }))
 
 describe('AnimeRssAdminPage', () => {
-  it('renders active torrents table', () => {
-    mockTorrents([
-      { hash: 'abc', name: 'Naruto EP1', state: 'downloading', progress: 0.5, size: 1024, dlspeed: 100 },
-    ])
-    render(<AnimeRssAdminPage />, { wrapper })
-    expect(screen.getByText('Naruto EP1')).toBeInTheDocument()
+  it('renders active torrents table', async () => {
+    renderWithProviders(<AnimeRssAdminPage />)
+    expect(await screen.findByText('Naruto EP1')).toBeInTheDocument()
   })
 
-  it('shows delete all torrents button', () => {
-    mockTorrents([])
-    render(<AnimeRssAdminPage />, { wrapper })
-    expect(screen.getByRole('button', { name: /deletar todos/i })).toBeInTheDocument()
+  it('shows delete all torrents button', async () => {
+    vi.mocked(api.fetchTorrents).mockResolvedValue([])
+    renderWithProviders(<AnimeRssAdminPage />)
+    expect(await screen.findByRole('button', { name: /deletar todos/i })).toBeInTheDocument()
   })
 
-  it('opens confirm dialog when deleting a torrent', () => {
-    mockTorrents([
-      { hash: 'abc', name: 'Naruto EP1', state: 'downloading', progress: 0.5, size: 1024, dlspeed: 100 },
-    ])
-    render(<AnimeRssAdminPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /deletar naruto ep1/i }))
+  it('opens confirm dialog when deleting a torrent', async () => {
+    renderWithProviders(<AnimeRssAdminPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /deletar naruto ep1/i }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('destructive actions still require confirmation', async () => {
+    vi.mocked(api.deleteTorrent).mockResolvedValue(undefined)
+    vi.mocked(api.deleteAllTorrents).mockResolvedValue(undefined)
+    renderWithProviders(<AnimeRssAdminPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: /deletar naruto ep1/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    fireEvent.click(screen.getByRole('button', { name: /deletar todos/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(api.deleteTorrent).not.toHaveBeenCalled()
+    expect(api.deleteAllTorrents).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /deletar naruto ep1/i }))
+    confirm()
+    fireEvent.click(screen.getByRole('button', { name: /deletar todos/i }))
+    confirm()
+    await waitFor(() => expect(api.deleteTorrent).toHaveBeenCalledWith('abc'))
+    await waitFor(() => expect(api.deleteAllTorrents).toHaveBeenCalledTimes(1))
+  })
+
+  it('toasts the result of every mutation', async () => {
+    vi.mocked(api.stopTorrent).mockResolvedValueOnce(undefined).mockRejectedValueOnce(failure)
+    vi.mocked(api.deleteTorrent).mockResolvedValueOnce(undefined).mockRejectedValueOnce(failure)
+    vi.mocked(api.deleteAllTorrents).mockResolvedValueOnce(undefined).mockRejectedValueOnce(failure)
+    renderWithProviders(<AnimeRssAdminPage />)
+    await screen.findByText('Naruto EP1')
+
+    for (let round = 0; round < 2; round += 1) {
+      fireEvent.click(screen.getByRole('button', { name: /pausar naruto ep1/i }))
+      fireEvent.click(screen.getByRole('button', { name: /deletar naruto ep1/i }))
+      confirm()
+      fireEvent.click(screen.getByRole('button', { name: /deletar todos/i }))
+      confirm()
+      await waitFor(() => expect(api.deleteAllTorrents).toHaveBeenCalledTimes(round + 1))
+    }
+
+    await waitFor(() => expect(screen.getAllByRole('status')).toHaveLength(3))
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').filter((el) => el.textContent?.includes('qbittorrent offline'))).toHaveLength(3)
+    )
   })
 })

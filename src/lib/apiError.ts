@@ -17,3 +17,12 @@ export function getApiErrorMessage(error: unknown): string {
 	}
 	return error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
 }
+
+/**
+ * HTTP status of a failed request, or null when the request never got a response.
+ * @example if (getApiErrorStatus(error) === 409) showDuplicate()
+ */
+export function getApiErrorStatus(error: unknown): number | null {
+	const status = (error as { response?: { status?: unknown } } | null)?.response?.status;
+	return typeof status === 'number' ? status : null;
+}
