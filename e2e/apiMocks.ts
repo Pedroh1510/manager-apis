@@ -66,6 +66,18 @@ export const PENDING_MIGRATIONS = [
 
 const BULL_BOARD_PLACEHOLDER = '<body style="margin:0;font:13px sans-serif;display:grid;place-items:center;height:100vh;background:#f4f5f7;color:#6b7280">bull-board</body>';
 
+export const TORRENTS = [
+	{ hash: 'a1', name: '[SubsPlease] Sousou no Frieren - 28 (1080p) [A1B2C3D4].mkv', state: 'downloading', progress: 0.62, size: 1, dlspeed: 1 },
+	{ hash: 'b2', name: '[Erai-raws] Dandadan - 12 [1080p][Multiple Subtitle].mkv', state: 'stalledUP', progress: 1, size: 1, dlspeed: 0 },
+	{ hash: 'c3', name: '[SubsPlease] Kagurabachi - 03 (1080p).mkv', state: 'pausedDL', progress: 0.08, size: 1, dlspeed: 0 }
+];
+
+export const RSS_ITEMS = [
+	{ title: '[SubsPlease] Sousou no Frieren - 28 (1080p)', pubDate: '2026-10-05T18:30:00.000Z' },
+	{ title: '[Erai-raws] Dandadan - 12 [1080p][Multiple Subtitle]', pubDate: '2026-10-05T16:02:00.000Z' },
+	{ title: '[SubsPlease] Kagurabachi - 03 (1080p)', pubDate: '2026-10-04T22:15:00.000Z' }
+];
+
 export const PLUGINS = [
 	{ id: 'mangeek', name: 'Mangeek' },
 	{ id: 'tcb', name: 'TCB Scans' }
@@ -95,6 +107,8 @@ export async function mockApis(page: Page) {
 				json: { database: { version: '16.4', maxConnections: 100, activeConnections: 3 }, qbittorrent: { version: 'v5.0.4', apiVersion: '2.11.2' } }
 			});
 		if (pathname === '/queues-summary') return route.fulfill({ json: RSS_QUEUES });
+		if (pathname === '/adm/torrents') return route.fulfill({ json: TORRENTS });
+		if (pathname === '/rss/json') return route.fulfill({ json: RSS_ITEMS });
 		if (pathname.startsWith('/queues')) return route.fulfill({ contentType: 'text/html', body: BULL_BOARD_PLACEHOLDER });
 		return route.fulfill({ json: [] });
 	});

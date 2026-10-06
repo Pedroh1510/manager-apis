@@ -5,6 +5,10 @@ const THEMES = ['light', 'dark'] as const;
 const SHOTS_DIR = 'test-results/visual';
 
 async function open(page: Page, path: string, theme: (typeof THEMES)[number]) {
+	page.on('pageerror', (error) => console.error(`[pageerror] ${error.message}`));
+	page.on('console', (message) => {
+		if (message.type() === 'error') console.error(`[console] ${message.text()}`);
+	});
 	await page.addInitScript((value) => localStorage.setItem('manager-apis-theme', value), theme);
 	await mockApis(page);
 	await page.goto(path);
@@ -45,6 +49,18 @@ for (const theme of THEMES) {
 			await expect(page.getByTestId('queue-card-connector-mangeek')).toBeVisible();
 			await page.screenshot({ path: `${SHOTS_DIR}/queues-${theme}.png` });
 		});
+
+		for (const [name, path, ready] of [
+			['anime-admin', '/anime-rss/admin', 'Kagurabachi - 03'],
+			['rss-query', '/anime-rss/rss', 'Kagurabachi - 03'],
+			['mangas-admin', '/mangas/admin', 'Salvar cookie']
+		] as const) {
+			test(`${name} page`, async ({ page }) => {
+				await open(page, path, theme);
+				await expect(page.getByText(ready).first()).toBeVisible();
+				await page.screenshot({ path: `${SHOTS_DIR}/${name}-${theme}.png` });
+			});
+		}
 
 		test('add manga drawer', async ({ page }) => {
 			await open(page, '/mangas/list', theme);

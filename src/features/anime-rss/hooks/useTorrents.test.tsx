@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ToastProvider } from '../../../components/ui/Toast'
 import { useTorrents } from './useTorrents'
 import * as api from '../services/api'
 
@@ -9,7 +10,7 @@ vi.mock('../services/api')
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      {children}
+      <ToastProvider>{children}</ToastProvider>
     </QueryClientProvider>
   )
 }

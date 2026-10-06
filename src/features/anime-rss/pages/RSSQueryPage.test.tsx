@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RSSQueryPage } from './RSSQueryPage'
@@ -54,5 +54,17 @@ describe('RSSQueryPage', () => {
     } as ReturnType<typeof hooks.useRss>)
     render(<RSSQueryPage />, { wrapper })
     expect(screen.getByText(/1 item/i)).toBeInTheDocument()
+  })
+
+  it('keeps the rss search', () => {
+    vi.mocked(hooks.useRss).mockReturnValue({
+      data: [], isLoading: false, isError: false, error: null,
+    } as unknown as ReturnType<typeof hooks.useRss>)
+    render(<RSSQueryPage />, { wrapper })
+
+    fireEvent.change(screen.getByPlaceholderText(/buscar por título/i), { target: { value: 'frieren' } })
+    fireEvent.click(screen.getByRole('checkbox'))
+
+    expect(hooks.useRss).toHaveBeenLastCalledWith({ scanAllItems: true, q: 'frieren' })
   })
 })

@@ -66,6 +66,15 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: 'Filas' })).toHaveAttribute('href', '/filas')
   })
 
+  it('highlights Mangas on a manga detail page', () => {
+    render(
+      <MemoryRouter initialEntries={['/mangas/12']}>
+        <Layout />
+      </MemoryRouter>
+    )
+    expect(screen.getByRole('link', { name: 'Mangas' })).toHaveAttribute('aria-current', 'page')
+  })
+
   describe('theme', () => {
     beforeEach(() => {
       localStorage.clear()

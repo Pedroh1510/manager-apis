@@ -1,4 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../../components/ui/useToast';
+import { getApiErrorMessage } from '../../../lib/apiError';
 import {
 	fetchTorrents,
 	fetchConcludedTorrents,
@@ -9,6 +11,7 @@ import {
 
 export function useTorrents() {
 	const queryClient = useQueryClient();
+	const toast = useToast();
 
 	const torrents = useQuery({
 		queryKey: ['anime-rss', 'torrents'],
@@ -21,23 +24,27 @@ export function useTorrents() {
 		queryFn: fetchConcludedTorrents
 	});
 
-	const invalidate = () => {
-		queryClient.invalidateQueries({ queryKey: ['anime-rss', 'torrents'] });
-	};
+	const notify = (successText: string) => ({
+		onSuccess: () => {
+			toast.success(successText);
+			return queryClient.invalidateQueries({ queryKey: ['anime-rss', 'torrents'] });
+		},
+		onError: (error: unknown) => toast.error(getApiErrorMessage(error))
+	});
 
 	const stopTorrent = useMutation({
-		mutationFn: stopTorrentApi,
-		onSuccess: invalidate
+		mutationFn: (hash: string) => stopTorrentApi(hash),
+		...notify('Torrent pausado')
 	});
 
 	const deleteTorrent = useMutation({
-		mutationFn: deleteTorrentApi,
-		onSuccess: invalidate
+		mutationFn: (hash: string) => deleteTorrentApi(hash),
+		...notify('Torrent removido')
 	});
 
 	const deleteAll = useMutation({
-		mutationFn: deleteAllTorrentsApi,
-		onSuccess: invalidate
+		mutationFn: () => deleteAllTorrentsApi(),
+		...notify('Todos os torrents removidos')
 	});
 
 	return { torrents, concludedTorrents, stopTorrent, deleteTorrent, deleteAll };
