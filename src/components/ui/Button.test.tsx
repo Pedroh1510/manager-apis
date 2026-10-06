@@ -26,4 +26,16 @@ describe('Button', () => {
     render(<Button type='submit'>Enviar</Button>)
     expect(screen.getByRole('button', { name: 'Enviar' })).toHaveAttribute('type', 'submit')
   })
+
+  it('only the primary variant uses the accent background', () => {
+    const { unmount } = render(<Button variant='primary'>Primário</Button>)
+    expect(screen.getByRole('button').className).toMatch(/(^|\s)bg-accent(\s|$)/)
+    unmount()
+
+    for (const variant of ['secondary', 'ghost', 'danger'] as const) {
+      const view = render(<Button variant={variant}>{variant}</Button>)
+      expect(screen.getByRole('button').className).not.toMatch(/(^|\s)bg-accent/)
+      view.unmount()
+    }
+  })
 })

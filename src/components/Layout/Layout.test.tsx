@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { THEME_STORAGE_KEY } from '../../lib/theme'
 import { MemoryRouter } from 'react-router-dom'
 import { Layout } from './Layout'
 
@@ -52,5 +53,34 @@ describe('Layout', () => {
     const hrefs = allLinks.map(l => l.getAttribute('href'))
     expect(hrefs).not.toContain('/anime-rss/status')
     expect(hrefs).not.toContain('/mangas/status')
+  })
+
+  describe('theme', () => {
+    beforeEach(() => {
+      localStorage.clear()
+      document.documentElement.classList.remove('dark')
+    })
+
+    it('toggles and persists the theme', () => {
+      localStorage.setItem(THEME_STORAGE_KEY, 'light')
+      render(
+        <MemoryRouter>
+          <Layout />
+        </MemoryRouter>
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /escuro/i }))
+
+      expect(document.documentElement).toHaveClass('dark')
+      expect(localStorage.getItem(THEME_STORAGE_KEY)).toEqual('dark')
+
+      cleanup()
+      render(
+        <MemoryRouter>
+          <Layout />
+        </MemoryRouter>
+      )
+      expect(screen.getByRole('button', { name: /claro/i })).toBeInTheDocument()
+    })
   })
 })
