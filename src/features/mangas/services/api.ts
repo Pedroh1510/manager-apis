@@ -7,7 +7,9 @@ import type {
 	AddMangaPayload,
 	LinkConnectorPayload,
 	UpdateCookiePayload,
-	UpdateCredentialsPayload
+	UpdateCredentialsPayload,
+	Chapter,
+	MissingChapter
 } from './types';
 
 export async function fetchMangasStatus(): Promise<MangasStatusResponse> {
@@ -90,4 +92,24 @@ export async function setConnectorActive(
 	await mangasHttp.patch(`/mangas/adm/${idManga}/connectors/${idPlugin}`, {
 		isActive
 	});
+}
+
+export async function fetchChapters(idManga: number): Promise<Chapter[]> {
+	const { data } = await mangasHttp.get<Chapter[]>(`/mangas/adm/${idManga}/chapters`);
+	return data;
+}
+
+/** Asks every active connector for its chapter list, so it can take a while. */
+export async function fetchMissingChapters(idManga: number): Promise<MissingChapter[]> {
+	const { data } = await mangasHttp.get<MissingChapter[]>(`/mangas/adm/${idManga}/chapters/missing`);
+	return data;
+}
+
+/** Fetches a known chapter's pages from its connector and enqueues the download. */
+export async function fetchChapterPages(idManga: number, idChapter: number): Promise<void> {
+	await mangasHttp.get(`/mangas/adm/${idManga}/chapters/${idChapter}/pages`);
+}
+
+export async function deleteChapter(idManga: number, idChapter: number): Promise<void> {
+	await mangasHttp.delete(`/mangas/adm/${idManga}/chapters/${idChapter}`);
 }

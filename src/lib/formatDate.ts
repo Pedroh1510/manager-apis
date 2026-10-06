@@ -1,0 +1,9 @@
+const DATE_TIME = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+/**
+ * Short pt-BR date and time for tables.
+ * @example formatDateTime('2026-10-01T10:00:00Z') // '01/10/2026, 07:00' in America/Sao_Paulo
+ */
+export function formatDateTime(iso: string): string {
+	return DATE_TIME.format(new Date(iso));
+}

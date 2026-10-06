@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { LocationDisplay } from '../../../test/renderWithProviders'
 import { describe, expect, it, vi } from 'vitest'
 import { MangasTable } from './MangasTable'
 import { connector, manga, PLUGIN_NAMES } from '../test/fixtures'
@@ -14,6 +15,7 @@ function renderTable(mangas: MangaListItem[], pendingMangaId: number | null = nu
   render(
     <MemoryRouter>
       <MangasTable mangas={mangas} pluginNames={PLUGIN_NAMES} pendingMangaId={pendingMangaId} {...handlers} />
+      <LocationDisplay />
     </MemoryRouter>
   )
   return handlers
@@ -85,5 +87,12 @@ describe('MangasTable', () => {
     expect(vazio.getByText('Vincule um conector')).toBeInTheDocument()
     fireEvent.click(toggle)
     expect(handlers.onSetAllConnectorsActive).not.toHaveBeenCalled()
+  })
+
+  it('links the title to the detail page', () => {
+    renderTable([manga(1, 'Naruto', [connector('tcb', true)])])
+
+    fireEvent.click(screen.getByRole('link', { name: 'Naruto' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/mangas/1')
   })
 })

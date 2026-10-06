@@ -25,6 +25,14 @@ for (const theme of THEMES) {
 			await page.screenshot({ path: `${SHOTS_DIR}/mangas-list-no-match-${theme}.png` });
 		});
 
+		test('manga detail with missing chapters', async ({ page }) => {
+			await open(page, '/mangas/1', theme);
+			await expect(page.getByRole('heading', { name: 'Bleach' })).toBeVisible();
+			await page.getByRole('button', { name: 'Verificar faltantes' }).click();
+			await expect(page.getByText('Capítulo 5')).toBeVisible();
+			await page.screenshot({ path: `${SHOTS_DIR}/manga-detail-${theme}.png`, fullPage: true });
+		});
+
 		test('add manga drawer', async ({ page }) => {
 			await open(page, '/mangas/list', theme);
 			await page.getByRole('button', { name: 'Adicionar mangá' }).click();
