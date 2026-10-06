@@ -1,4 +1,5 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, screen, waitFor } from '@testing-library/react'
+import { ToastProvider } from '../../../components/ui/Toast'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMangas } from './useMangas'
@@ -9,7 +10,7 @@ vi.mock('../services/api')
 function wrapper({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-      {children}
+      <ToastProvider>{children}</ToastProvider>
     </QueryClientProvider>
   )
 }
@@ -17,7 +18,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('useMangas', () => {
   it('returns manga list on success', async () => {
     vi.mocked(api.fetchMangaList).mockResolvedValue([
-      { idManga: 1, title: 'Naruto', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+      { idManga: 1, title: 'Naruto', createdAt: '2026-01-01', updatedAt: '2026-01-01', connectors: [] },
     ])
     const { result } = renderHook(() => useMangas(), { wrapper })
     await waitFor(() => expect(result.current.mangas.isSuccess).toBe(true))
@@ -50,5 +51,19 @@ describe('useMangas', () => {
       idMangaPlugin: 'abc',
       titlePlugin: 'Naruto',
     })
+  })
+
+  it('invalidates the list and shows a success toast after a toggle', async () => {
+    vi.mocked(api.fetchMangaList).mockResolvedValue([])
+    vi.mocked(api.setAllConnectorsActive).mockResolvedValue(undefined)
+    const { result } = renderHook(() => useMangas(), { wrapper })
+    await waitFor(() => expect(result.current.mangas.isSuccess).toBe(true))
+    vi.mocked(api.fetchMangaList).mockClear()
+
+    result.current.setAllConnectorsActive.mutate({ idManga: 1, isActive: false })
+
+    await waitFor(() => expect(api.setAllConnectorsActive).toHaveBeenCalledWith(1, false))
+    await waitFor(() => expect(api.fetchMangaList).toHaveBeenCalled())
+    expect(await screen.findByRole('status')).toBeInTheDocument()
   })
 })

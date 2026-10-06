@@ -1,286 +1,150 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MangasListPage } from './MangasPage'
-import * as mangasHook from '../hooks/useMangas'
-import * as pluginsHook from '../hooks/usePlugins'
 import * as api from '../services/api'
+import { renderWithProviders } from '../../../test/renderWithProviders'
+import { connector, manga, PLUGINS } from '../test/fixtures'
 
-vi.mock('../hooks/useMangas')
-vi.mock('../hooks/usePlugins')
 vi.mock('../services/api')
 
-const mockDeleteMutation = { mutate: vi.fn(), isPending: false }
-const mockAddMutation = { mutate: vi.fn(), isPending: false, isSuccess: false }
+const NARUTO = manga(1, 'Naruto', [connector('tcb', true)])
+const ONE_PIECE = manga(2, 'One Piece', [connector('mangeek', false)])
+const BLEACH = manga(3, 'Bleach', [connector('tcb', true), connector('mangeek', false)])
 
-function wrapper({ children }: { children: React.ReactNode }) {
-  return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+function renderPage(route = '/mangas/list') {
+  return renderWithProviders(<MangasListPage />, { route })
 }
 
-beforeEach(() => {
-  vi.mocked(pluginsHook.usePlugins).mockReturnValue({
-    data: [{ id: 'tcb', name: 'TCB Scans' }],
-    isLoading: false,
-    isSuccess: true,
-    isError: false,
-  } as ReturnType<typeof pluginsHook.usePlugins>)
+const location = () => screen.getByTestId('location').textContent ?? ''
+const titles = () => screen.queryAllByTestId('manga-title').map((cell) => cell.textContent)
 
-  vi.mocked(mangasHook.useMangas).mockReturnValue({
-    mangas: {
-      data: [
-        { idManga: 1, title: 'Naruto', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
-        { idManga: 2, title: 'One Piece', createdAt: '2026-01-01', updatedAt: '2026-01-01' },
-      ],
-      isLoading: false,
-      isSuccess: true,
-      isError: false,
-    } as any,
-    deleteManga: mockDeleteMutation as any,
-    addManga: mockAddMutation as any,
-  })
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.mocked(api.fetchPlugins).mockResolvedValue(PLUGINS)
+  vi.mocked(api.fetchMangaList).mockResolvedValue([NARUTO, ONE_PIECE, BLEACH])
 })
 
 describe('MangasListPage', () => {
-  it('renders manga list', () => {
-    render(<MangasListPage />, { wrapper })
-    expect(screen.getByText('Naruto')).toBeInTheDocument()
-    expect(screen.getByText('One Piece')).toBeInTheDocument()
-  })
+  it('shows placeholder rows while loading', () => {
+    vi.mocked(api.fetchMangaList).mockReturnValue(new Promise(() => {}))
+    renderPage()
 
-  it('filters mangas by title', () => {
-    render(<MangasListPage />, { wrapper })
-    fireEvent.change(screen.getByPlaceholderText(/filtrar por título/i), {
-      target: { value: 'Naruto' },
-    })
-    expect(screen.getByText('Naruto')).toBeInTheDocument()
-    expect(screen.queryByText('One Piece')).not.toBeInTheDocument()
-  })
-
-  it('opens confirm dialog when clicking delete', () => {
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getAllByRole('button', { name: /deletar/i })[0])
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
-  })
-
-  it('renders Add Manga button', () => {
-    render(<MangasListPage />, { wrapper })
-    expect(screen.getByRole('button', { name: /adicionar manga/i })).toBeInTheDocument()
-  })
-
-  it('shows plugin filter input in select-plugin step', () => {
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    expect(screen.getByPlaceholderText(/filtrar plugin/i)).toBeInTheDocument()
-  })
-
-  it('filters plugins in select-plugin step', () => {
-    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
-      data: [
-        { id: 'tcb', name: 'TCB Scans' },
-        { id: 'other', name: 'Other Source' },
-      ],
-      isLoading: false,
-      isSuccess: true,
-      isError: false,
-    } as ReturnType<typeof pluginsHook.usePlugins>)
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByPlaceholderText(/filtrar plugin/i), { target: { value: 'TCB' } })
-    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: 'Other Source' })).not.toBeInTheDocument()
-  })
-
-  it('does NOT reset to list step before addManga succeeds', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { id: 'a1', title: 'Manga A' },
-      { id: 'b1', title: 'Manga B' },
-    ])
-    render(<MangasListPage />, { wrapper })
-
-    // navigate to select-plugin
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    // select plugin
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    // go to next
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-
-    // wait for select-manga step
-    await waitFor(() => expect(screen.getByText('Manga A')).toBeInTheDocument())
-    // select manga
-    fireEvent.click(screen.getByText('Manga A'))
-
-    // now on confirm-add step — unique label visible
-    expect(screen.getByText(/título no plugin/i)).toBeInTheDocument()
-
-    // click add
-    fireEvent.click(screen.getByRole('button', { name: /^adicionar$/i }))
-
-    // mutate was called with correct payload AND onSuccess callback
-    expect(mockAddMutation.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Manga A',
-        idPlugin: 'tcb',
-        idMangaPlugin: 'a1',
-        titlePlugin: 'Manga A',
-      }),
-      expect.objectContaining({ onSuccess: expect.any(Function) })
-    )
-
-    // confirm form is still visible (state has NOT reset yet)
-    expect(screen.getByText(/título no plugin/i)).toBeInTheDocument()
-  })
-
-  it('resets to list step after addManga onSuccess fires', async () => {
-    let capturedOnSuccess: (() => void) | undefined
-    const mutateSpy = vi.fn((_payload: unknown, opts?: { onSuccess?: () => void }) => {
-      capturedOnSuccess = opts?.onSuccess
-    })
-    vi.mocked(mangasHook.useMangas).mockReturnValue({
-      mangas: { data: [], isLoading: false, isSuccess: true, isError: false } as any,
-      deleteManga: mockDeleteMutation as any,
-      addManga: { mutate: mutateSpy, isPending: false, isSuccess: false } as any,
-    })
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ id: 'a1', title: 'Manga A' }])
-
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-    await waitFor(() => expect(screen.getByText('Manga A')).toBeInTheDocument())
-    fireEvent.click(screen.getByText('Manga A'))
-    fireEvent.click(screen.getByRole('button', { name: /^adicionar$/i }))
-
-    // still on confirm-add before onSuccess — unique label visible
-    expect(screen.getByText(/título no plugin/i)).toBeInTheDocument()
-
-    // fire onSuccess
-    capturedOnSuccess?.()
-
-    // now back to list step — confirm form gone, filter input visible
-    await waitFor(() =>
-      expect(screen.queryByText(/título no plugin/i)).not.toBeInTheDocument()
-    )
-    expect(screen.getByPlaceholderText(/filtrar por título/i)).toBeInTheDocument()
-  })
-
-  it('shows plugin id as fallback when plugin name is empty in add manga wizard', () => {
-    vi.mocked(pluginsHook.usePlugins).mockReturnValue({
-      data: [
-        { id: 'tcb', name: 'TCB Scans' },
-        { id: 'no-name-plugin', name: '' },
-      ],
-      isLoading: false,
-      isSuccess: true,
-      isError: false,
-    } as ReturnType<typeof pluginsHook.usePlugins>)
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    // plugin with empty name should display its id
-    expect(screen.getByRole('option', { name: 'no-name-plugin' })).toBeInTheDocument()
-    // plugin with name should still display name
-    expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
-  })
-
-  const DOWNLOADING_MESSAGE =
-    'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.'
-
-  function choosePluginAndClickNext() {
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-  }
-
-  it('shows the downloading message and stays on the plugin step on 202', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue(null)
-    render(<MangasListPage />, { wrapper })
-    choosePluginAndClickNext()
-
-    await waitFor(() => expect(screen.getByText(DOWNLOADING_MESSAGE)).toBeInTheDocument())
-    expect(screen.getByText('Selecione um Plugin')).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText(/filtrar manga/i)).not.toBeInTheDocument()
-  })
-
-  it('retries on Próximo and moves to manga selection once the catalog is ready', async () => {
-    vi.mocked(api.fetchMangasByPlugin)
-      .mockReset()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce([{ id: 'n1', title: 'Naruto' }])
-    render(<MangasListPage />, { wrapper })
-    choosePluginAndClickNext()
-    await waitFor(() => expect(screen.getByText(DOWNLOADING_MESSAGE)).toBeInTheDocument())
-
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-
-    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
-    expect(api.fetchMangasByPlugin).toHaveBeenCalledTimes(2)
-    expect(screen.queryByText(DOWNLOADING_MESSAGE)).not.toBeInTheDocument()
-  })
-
-  it('filters mangas by title in select-manga step', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { id: 'n1', title: 'Naruto' },
-      { id: 'op1', title: 'One Piece' },
-    ])
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
-
-    fireEvent.change(screen.getByPlaceholderText(/filtrar manga/i), {
-      target: { value: 'Naruto' },
-    })
-
-    expect(screen.getByText('Naruto')).toBeInTheDocument()
-    expect(screen.queryByText('One Piece')).not.toBeInTheDocument()
-  })
-
-  it('renders available mangas with title as key (no duplicate key warnings)', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { id: 'x1', title: 'Manga X' },
-      { id: 'y1', title: 'Manga Y' },
-    ])
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-    await waitFor(() => expect(screen.getByText('Manga X')).toBeInTheDocument())
-    expect(screen.getByText('Manga Y')).toBeInTheDocument()
-  })
-
-  it('deduplicates mangas with the same title from the API', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { id: 'n1', title: 'Naruto' },
-      { id: 'op1', title: 'One Piece' },
-      { id: 'n1', title: 'Naruto' }, // duplicate
-    ])
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
-
-    // Should show only one "Naruto" button, not two
-    expect(screen.getAllByRole('button', { name: 'Naruto' })).toHaveLength(1)
-  })
-
-  it('shows no-results message when filter matches nothing in select-manga step', async () => {
-    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([
-      { id: 'n1', title: 'Naruto' },
-      { id: 'op1', title: 'One Piece' },
-    ])
-    render(<MangasListPage />, { wrapper })
-    fireEvent.click(screen.getByRole('button', { name: /adicionar manga/i }))
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'tcb' } })
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
-    await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
-
-    fireEvent.change(screen.getByPlaceholderText(/filtrar manga/i), {
-      target: { value: 'zzznomatch' },
-    })
-
-    expect(screen.getByText(/nenhum manga/i)).toBeInTheDocument()
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getAllByTestId('placeholder-row').length).toBeGreaterThan(0)
     expect(screen.queryByText('Naruto')).not.toBeInTheDocument()
+  })
+
+  it('shows the error with a retry button', async () => {
+    vi.mocked(api.fetchMangaList).mockRejectedValueOnce(new Error('Network Error'))
+    renderPage()
+
+    const retry = await screen.findByRole('button', { name: 'Tentar de novo' })
+    expect(screen.getByText(/Network Error/)).toBeInTheDocument()
+    fireEvent.click(retry)
+
+    await screen.findByText('Naruto')
+    expect(api.fetchMangaList).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the empty state when no manga is registered', async () => {
+    vi.mocked(api.fetchMangaList).mockResolvedValue([])
+    renderPage()
+
+    expect(await screen.findByText('Nenhum mangá cadastrado')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Adicionar mangá' }).length).toBeGreaterThan(0)
+  })
+
+  it('filters by title, connector and status and writes them to the URL', async () => {
+    renderPage()
+    await screen.findByText('Naruto')
+
+    fireEvent.change(screen.getByLabelText('Filtrar por título'), { target: { value: 'naru' } })
+    expect(titles()).toEqual(['Naruto'])
+    expect(location()).toContain('q=naru')
+
+    fireEvent.change(screen.getByLabelText('Filtrar por título'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Conector'), { target: { value: 'mangeek' } })
+    expect(titles()).toEqual(['One Piece', 'Bleach'])
+    expect(location()).toContain('plugin=mangeek')
+
+    fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'partial' } })
+    expect(titles()).toEqual(['Bleach'])
+    expect(location()).toContain('status=partial')
+  })
+
+  it('starts with the filters read from the URL', async () => {
+    renderPage('/mangas/list?q=one&plugin=mangeek&status=inactive')
+    await screen.findByText('One Piece')
+
+    expect(screen.getByLabelText('Filtrar por título')).toHaveValue('one')
+    expect(screen.getByLabelText('Conector')).toHaveValue('mangeek')
+    expect(screen.getByLabelText('Status')).toHaveValue('inactive')
+    expect(titles()).toEqual(['One Piece'])
+  })
+
+  it('shows the no-match state and clears the filters', async () => {
+    renderPage('/mangas/list?q=zzz&plugin=tcb&status=active')
+
+    expect(await screen.findByText('Nenhum mangá com esses filtros')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(location()).toEqual('/mangas/list')
+    expect(titles()).toEqual(['Naruto', 'One Piece', 'Bleach'])
+  })
+
+  it('keeps the previous state and shows the API message when a toggle fails', async () => {
+    vi.mocked(api.setAllConnectorsActive).mockRejectedValue({
+      isAxiosError: true,
+      response: { data: { message: 'Manga 1 has no connector links' } },
+      message: 'Request failed with status code 400',
+    })
+    renderPage()
+    await screen.findByText('Naruto')
+
+    const narutoRow = screen.getByText('Naruto').closest('tr') as HTMLElement
+    fireEvent.click(within(narutoRow).getByRole('switch', { name: 'Ativar ou desativar Naruto' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Manga 1 has no connector links')
+    expect(within(narutoRow).getByText('Ativo')).toBeInTheDocument()
+  })
+
+  it('closes the drawer and refreshes the list after adding a manga', async () => {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ id: 'dd1', title: 'Dandadan' }])
+    vi.mocked(api.addManga).mockResolvedValue({ idManga: 9 })
+    vi.mocked(api.linkConnector).mockResolvedValue(undefined)
+    renderPage()
+    await screen.findByText('Naruto')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar mangá' }))
+    const drawer = screen.getByRole('dialog', { name: 'Adicionar mangá' })
+    await within(drawer).findByRole('option', { name: 'TCB' })
+    fireEvent.change(within(drawer).getByRole('combobox'), { target: { value: 'tcb' } })
+    fireEvent.click(within(drawer).getByRole('button', { name: /próximo/i }))
+    fireEvent.click(await within(drawer).findByRole('button', { name: 'Dandadan' }))
+    vi.mocked(api.fetchMangaList).mockClear()
+    fireEvent.click(within(drawer).getByRole('button', { name: /^adicionar$/i }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    await waitFor(() => expect(api.fetchMangaList).toHaveBeenCalled())
+  })
+
+  it('deletes only after confirmation', async () => {
+    vi.mocked(api.deleteManga).mockResolvedValue(undefined)
+    renderPage()
+    await screen.findByText('Naruto')
+    const narutoRow = () => screen.getByText('Naruto').closest('tr') as HTMLElement
+
+    fireEvent.click(within(narutoRow()).getByRole('button', { name: 'Remover Naruto' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(api.deleteManga).not.toHaveBeenCalled()
+
+    fireEvent.click(within(narutoRow()).getByRole('button', { name: 'Remover Naruto' }))
+    vi.mocked(api.fetchMangaList).mockClear()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(api.deleteManga).toHaveBeenCalledWith(1))
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    await waitFor(() => expect(api.fetchMangaList).toHaveBeenCalled())
   })
 })
