@@ -52,9 +52,11 @@ function NotFound() {
 
 function MangaDetail({ manga }: { manga: MangaListItem }) {
 	const { setConnectorActive } = useMangas();
-	const { data: plugins } = usePlugins();
+	const { data: plugins, error: pluginsError } = usePlugins();
 	const { chapters, missing, enqueueChapter, removeChapter } = useMangaChapters(manga.idManga);
 	useErrorToast(chapters.error);
+	// Without plugin names the connectors still render with their idPlugin.
+	useErrorToast(pluginsError);
 	const [pendingDelete, setPendingDelete] = useState<Chapter | null>(null);
 	const pluginName = (idPlugin: string) => plugins?.find((p) => p?.id === idPlugin)?.name || idPlugin;
 

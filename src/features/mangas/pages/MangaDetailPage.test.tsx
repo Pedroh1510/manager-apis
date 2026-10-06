@@ -151,6 +151,14 @@ describe('MangaDetailPage', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/mangas/1')
   })
 
+  it('shows the API message for every failing call (plugins)', async () => {
+    vi.mocked(api.fetchPlugins).mockRejectedValue(failure)
+    renderDetail()
+
+    await waitFor(() => expect(toastAlerts()).toHaveLength(1))
+    expect(screen.getByRole('heading', { name: 'Naruto' })).toBeInTheDocument()
+  })
+
   it('shows the API message for every failing call (manga list)', async () => {
     vi.mocked(api.fetchMangaList).mockRejectedValue(failure)
     renderDetail()

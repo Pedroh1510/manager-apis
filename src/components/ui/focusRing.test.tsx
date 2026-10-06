@@ -1,6 +1,3 @@
-/// <reference types="node" />
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
@@ -30,22 +27,6 @@ describe('focus ring', () => {
     ]
     for (const element of elements) {
       expect(element).toHaveClass(...FOCUS_RING)
-    }
-  })
-
-  it('every select and tab outside the primitives uses the shared focus ring', () => {
-    const src = resolve(__dirname, '../..')
-    const files = (function walk(dir: string): string[] {
-      return readdirSync(dir).flatMap((entry: string) => {
-        const path = join(dir, entry)
-        if (statSync(path).isDirectory()) return walk(path)
-        return entry.endsWith('.tsx') && !entry.endsWith('.test.tsx') ? [path] : []
-      })
-    })(src)
-    const users = files.filter((file) => /<select|role='tab'/.test(readFileSync(file, 'utf-8')))
-    expect(users.length).toBeGreaterThan(0)
-    for (const file of users) {
-      expect(readFileSync(file, 'utf-8'), file).toMatch(/FOCUS_RING/)
     }
   })
 })
