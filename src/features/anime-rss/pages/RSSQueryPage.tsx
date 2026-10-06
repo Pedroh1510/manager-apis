@@ -6,10 +6,12 @@ import { Table, Td, Th } from '../../../components/ui/Table';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { getApiErrorMessage } from '../../../lib/apiError';
 import { useRss } from '../hooks/useRss';
+import { AddRssItemDrawer } from '../components/AddRssItemDrawer';
 
 export function RSSQueryPage() {
 	const [scanAllItems, setScanAllItems] = useState(false);
 	const [search, setSearch] = useState('');
+	const [isAdding, setIsAdding] = useState(false);
 
 	const { data, isLoading, isError, error, refetch } = useRss({
 		scanAllItems: scanAllItems || undefined,
@@ -21,7 +23,14 @@ export function RSSQueryPage() {
 			<PageHeader
 				title='Consulta RSS'
 				subtitle={data ? `${data.length} item(s) encontrado(s)` : 'Feed do Anime RSS'}
-				actions={<Button onClick={() => refetch()}>Atualizar</Button>}
+				actions={
+					<>
+						<Button onClick={() => refetch()}>Atualizar</Button>
+						<Button variant='primary' onClick={() => setIsAdding(true)}>
+							Adicionar item
+						</Button>
+					</>
+				}
 			/>
 
 			<div className='mb-3 flex flex-wrap items-center gap-3'>
@@ -68,6 +77,8 @@ export function RSSQueryPage() {
 					</tbody>
 				</Table>
 			)}
+
+			<AddRssItemDrawer open={isAdding} onClose={() => setIsAdding(false)} />
 		</div>
 	);
 }

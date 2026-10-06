@@ -109,6 +109,8 @@ export async function mockApis(page: Page) {
 		if (pathname === '/queues-summary') return route.fulfill({ json: RSS_QUEUES });
 		if (pathname === '/adm/torrents') return route.fulfill({ json: TORRENTS });
 		if (pathname === '/rss/json') return route.fulfill({ json: RSS_ITEMS });
+		if (pathname === '/rss' && route.request().method() === 'POST')
+			return route.fulfill({ status: 409, json: { statusCode: 409, message: 'Torrent with title already exists', error: 'Conflict' } });
 		if (pathname.startsWith('/queues')) return route.fulfill({ contentType: 'text/html', body: BULL_BOARD_PLACEHOLDER });
 		return route.fulfill({ json: [] });
 	});

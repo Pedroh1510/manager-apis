@@ -2,12 +2,17 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RSSQueryPage } from './RSSQueryPage'
+import { ToastProvider } from '../../../components/ui/Toast'
 import * as hooks from '../hooks/useRss'
 
 vi.mock('../hooks/useRss')
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+  return (
+    <QueryClientProvider client={new QueryClient()}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
+  )
 }
 
 describe('RSSQueryPage', () => {
@@ -66,5 +71,18 @@ describe('RSSQueryPage', () => {
     fireEvent.click(screen.getByRole('checkbox'))
 
     expect(hooks.useRss).toHaveBeenLastCalledWith({ scanAllItems: true, q: 'frieren' })
+  })
+
+  it('opens the add item drawer', () => {
+    vi.mocked(hooks.useRss).mockReturnValue({
+      data: [], isLoading: false, isError: false, error: null,
+    } as unknown as ReturnType<typeof hooks.useRss>)
+    render(<RSSQueryPage />, { wrapper })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar item' }))
+
+    expect(screen.getByRole('dialog', { name: 'Adicionar item ao feed' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Título')).toBeInTheDocument()
+    expect(screen.getByLabelText('Magnet')).toBeInTheDocument()
   })
 })

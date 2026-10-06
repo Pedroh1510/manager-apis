@@ -20,13 +20,13 @@ for (const theme of THEMES) {
 		test('mangas list', async ({ page }) => {
 			await open(page, '/mangas/list', theme);
 			await expect(page.getByText('Kagurabachi')).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/mangas-list-${theme}.png`, fullPage: true });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/mangas-list-${theme}.png`, fullPage: true });
 		});
 
 		test('mangas list with no match', async ({ page }) => {
 			await open(page, '/mangas/list?q=zzz', theme);
 			await expect(page.getByText('Nenhum mangá com esses filtros')).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/mangas-list-no-match-${theme}.png` });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/mangas-list-no-match-${theme}.png` });
 		});
 
 		test('manga detail with missing chapters', async ({ page }) => {
@@ -34,20 +34,20 @@ for (const theme of THEMES) {
 			await expect(page.getByRole('heading', { name: 'Bleach' })).toBeVisible();
 			await page.getByRole('button', { name: 'Verificar faltantes' }).click();
 			await expect(page.getByText('Capítulo 5')).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/manga-detail-${theme}.png`, fullPage: true });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/manga-detail-${theme}.png`, fullPage: true });
 		});
 
 		test('status with migrations and queues', async ({ page }) => {
 			await open(page, '/status', theme);
 			await expect(page.getByText('1760000000000_add-connector-priority')).toBeVisible();
 			await expect(page.getByTestId('queue-card-Scan process')).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/status-${theme}.png`, fullPage: true });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/status-${theme}.png`, fullPage: true });
 		});
 
 		test('queues page', async ({ page }) => {
 			await open(page, '/filas', theme);
 			await expect(page.getByTestId('queue-card-connector-mangeek')).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/queues-${theme}.png` });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/queues-${theme}.png` });
 		});
 
 		for (const [name, path, ready] of [
@@ -58,15 +58,27 @@ for (const theme of THEMES) {
 			test(`${name} page`, async ({ page }) => {
 				await open(page, path, theme);
 				await expect(page.getByText(ready).first()).toBeVisible();
-				await page.screenshot({ path: `${SHOTS_DIR}/${name}-${theme}.png` });
+				await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/${name}-${theme}.png` });
 			});
 		}
+
+		test('add rss item drawer', async ({ page }) => {
+			await open(page, '/anime-rss/rss', theme);
+			await page.getByRole('button', { name: 'Adicionar item' }).click();
+			await page.getByLabel('Título', { exact: true }).fill('[SubsPlease] Sousou no Frieren - 28 (1080p)');
+			await page.getByLabel('Magnet').fill('http://nao-e-magnet');
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/add-rss-item-invalid-${theme}.png` });
+			await page.getByLabel('Magnet').fill(`magnet:?xt=urn:btih:${'a'.repeat(40)}`);
+			await page.getByRole('button', { name: 'Adicionar', exact: true }).click();
+			await expect(page.getByText('Já existe item com esse título')).toBeVisible();
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/add-rss-item-duplicate-${theme}.png` });
+		});
 
 		test('add manga drawer', async ({ page }) => {
 			await open(page, '/mangas/list', theme);
 			await page.getByRole('button', { name: 'Adicionar mangá' }).click();
 			await expect(page.getByRole('dialog', { name: 'Adicionar mangá' })).toBeVisible();
-			await page.screenshot({ path: `${SHOTS_DIR}/add-manga-drawer-${theme}.png` });
+			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/add-manga-drawer-${theme}.png` });
 		});
 	});
 }

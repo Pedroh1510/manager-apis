@@ -38,3 +38,17 @@ export interface FetchRssParams {
 	term?: string;
 	isScan?: boolean;
 }
+
+/** Body of `POST /rss`: a manual item for the feed. */
+export interface CreateRssItemPayload {
+	title: string;
+	magnet: string;
+}
+
+/** The `Torrent` row the API created. */
+export interface RssFeedItem {
+	id: number;
+	title: string;
+	magnet: string;
+	pubDate: string;
+}

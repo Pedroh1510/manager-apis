@@ -7,12 +7,14 @@ import {
 	fetchConcludedTorrents,
 	stopTorrent,
 	deleteTorrent,
-	deleteAllTorrents
+	deleteAllTorrents,
+	createRssItem
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
 	rssHttp: {
 		get: vi.fn(),
+		post: vi.fn(),
 		patch: vi.fn(),
 		delete: vi.fn()
 	}
@@ -97,5 +99,15 @@ describe('deleteAllTorrents', () => {
 		mockGet.mockResolvedValue({ data: {} });
 		await deleteAllTorrents();
 		expect(mockGet).toHaveBeenCalledWith('/adm/delete');
+	});
+});
+
+describe('createRssItem posts to /rss', () => {
+	it('sends title and magnet and returns the created item', async () => {
+		const item = { id: 1, title: 'Frieren 28', magnet: 'magnet:?xt=urn:btih:a', pubDate: '2026-10-05' };
+		vi.mocked(rssHttp.post).mockResolvedValue({ data: item });
+
+		await expect(createRssItem({ title: 'Frieren 28', magnet: 'magnet:?xt=urn:btih:a' })).resolves.toEqual(item);
+		expect(rssHttp.post).toHaveBeenCalledWith('/rss', { title: 'Frieren 28', magnet: 'magnet:?xt=urn:btih:a' });
 	});
 });
