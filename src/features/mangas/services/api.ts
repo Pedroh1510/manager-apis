@@ -74,3 +74,20 @@ export async function linkConnector(
 ): Promise<void> {
 	await mangasHttp.post(`/mangas/adm/${idManga}/connectors`, payload);
 }
+
+export async function setAllConnectorsActive(
+	idManga: number,
+	isActive: boolean
+): Promise<void> {
+	await mangasHttp.patch(`/mangas/adm/${idManga}/connectors`, { isActive });
+}
+
+export async function setConnectorActive(
+	idManga: number,
+	idPlugin: string,
+	isActive: boolean
+): Promise<void> {
+	await mangasHttp.patch(`/mangas/adm/${idManga}/connectors/${idPlugin}`, {
+		isActive
+	});
+}

@@ -10,11 +10,20 @@ export interface Plugin {
 	[key: string]: unknown;
 }
 
+/** One connector link as `GET /mangas/adm` returns it inside each manga. */
+export interface MangaConnectorSummary {
+	idMangaConnector: number;
+	idPlugin: string;
+	titlePlugin: string;
+	isActive: boolean;
+}
+
 export interface MangaListItem {
 	idManga: number;
 	title: string;
 	createdAt: string;
 	updatedAt: string;
+	connectors: MangaConnectorSummary[];
 	[key: string]: unknown;
 }
 

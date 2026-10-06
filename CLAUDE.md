@@ -11,6 +11,7 @@ npm run lint         # ESLint
 npm run test         # Vitest (watch mode)
 npm run test:run     # Vitest (single run)
 npm run coverage     # Coverage report
+npm run test:visual  # Playwright screenshots (dev server on :5173, APIs mocked) -> test-results/visual
 npx tsc --noEmit     # Type-check only
 ```
 

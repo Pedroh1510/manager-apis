@@ -7,7 +7,7 @@ import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 export function Table({ className = '', ...props }: HTMLAttributes<HTMLTableElement>) {
 	return (
 		<div className='overflow-x-auto rounded-lg border border-border bg-surface shadow-raised'>
-			<table className={`w-full border-collapse text-sm ${className}`} {...props} />
+			<table className={`w-full border-collapse text-sm [&_tbody_tr:last-child_td]:border-b-0 ${className}`} {...props} />
 		</div>
 	);
 }
@@ -22,5 +22,5 @@ export function Th({ className = '', ...props }: ThHTMLAttributes<HTMLTableCellE
 }
 
 export function Td({ className = '', ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-	return <td className={`h-10 border-b border-border px-3 text-text last:border-b-0 ${className}`} {...props} />;
+	return <td className={`h-10 border-b border-border px-3 text-text ${className}`} {...props} />;
 }

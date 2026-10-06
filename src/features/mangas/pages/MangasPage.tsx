@@ -1,324 +1,185 @@
+import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { Button } from '../../../components/ui/Button';
-import { Card } from '../../../components/ui/Card';
+import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
+import { Drawer } from '../../../components/ui/Drawer';
+import { Input } from '../../../components/ui/Input';
+import { Table, Td } from '../../../components/ui/Table';
+import { FOCUS_RING } from '../../../components/ui/focusRing';
+import { getApiErrorMessage } from '../../../lib/apiError';
+import { AddMangaWizard } from '../components/AddMangaWizard';
+import { MangasTable } from '../components/MangasTable';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
-import { fetchMangasByPlugin } from '../services/api';
-import type { MangaListItem, MangaFromPlugin, Plugin } from '../services/types';
+import { filterMangas, useMangaFilters } from '../lib/mangaFilters';
+import type { MangaListItem, Plugin } from '../services/types';
 
-const toPlugins = (list: Plugin[] | undefined) =>
-	(list ?? []).filter((p): p is Plugin => p != null);
+const selectCls = `h-8 rounded-md border border-border bg-surface px-2 text-sm text-text ${FOCUS_RING}`;
+const PLACEHOLDER_ROWS = 6;
 
-const inputCls =
-	'rounded-md border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-accent';
-const labelCls = 'mb-1 block text-sm font-medium text-text-muted';
-const CATALOG_DOWNLOADING_MESSAGE =
-	'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.';
-
-type Step = 'list' | 'select-plugin' | 'select-manga' | 'confirm-add';
-
-interface NewMangaForm {
-	plugin: Plugin | null;
-	mangaFromPlugin: MangaFromPlugin | null;
-	localTitle: string;
+function toPluginNames(plugins: Plugin[] | undefined): Record<string, string> {
+	return Object.fromEntries((plugins ?? []).filter(Boolean).map((p) => [p.id, p.name || p.id]));
 }
 
 export function MangasListPage() {
-	const { mangas, deleteManga, addManga } = useMangas();
+	const { mangas, deleteManga, addManga, setAllConnectorsActive, setConnectorActive } = useMangas();
 	const { data: plugins } = usePlugins();
+	const { filters, setFilter, clearFilters, hasFilters } = useMangaFilters();
+	const [pendingDelete, setPendingDelete] = useState<MangaListItem | null>(null);
+	const [isAdding, setIsAdding] = useState(false);
 
-	const [filterTitle, setFilterTitle] = useState('');
-	const [pendingDelete, setPendingDelete] = useState<MangaListItem | null>(
-		null
-	);
-
-	const [step, setStep] = useState<Step>('list');
-	const [pluginFilter, setPluginFilter] = useState('');
-	const [newManga, setNewManga] = useState<NewMangaForm>({
-		plugin: null,
-		mangaFromPlugin: null,
-		localTitle: ''
-	});
-	const [availableMangas, setAvailableMangas] = useState<MangaFromPlugin[]>([]);
-	const [loadingMangas, setLoadingMangas] = useState(false);
-	const [catalogDownloading, setCatalogDownloading] = useState(false);
-	const [mangaTitleFilter, setMangaTitleFilter] = useState('');
-
-	const filteredPluginMangas = availableMangas.filter((m) =>
-		!mangaTitleFilter ||
-		m.title.toLowerCase().includes(mangaTitleFilter.toLowerCase())
-	);
-
-	const filteredMangas = (mangas.data ?? []).filter((m) =>
-		m.title.toLowerCase().includes(filterTitle.toLowerCase())
-	);
-
-	async function handlePluginSelected(plugin: Plugin) {
-		setNewManga((prev) => ({ ...prev, plugin }));
-		setLoadingMangas(true);
-		setMangaTitleFilter('');
-		try {
-			const list = await fetchMangasByPlugin(plugin.id);
-			setCatalogDownloading(list === null);
-			if (list === null) return;
-			const seen = new Set<string>();
-			const deduped = list.filter((m) => {
-				if (seen.has(m.title)) return false;
-				seen.add(m.title);
-				return true;
-			});
-			setAvailableMangas(deduped);
-			setStep('select-manga');
-		} finally {
-			setLoadingMangas(false);
-		}
-	}
-
-	function handleMangaFromPluginSelected(manga: MangaFromPlugin) {
-		setNewManga((prev) => ({
-			...prev,
-			mangaFromPlugin: manga,
-			localTitle: manga.title
-		}));
-		setStep('confirm-add');
-	}
-
-	function handleAddConfirm() {
-		if (!newManga.plugin || !newManga.mangaFromPlugin) return;
-		addManga.mutate(
-			{
-				title: newManga.localTitle,
-				idPlugin: newManga.plugin.id,
-				idMangaPlugin: newManga.mangaFromPlugin.id,
-				titlePlugin: newManga.mangaFromPlugin.title
-			},
-			{
-				onSuccess: () => {
-					setStep('list');
-					setNewManga({ plugin: null, mangaFromPlugin: null, localTitle: '' });
-				}
-			}
-		);
-	}
+	const all = mangas.data ?? [];
+	const visible = filterMangas(all, filters);
+	const pluginNames = toPluginNames(plugins);
+	const pendingMangaId =
+		(setAllConnectorsActive.isPending && setAllConnectorsActive.variables?.idManga) ||
+		(setConnectorActive.isPending && setConnectorActive.variables?.idManga) ||
+		null;
 
 	return (
-		<div>
-			<div className='mb-6 flex items-center justify-between'>
-				<h1 className='text-3xl font-semibold tracking-tight text-text'>Mangas</h1>
-				<Button variant='primary' onClick={() => setStep('select-plugin')}>
-					Adicionar Manga
+		<div className='mx-auto max-w-6xl'>
+			<header className='mb-5 flex items-end justify-between gap-4'>
+				<div>
+					<h1 className='text-xl font-semibold tracking-tight text-text'>Mangás</h1>
+					<p className='mt-0.5 text-xs text-text-muted'>
+						{mangas.isSuccess ? `${visible.length} de ${all.length} mangás` : 'Catálogo local e seus conectores'}
+					</p>
+				</div>
+				<Button variant='primary' onClick={() => setIsAdding(true)}>
+					Adicionar mangá
 				</Button>
+			</header>
+
+			<div className='mb-3 flex flex-wrap items-center gap-2'>
+				<Input
+					aria-label='Filtrar por título'
+					placeholder='Filtrar por título...'
+					value={filters.q}
+					onChange={(e) => setFilter('q', e.target.value)}
+					className='max-w-xs'
+				/>
+				<select aria-label='Conector' value={filters.plugin} onChange={(e) => setFilter('plugin', e.target.value)} className={selectCls}>
+					<option value=''>Todos os conectores</option>
+					{Object.entries(pluginNames).map(([id, name]) => (
+						<option key={id} value={id}>
+							{name}
+						</option>
+					))}
+				</select>
+				<select aria-label='Status' value={filters.status} onChange={(e) => setFilter('status', e.target.value)} className={selectCls}>
+					<option value=''>Todos os status</option>
+					<option value='active'>Ativo</option>
+					<option value='partial'>Parcial</option>
+					<option value='inactive'>Inativo</option>
+				</select>
+				{hasFilters && (
+					<Button variant='ghost' size='sm' onClick={clearFilters}>
+						Limpar
+					</Button>
+				)}
 			</div>
 
-			{step === 'list' && (
-				<>
-					<div className='mb-4 flex flex-wrap gap-4'>
-						<input
-							type='text'
-							placeholder='Filtrar por título...'
-							value={filterTitle}
-							onChange={(e) => setFilterTitle(e.target.value)}
-							className={inputCls}
-						/>
-					</div>
-
-					{mangas.isLoading && <LoadingSpinner />}
-
-					{filteredMangas.length === 0 && !mangas.isLoading && (
-						<p className='text-sm text-text-muted'>Nenhum manga encontrado.</p>
-					)}
-
-					<ul className='space-y-2'>
-						{filteredMangas.map((manga) => (
-							<li
-								key={manga.idManga}
-								className='flex items-center justify-between rounded-lg border border-border bg-surface p-4'
-							>
-								<div>
-									<p className='font-medium text-text'>{manga.title}</p>
-								</div>
-								<button
-									onClick={() => setPendingDelete(manga)}
-									className='rounded border border-danger/40 px-3 py-1 text-xs text-danger transition-colors hover:bg-danger-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
-								>
-									Deletar
-								</button>
-							</li>
-						))}
-					</ul>
-				</>
-			)}
-
-			{step === 'select-plugin' && (
-				<Card>
-					<h2 className='mb-4 text-lg font-semibold text-text'>Selecione um Plugin</h2>
-					{loadingMangas && <LoadingSpinner />}
-					{catalogDownloading && (
-						<p role='status' className='mb-4 text-sm text-text-muted'>
-							{CATALOG_DOWNLOADING_MESSAGE}
-						</p>
-					)}
-					<div className='mb-4'>
-						<label htmlFor='new-manga-plugin' className={labelCls}>
-							Plugin
-						</label>
-						<input
-							type='text'
-							placeholder='Filtrar plugin...'
-							value={pluginFilter}
-							onChange={(e) => setPluginFilter(e.target.value)}
-							className={`mb-1 block w-full ${inputCls}`}
-						/>
-						<select
-							id='new-manga-plugin'
-							value={newManga.plugin?.id ?? ''}
-							onChange={(e) => {
-								const plugin =
-									toPlugins(plugins).find((p) => p.id === e.target.value) ??
-									null;
-								setNewManga((prev) => ({ ...prev, plugin }));
-							}}
-							className={`w-full ${inputCls}`}
-						>
-							<option value=''>Selecione um plugin</option>
-							{toPlugins(plugins)
-								.filter((p) =>
-									!pluginFilter ||
-									(p.name ?? p.id ?? '').toLowerCase().includes(pluginFilter.toLowerCase())
-								)
-								.map((p) => (
-									<option key={p.id} value={p.id}>
-										{p.name || p.id}
-									</option>
-								))}
-						</select>
-					</div>
-					<div className='flex gap-3'>
-						<Button
-							variant='primary'
-							onClick={() =>
-								newManga.plugin && handlePluginSelected(newManga.plugin)
-							}
-							disabled={!newManga.plugin || loadingMangas}
-						>
-							Próximo
-						</Button>
-						<Button variant='ghost' onClick={() => { setStep('list'); }}>
-							Cancelar
-						</Button>
-					</div>
-				</Card>
-			)}
-
-			{step === 'select-manga' && (
-				<Card>
-					<h2 className='mb-4 text-lg font-semibold text-text'>
-						Selecione um Manga ({newManga.plugin?.name})
-					</h2>
-					<input
-						type='text'
-						placeholder='Filtrar manga por título...'
-						value={mangaTitleFilter}
-						onChange={(e) => setMangaTitleFilter(e.target.value)}
-						className={`mb-4 block w-full ${inputCls}`}
+			<ListBody
+				mangas={mangas}
+				all={all}
+				visible={visible}
+				hasFilters={hasFilters}
+				onClearFilters={clearFilters}
+				onAdd={() => setIsAdding(true)}
+				table={
+					<MangasTable
+						mangas={visible}
+						pluginNames={pluginNames}
+						pendingMangaId={pendingMangaId}
+						onSetAllConnectorsActive={(idManga, isActive) => setAllConnectorsActive.mutate({ idManga, isActive })}
+						onSetConnectorActive={(idManga, idPlugin, isActive) => setConnectorActive.mutate({ idManga, idPlugin, isActive })}
+						onDelete={setPendingDelete}
 					/>
-					{filteredPluginMangas.length === 0 && (
-						<p className='text-sm text-text-muted'>Nenhum manga disponível.</p>
-					)}
-					<ul className='max-h-96 space-y-2 overflow-y-auto'>
-						{filteredPluginMangas.map((manga) => (
-							<li key={manga.title}>
-								<button
-									onClick={() => handleMangaFromPluginSelected(manga)}
-									className='w-full rounded-md border border-border px-4 py-3 text-left text-sm text-text transition-colors hover:bg-surface-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
-								>
-									{manga.title}
-								</button>
-							</li>
-						))}
-					</ul>
-					<Button
-						variant='ghost'
-						className='mt-4'
-						onClick={() => setStep('select-plugin')}
-					>
-						Voltar
-					</Button>
-				</Card>
-			)}
+				}
+			/>
 
-			{step === 'confirm-add' &&
-				newManga.mangaFromPlugin &&
-				newManga.plugin && (
-					<Card>
-						<h2 className='mb-4 text-lg font-semibold text-text'>Adicionar Manga</h2>
-						<div className='space-y-4'>
-							<div>
-								<label className={labelCls}>
-									Título (pasta local)
-								</label>
-								<input
-									type='text'
-									value={newManga.localTitle}
-									onChange={(e) =>
-										setNewManga((prev) => ({
-											...prev,
-											localTitle: e.target.value
-										}))
-									}
-									className={`w-full ${inputCls}`}
-								/>
-							</div>
-							<div>
-								<label className={labelCls}>
-									Título no Plugin
-								</label>
-								<input
-									type='text'
-									value={newManga.mangaFromPlugin.title}
-									readOnly
-									className='w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-text-muted'
-								/>
-							</div>
-							<div>
-								<label className={labelCls}>
-									Plugin
-								</label>
-								<input
-									type='text'
-									value={newManga.plugin.name}
-									readOnly
-									className='w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-sm text-text-muted'
-								/>
-							</div>
-						</div>
-						<div className='mt-6 flex gap-3'>
-							<Button
-								variant='primary'
-								onClick={handleAddConfirm}
-								disabled={!newManga.localTitle || addManga.isPending}
-							>
-								{addManga.isPending ? 'Adicionando...' : 'Adicionar'}
-							</Button>
-							<Button variant='secondary' onClick={() => { setStep('list'); }}>
-								Cancelar
-							</Button>
-						</div>
-					</Card>
-				)}
+			<Drawer open={isAdding} title='Adicionar mangá' onClose={() => setIsAdding(false)}>
+				<AddMangaWizard
+					isAdding={addManga.isPending}
+					onAdd={(payload) => addManga.mutate(payload, { onSuccess: () => setIsAdding(false) })}
+					onCancel={() => setIsAdding(false)}
+				/>
+			</Drawer>
 
 			<ConfirmDialog
 				open={pendingDelete !== null}
-				title='Deletar manga'
-				message={`Tem certeza que deseja deletar "${pendingDelete?.title}"?`}
+				title='Remover mangá'
+				message={`Tem certeza que deseja remover "${pendingDelete?.title}"? Os capítulos baixados também serão apagados.`}
 				onConfirm={() => {
 					if (pendingDelete) deleteManga.mutate(pendingDelete.idManga);
 					setPendingDelete(null);
 				}}
 				onCancel={() => setPendingDelete(null)}
 			/>
+		</div>
+	);
+}
+
+interface ListBodyProps {
+	mangas: ReturnType<typeof useMangas>['mangas'];
+	all: MangaListItem[];
+	visible: MangaListItem[];
+	hasFilters: boolean;
+	onClearFilters: () => void;
+	onAdd: () => void;
+	table: ReactNode;
+}
+
+function ListBody({ mangas, all, visible, hasFilters, onClearFilters, onAdd, table }: ListBodyProps) {
+	if (mangas.isLoading) return <PlaceholderTable />;
+	if (mangas.isError) {
+		return (
+			<EmptyState title='Não foi possível carregar os mangás' detail={getApiErrorMessage(mangas.error)}>
+				<Button onClick={() => mangas.refetch()}>Tentar de novo</Button>
+			</EmptyState>
+		);
+	}
+	if (all.length === 0) {
+		return (
+			<EmptyState title='Nenhum mangá cadastrado' detail='Escolha um plugin e um título do catálogo para começar.'>
+				<Button variant='primary' onClick={onAdd}>
+					Adicionar mangá
+				</Button>
+			</EmptyState>
+		);
+	}
+	if (visible.length === 0 && hasFilters) {
+		return (
+			<EmptyState title='Nenhum mangá com esses filtros' detail='Ajuste a busca ou volte para a lista completa.'>
+				<Button onClick={onClearFilters}>Limpar filtros</Button>
+			</EmptyState>
+		);
+	}
+	return <>{table}</>;
+}
+
+function PlaceholderTable() {
+	return (
+		<Table aria-busy='true'>
+			<tbody>
+				{Array.from({ length: PLACEHOLDER_ROWS }, (_, index) => (
+					<tr key={index} data-testid='placeholder-row'>
+						<Td>
+							<span className='block h-3 w-full animate-pulse rounded-sm bg-surface-raised' />
+						</Td>
+					</tr>
+				))}
+			</tbody>
+		</Table>
+	);
+}
+
+function EmptyState({ title, detail, children }: { title: string; detail: string; children: ReactNode }) {
+	return (
+		<div className='flex flex-col items-center rounded-lg border border-dashed border-border bg-surface px-6 py-14 text-center'>
+			<p className='text-sm font-medium text-text'>{title}</p>
+			<p className='mb-4 mt-1 max-w-sm text-xs text-text-muted'>{detail}</p>
+			{children}
 		</div>
 	);
 }

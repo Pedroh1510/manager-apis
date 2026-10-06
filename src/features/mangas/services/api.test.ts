@@ -10,7 +10,9 @@ import {
 	deleteManga,
 	fetchMangasByPlugin,
 	addManga,
-	linkConnector
+	linkConnector,
+	setAllConnectorsActive,
+	setConnectorActive
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
@@ -25,6 +27,7 @@ vi.mock('../../../lib/http', () => ({
 const mockGet = vi.mocked(mangasHttp.get);
 const mockPost = vi.mocked(mangasHttp.post);
 const mockDelete = vi.mocked(mangasHttp.delete);
+const mockPatch = vi.mocked(mangasHttp.patch);
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -145,5 +148,28 @@ describe('linkConnector', () => {
 			idMangaPlugin: 'abc',
 			titlePlugin: 'Naruto'
 		});
+	});
+});
+
+describe('connector activation endpoints', () => {
+	it('PATCHes every link or a single one', async () => {
+		mockPatch.mockResolvedValue({ data: {} });
+
+		await setAllConnectorsActive(7, true);
+		await setConnectorActive(7, 'mangeek', false);
+
+		expect(mockPatch).toHaveBeenNthCalledWith(1, '/mangas/adm/7/connectors', { isActive: true });
+		expect(mockPatch).toHaveBeenNthCalledWith(2, '/mangas/adm/7/connectors/mangeek', { isActive: false });
+	});
+});
+
+describe('fetchMangaList keeps the connectors array', () => {
+	it('returns connectors as the API sent them', async () => {
+		const connectors = [{ idMangaConnector: 3, idPlugin: 'tcb', titlePlugin: 'Naruto', isActive: true }];
+		mockGet.mockResolvedValue({ data: [{ idManga: 1, title: 'Naruto', createdAt: '', updatedAt: '', connectors }] });
+
+		const [first] = await fetchMangaList();
+
+		expect(first.connectors).toEqual(connectors);
 	});
 });
