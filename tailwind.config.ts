@@ -25,12 +25,13 @@ const config: Config = {
 				'warning-bg': withOpacity('--color-warning-bg')
 			},
 			fontFamily: {
-				sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif']
+				sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
 			},
 			borderRadius: {
 				sm: '4px',
-				md: '8px',
-				lg: '12px'
+				md: '6px',
+				lg: '10px'
 			},
 			boxShadow: {
 				raised: '0 1px 2px rgb(0 0 0 / 0.06), 0 1px 1px rgb(0 0 0 / 0.04)',
@@ -38,6 +39,16 @@ const config: Config = {
 			},
 			transitionDuration: {
 				DEFAULT: '150ms'
+			},
+			keyframes: {
+				'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+				'drawer-in': { from: { transform: 'translateX(16px)', opacity: '0' }, to: { transform: 'none', opacity: '1' } },
+				'toast-in': { from: { transform: 'translateY(8px)', opacity: '0' }, to: { transform: 'none', opacity: '1' } }
+			},
+			animation: {
+				'fade-in': 'fade-in 150ms ease-out',
+				'drawer-in': 'drawer-in 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+				'toast-in': 'toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1)'
 			}
 		}
 	},

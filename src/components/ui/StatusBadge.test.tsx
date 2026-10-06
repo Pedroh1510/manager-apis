@@ -28,3 +28,18 @@ describe('StatusBadge', () => {
     expect(screen.getByText('Offline')).toHaveClass('bg-danger-bg')
   })
 })
+
+describe('StatusBadge for manga status', () => {
+  it('maps each manga status to its semantic color', () => {
+    const cases = [
+      { status: 'active', label: 'Ativo', bg: 'bg-success-bg', text: 'text-success' },
+      { status: 'partial', label: 'Parcial', bg: 'bg-warning-bg', text: 'text-warning' },
+      { status: 'inactive', label: 'Inativo', bg: 'bg-danger-bg', text: 'text-danger' },
+    ] as const
+    for (const { status, label, bg, text } of cases) {
+      const { unmount } = render(<StatusBadge status={status} />)
+      expect(screen.getByText(label)).toHaveClass(bg, text)
+      unmount()
+    }
+  })
+})

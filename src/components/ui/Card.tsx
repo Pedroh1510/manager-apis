@@ -3,9 +3,9 @@ import type { HTMLAttributes } from 'react';
 type CardPadding = 'sm' | 'md' | 'lg';
 
 const paddingClasses: Record<CardPadding, string> = {
-	sm: 'p-4',
-	md: 'p-6',
-	lg: 'p-8'
+	sm: 'p-3',
+	md: 'p-4',
+	lg: 'p-6'
 };
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -15,7 +15,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 export function Card({ padding = 'md', className = '', ...props }: CardProps) {
 	return (
 		<div
-			className={`rounded-lg border border-border bg-surface ${paddingClasses[padding]} ${className}`}
+			className={`rounded-lg border border-border bg-surface shadow-raised ${paddingClasses[padding]} ${className}`}
 			{...props}
 		/>
 	);
