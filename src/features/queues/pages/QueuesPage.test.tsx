@@ -31,7 +31,11 @@ describe('QueuesPage', () => {
 
   it('embeds the bull-board of the selected API', async () => {
     renderWithProviders(<QueuesPage />, { route: '/filas' })
-    expect(screen.getByTitle('Bull Board — Mangas')).toHaveAttribute('src', MANGAS_URL)
+    const card = await screen.findByTestId('queue-card-download')
+    const board = screen.getByTitle('Bull Board — Mangas')
+    // Native counts first, the embedded bull-board below them.
+    expect(card.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(board).toHaveAttribute('src', MANGAS_URL)
     expect(screen.getByRole('link', { name: 'Abrir em nova aba' })).toHaveAttribute('href', MANGAS_URL)
     expect(screen.getByRole('link', { name: 'Abrir em nova aba' })).toHaveAttribute('target', '_blank')
 

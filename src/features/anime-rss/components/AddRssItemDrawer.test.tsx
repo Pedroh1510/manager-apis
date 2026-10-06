@@ -36,6 +36,8 @@ describe('AddRssItemDrawer', () => {
 
     fill('Frieren 28', HEX_MAGNET)
     expect(submit()).toBeEnabled()
+    fill('Frieren 28', `magnet:?xt=urn:btih:${'A2'.repeat(16)}`)
+    expect(submit()).toBeEnabled()
   })
 
   it('closes, refreshes and toasts after creating', async () => {

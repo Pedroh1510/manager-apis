@@ -33,6 +33,13 @@ describe('MangasTable', () => {
     expect(naruto.getByTestId('connector-chip-mangeek')).toHaveTextContent('Mangeek')
     expect(naruto.getByTestId('connector-chip-mangeek')).toHaveAttribute('data-active', 'false')
     expect(naruto.getByText('Parcial')).toBeInTheDocument()
+    expect(naruto.getByTestId('connector-chip-tcb')).toHaveAttribute('title', 'Naruto TCB')
+  })
+
+  it('falls back to idPlugin when the plugin has no name', () => {
+    renderTable([manga(1, 'Naruto', [connector('desconhecido', true, 'Naruto X')])])
+
+    expect(within(row('Naruto')).getByTestId('connector-chip-desconhecido')).toHaveTextContent('desconhecido')
   })
 
   it('general toggle sends the opposite of the derived status', () => {

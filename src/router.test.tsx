@@ -40,8 +40,8 @@ describe('router', () => {
 
   it('resolves fixed routes before the manga detail route (admin)', async () => {
     renderAt('/mangas/admin')
+    expect(await screen.findByRole('heading', { name: 'Configurações', level: 1 })).toBeInTheDocument()
     expect(screen.queryByText('Mangá não encontrado')).not.toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Naruto' })).not.toBeInTheDocument()
   })
 
   it('resolves fixed routes before the manga detail route (detail)', async () => {
