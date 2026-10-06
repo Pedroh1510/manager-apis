@@ -19,8 +19,8 @@ export function ChaptersTable({ query, pendingChapterId, onEnqueue, onDelete }: 
 	if (query.isLoading) return <p className='text-xs text-text-muted'>Carregando capítulos…</p>;
 	if (query.isError) {
 		return (
-			<p role='alert' className='rounded-md bg-danger-bg px-3 py-2 text-xs text-danger'>
-				{getApiErrorMessage(query.error)}
+			<p className='rounded-md bg-danger-bg px-3 py-2 text-xs text-danger'>
+				Não foi possível carregar os capítulos: {getApiErrorMessage(query.error)}
 			</p>
 		);
 	}

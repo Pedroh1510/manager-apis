@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
+import { TablePlaceholder } from '../../../components/ui/TablePlaceholder';
 import { Toggle } from '../../../components/ui/Toggle';
+import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { useMangaChapters } from '../hooks/useMangaChapters';
@@ -18,10 +20,22 @@ export function MangaDetailPage() {
 	const idManga = Number(useParams().idManga);
 	const { mangas } = useMangas();
 	const manga = mangas.data?.find((item) => item.idManga === idManga);
+	useErrorToast(mangas.error);
 
-	if (mangas.isLoading) return <p className='text-xs text-text-muted'>Carregando…</p>;
+	if (mangas.isLoading) return <TablePlaceholder />;
+	if (mangas.isError) return <LoadFailed onRetry={() => mangas.refetch()} />;
 	if (!manga) return <NotFound />;
 	return <MangaDetail manga={manga} />;
+}
+
+function LoadFailed({ onRetry }: { onRetry: () => void }) {
+	return (
+		<div className='mx-auto max-w-md rounded-lg border border-dashed border-border bg-surface px-6 py-14 text-center'>
+			<p className='text-sm font-medium text-text'>Não foi possível carregar o mangá</p>
+			<p className='mb-4 mt-1 text-xs text-text-muted'>A API de mangás não respondeu.</p>
+			<Button onClick={onRetry}>Tentar de novo</Button>
+		</div>
+	);
 }
 
 function NotFound() {
@@ -40,6 +54,7 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 	const { setConnectorActive } = useMangas();
 	const { data: plugins } = usePlugins();
 	const { chapters, missing, enqueueChapter, removeChapter } = useMangaChapters(manga.idManga);
+	useErrorToast(chapters.error);
 	const [pendingDelete, setPendingDelete] = useState<Chapter | null>(null);
 	const pluginName = (idPlugin: string) => plugins?.find((p) => p?.id === idPlugin)?.name || idPlugin;
 

@@ -120,11 +120,16 @@ describe('MangaDetailPage', () => {
     expect(screen.getByRole('link', { name: /voltar para a lista/i })).toHaveAttribute('href', '/mangas/list')
   })
 
+  const failure = { isAxiosError: true, response: { data: { message: 'boom' } }, message: 'x' }
+  // Toasts live in the provider's region; inline page notices are not toasts.
+  const toastAlerts = () =>
+    screen.queryAllByRole('alert').filter((el) => el.closest('[data-toast-region]') && el.textContent?.includes('boom'))
+
   it('shows the API message for every failing call', async () => {
-    const failure = { isAxiosError: true, response: { data: { message: 'boom' } }, message: 'x' }
     vi.mocked(api.fetchMissingChapters).mockRejectedValue(failure)
     vi.mocked(api.fetchChapterPages).mockRejectedValue(failure)
     vi.mocked(api.deleteChapter).mockRejectedValue(failure)
+    vi.mocked(api.setConnectorActive).mockRejectedValue(failure)
     renderDetail()
     await screen.findByText('Cap 1')
 
@@ -132,16 +137,35 @@ describe('MangaDetailPage', () => {
     fireEvent.click(within(chapterRow('Cap 2')).getByRole('button', { name: 'Baixar Cap 2' }))
     fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+    fireEvent.click(await screen.findByRole('switch', { name: 'Conector TCB de Naruto' }))
 
-    await waitFor(() => expect(screen.getAllByRole('alert').filter((el) => el.textContent?.includes('boom'))).toHaveLength(3))
+    await waitFor(() => expect(toastAlerts()).toHaveLength(4))
     expect(screen.getByTestId('location')).toHaveTextContent('/mangas/1')
   })
 
   it('shows the API message for every failing call (chapter list)', async () => {
-    vi.mocked(api.fetchChapters).mockRejectedValue({ isAxiosError: true, response: { data: { message: 'boom' } }, message: 'x' })
+    vi.mocked(api.fetchChapters).mockRejectedValue(failure)
     renderDetail()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('boom')
+    await waitFor(() => expect(toastAlerts()).toHaveLength(1))
     expect(screen.getByTestId('location')).toHaveTextContent('/mangas/1')
+  })
+
+  it('shows the API message for every failing call (manga list)', async () => {
+    vi.mocked(api.fetchMangaList).mockRejectedValue(failure)
+    renderDetail()
+
+    await waitFor(() => expect(toastAlerts()).toHaveLength(1))
+    expect(screen.getByText('Não foi possível carregar o mangá')).toBeInTheDocument()
+    expect(screen.queryByText('Mangá não encontrado')).not.toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/mangas/1')
+  })
+
+  it('shows placeholder rows while loading', () => {
+    vi.mocked(api.fetchMangaList).mockReturnValue(new Promise(() => {}))
+    renderDetail()
+
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true')
+    expect(screen.getAllByTestId('placeholder-row').length).toBeGreaterThan(0)
   })
 })
