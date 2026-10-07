@@ -65,7 +65,9 @@ for (const theme of THEMES) {
 		test('add rss item drawer', async ({ page }) => {
 			await open(page, '/anime-rss/rss', theme);
 			await page.getByRole('button', { name: 'Adicionar item' }).click();
-			await page.getByLabel('Título', { exact: true }).fill('[SubsPlease] Sousou no Frieren - 28 (1080p)');
+			await page.getByLabel('Título', { exact: true }).fill('Sousou no Frieren');
+			await page.getByLabel('Temporada').fill('1');
+			await page.getByLabel('Episódio').fill('28');
 			await page.getByLabel('Magnet').fill('http://nao-e-magnet');
 			await page.screenshot({ animations: 'disabled', path: `${SHOTS_DIR}/add-rss-item-invalid-${theme}.png` });
 			await page.getByLabel('Magnet').fill(`magnet:?xt=urn:btih:${'a'.repeat(40)}`);

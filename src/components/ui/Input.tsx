@@ -1,7 +1,8 @@
-import type { InputHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 import { FOCUS_RING } from './focusRing';
 
-type InputProps = InputHTMLAttributes<HTMLInputElement>;
+// ComponentProps keeps `ref` (React 19 passes it as a prop) so forms can focus fields.
+type InputProps = ComponentProps<'input'>;
 
 export function Input({ className = '', ...props }: InputProps) {
 	return (
