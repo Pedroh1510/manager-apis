@@ -17,7 +17,7 @@ function render(ui: ReactElement) {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
 })
 
 describe('Layout', () => {
@@ -92,7 +92,7 @@ describe('Layout', () => {
   })
 
   it('shows the media section when qbittorrent is configured', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -106,7 +106,7 @@ describe('Layout', () => {
     const outcomes = [
       () => new Promise<never>(() => {}),
       () => Promise.reject(new Error('offline')),
-      () => Promise.resolve({ qbittorrent: false }),
+      () => Promise.resolve({ qbittorrent: false, sonarr: false }),
     ]
     for (const outcome of outcomes) {
       vi.mocked(configApi.fetchServerConfig).mockImplementation(outcome)
@@ -120,6 +120,56 @@ describe('Layout', () => {
       expect(screen.queryByRole('link', { name: 'Torrents' })).not.toBeInTheDocument()
       cleanup()
     }
+  })
+
+  it('shows Séries before Torrents when sonarr is configured', async () => {
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true })
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    const series = await screen.findByRole('link', { name: 'Séries' })
+    expect(series).toHaveAttribute('href', '/sonarr')
+    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
+    expect(hrefs.indexOf('/sonarr')).toBeLessThan(hrefs.indexOf('/torrents'))
+  })
+
+  it('hides Séries unless sonarr is configured and drops an empty media section', async () => {
+    const outcomes = [
+      () => new Promise<never>(() => {}),
+      () => Promise.reject(new Error('offline')),
+      () => Promise.resolve({ qbittorrent: true, sonarr: false }),
+    ]
+    for (const outcome of outcomes) {
+      vi.mocked(configApi.fetchServerConfig).mockImplementation(outcome)
+      render(
+        <MemoryRouter>
+          <Layout />
+        </MemoryRouter>
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(screen.queryByRole('link', { name: 'Séries' })).not.toBeInTheDocument()
+      cleanup()
+    }
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.queryByText('Mídia')).not.toBeInTheDocument()
+  })
+
+  it('highlights Séries on a series detail page', async () => {
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true })
+    render(
+      <MemoryRouter initialEntries={['/sonarr/12']}>
+        <Layout />
+      </MemoryRouter>
+    )
+    expect(await screen.findByRole('link', { name: 'Séries' })).toHaveAttribute('aria-current', 'page')
   })
 
   describe('theme', () => {

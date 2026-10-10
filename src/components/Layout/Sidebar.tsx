@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { getPreferredTheme, setTheme, type Theme } from '../../lib/theme'
 import { useServerConfig } from '../../features/server-config/hooks/useServerConfig'
+import type { ServerConfig } from '../../features/server-config/services/api'
 import { Button } from '../ui/Button'
 import { FOCUS_RING } from '../ui/focusRing'
 
@@ -22,11 +23,11 @@ const navItems = [
   },
 ]
 
-// Shown only when the server says the integration is configured (GET /api/config).
-const mediaSection = {
-  section: 'Mídia',
-  links: [{ to: '/torrents', label: 'Torrents' }],
-}
+// Each link shows only when the server says its integration is configured (GET /api/config).
+const mediaLinks: { to: string; label: string; integration: keyof ServerConfig }[] = [
+  { to: '/sonarr', label: 'Séries', integration: 'sonarr' },
+  { to: '/torrents', label: 'Torrents', integration: 'qbittorrent' },
+]
 
 const linkBase = `flex h-7 items-center rounded-md px-2 text-[13px] transition-colors ${FOCUS_RING}`
 const activeCls = 'bg-surface-raised font-medium text-text'
@@ -39,8 +40,9 @@ export function Sidebar() {
   const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme())
   const { pathname } = useLocation()
   const isMangaDetail = MANGA_DETAIL_PATH.test(pathname)
-  const isQbittorrentOn = useServerConfig().data?.qbittorrent === true
-  const sections = isQbittorrentOn ? [...navItems, mediaSection] : navItems
+  const config = useServerConfig().data
+  const enabledMediaLinks = mediaLinks.filter(({ integration }) => config?.[integration] === true)
+  const sections = enabledMediaLinks.length ? [...navItems, { section: 'Mídia', links: enabledMediaLinks }] : navItems
 
   function toggleTheme() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
