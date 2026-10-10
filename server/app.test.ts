@@ -70,6 +70,13 @@ describe('server app', () => {
     }
   })
 
+  it('any qbittorrent subpath returns 503 when not configured', async () => {
+    app = await startTestApp(null)
+    const res = await get('/api/qbittorrent/foo')
+    expect(res.status).toBe(503)
+    expect(JSON.parse(res.body)).toEqual({ error: 'qBittorrent não configurado (QBITTORRENT_URL ausente)' })
+  })
+
   it('torrents route returns counts, eta and active list', async () => {
     app = await startTestApp(new FakeQbittorrentGateway({ torrents: oneOfEachState }))
     const res = await get('/api/qbittorrent/torrents')
