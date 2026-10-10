@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { episodeStateLabel, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, seriesStatusLabel } from './formatSeries';
+import { episodeStateLabel, formatAge, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, seriesStatusLabel } from './formatSeries';
 
 describe('formatSeries', () => {
 	it('formats bytes in GB from 1 GiB and MB below', () => {
@@ -25,5 +25,12 @@ describe('formatSeries', () => {
 		expect(initialsOf('Ação Total')).toBe('AT');
 		expect(initialsOf('The Wire')).toBe('TW');
 		expect(initialsOf('Dark')).toBe('D');
+	});
+
+	it('formats release age in hours below 48 and days above', () => {
+		expect(formatAge(30.5)).toBe('30h');
+		expect(formatAge(47.9)).toBe('47h');
+		expect(formatAge(48)).toBe('2d');
+		expect(formatAge(100)).toBe('4d');
 	});
 });

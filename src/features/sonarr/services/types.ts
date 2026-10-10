@@ -27,6 +27,8 @@ export interface EpisodeDetail {
 
 export interface SeasonDetail {
 	seasonNumber: number;
+	/** Sonarr's season flag: whether future episodes of it get monitored */
+	monitored: boolean;
 	episodeFileCount: number;
 	episodeCount: number;
 	episodes: EpisodeDetail[];
@@ -46,3 +48,21 @@ export interface SonarrStatus {
 	queueCount: number;
 	rootFolders: { path: string; freeSpace: number }[];
 }
+
+/** `GET /api/sonarr/releases` item; approved ones come first. */
+export interface ReleaseSummary {
+	guid: string;
+	indexerId: number;
+	title: string;
+	indexer: string;
+	quality: string;
+	size: number;
+	seeders: number | null;
+	leechers: number | null;
+	ageHours: number;
+	approved: boolean;
+	rejections: string[];
+}
+
+/** One episode, or one season of a series. */
+export type ReleaseQuery = { episodeId: number } | { seriesId: number; seasonNumber: number };
