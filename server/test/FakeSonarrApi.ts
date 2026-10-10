@@ -10,14 +10,19 @@ export interface FakeSonarrOptions {
   health?: { type: string; message: string; source?: string }[]
   queueTotal?: number
   rootFolders?: { path: string; freeSpace: number }[]
+  releases?: unknown[]
+  /** Status for POST /release; 404 simulates a release that left Sonarr's cache. */
+  grabStatus?: number
   /** Answer every request with this status instead of data. */
   failStatus?: number
   delayMs?: number
 }
 
 export interface RecordedSonarrRequest {
+  method: string
   url: string
   apiKey: string | undefined
+  body: unknown
 }
 
 /**
@@ -46,16 +51,23 @@ export class FakeSonarrApi {
     return new Promise((resolve) => this.server.close(() => resolve()))
   }
 
+  /** Writes only, in order: what the gateway asked Sonarr to change. */
+  get writes(): RecordedSonarrRequest[] {
+    return this.requests.filter((request) => request.method !== 'GET')
+  }
+
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    this.requests.push({ url: req.url ?? '', apiKey: req.headers['x-api-key'] as string | undefined })
+    const body = await readJsonBody(req)
+    this.requests.push({ method: req.method ?? 'GET', url: req.url ?? '', apiKey: req.headers['x-api-key'] as string | undefined, body })
     if (this.options.delayMs) await new Promise((resolve) => setTimeout(resolve, this.options.delayMs))
     if (this.options.failStatus) return void res.writeHead(this.options.failStatus).end('fail')
     const url = new URL(req.url ?? '/', 'http://fake')
+    if (req.method !== 'GET') return this.answerWrite(req.method ?? '', url.pathname, body, res)
     const poster = url.pathname.match(/^\/api\/v3\/mediacover\/(\d+)\/poster-500\.jpg$/)
     if (poster) return this.sendPoster(Number(poster[1]), res)
-    const body = this.route(url)
-    if (body === undefined) return void res.writeHead(404).end('Not Found')
-    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(body))
+    const data = this.route(url)
+    if (data === undefined) return void res.writeHead(404).end('Not Found')
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(data))
   }
 
   private route(url: URL): unknown {
@@ -68,10 +80,20 @@ export class FakeSonarrApi {
       '/api/v3/queue/status': { totalCount: this.options.queueTotal ?? 0 },
       '/api/v3/rootfolder': this.options.rootFolders ?? [],
       '/api/v3/series': series,
+      '/api/v3/release': this.options.releases ?? [],
       // One series per fake: every episode belongs to whichever seriesId is asked.
       '/api/v3/episode': url.searchParams.has('seriesId') ? episodes : [],
     }
     return routes[url.pathname]
+  }
+
+  private answerWrite(method: string, path: string, body: unknown, res: ServerResponse): void {
+    if (method === 'POST' && path === '/api/v3/release') return void res.writeHead(this.options.grabStatus ?? 200).end('{}')
+    const statuses: Record<string, number> = { 'PUT /api/v3/episode/monitor': 202, 'POST /api/v3/command': 201 }
+    const isSeriesPut = method === 'PUT' && /^\/api\/v3\/series\/\d+$/.test(path)
+    const status = isSeriesPut ? 202 : statuses[`${method} ${path}`]
+    if (!status) return void res.writeHead(404).end('Not Found')
+    res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body ?? {}))
   }
 
   private sendPoster(seriesId: number, res: ServerResponse): void {
@@ -79,4 +101,11 @@ export class FakeSonarrApi {
     if (!bytes) return void res.writeHead(404).end('Not Found')
     res.writeHead(200, { 'Content-Type': 'image/jpeg' }).end(bytes)
   }
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) chunks.push(chunk as Buffer)
+  const text = Buffer.concat(chunks).toString()
+  return text ? JSON.parse(text) : undefined
 }
