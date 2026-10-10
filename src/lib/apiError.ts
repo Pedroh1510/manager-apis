@@ -9,6 +9,8 @@ export function getApiErrorMessage(error: unknown): string {
 	if (isAxiosError(error) || (typeof error === 'object' && error !== null && 'response' in error)) {
 		const data = (error as { response?: { data?: unknown } }).response?.data;
 		if (typeof data === 'string' && data) return data;
+		// server/ answers `{ error }`; the other APIs use `{ message }`.
+		if (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string') return data.error;
 		if (data && typeof data === 'object' && 'message' in data) {
 			const message = (data as { message: unknown }).message;
 			if (Array.isArray(message)) return message.join('; ');

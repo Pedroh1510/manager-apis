@@ -7,6 +7,7 @@ import { MangasAdminPage } from './features/mangas/pages/AdminPage'
 import { MangasListPage } from './features/mangas/pages/MangasPage'
 import { MangaDetailPage } from './features/mangas/pages/MangaDetailPage'
 import { QueuesPage } from './features/queues/pages/QueuesPage'
+import { TorrentsPage } from './features/torrents/pages/TorrentsPage'
 
 export const routes: RouteObject[] = [
   {
@@ -16,6 +17,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to='/status' replace /> },
       { path: 'status', element: <GlobalStatusPage /> },
       { path: 'filas', element: <QueuesPage /> },
+      { path: 'torrents', element: <TorrentsPage /> },
       { path: 'anime-rss/rss', element: <RSSQueryPage /> },
       { path: 'anime-rss/admin', element: <AnimeRssAdminPage /> },
       { path: 'mangas/admin', element: <MangasAdminPage /> },
