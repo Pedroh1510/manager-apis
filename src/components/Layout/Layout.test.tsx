@@ -1,8 +1,24 @@
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { render as rtlRender, screen, fireEvent, cleanup } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+import type { ReactElement } from 'react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { THEME_STORAGE_KEY } from '../../lib/theme'
 import { MemoryRouter } from 'react-router-dom'
 import { Layout } from './Layout'
+import * as configApi from '../../features/server-config/services/api'
+import { createTestQueryClient } from '../../test/renderWithProviders'
+
+vi.mock('../../features/server-config/services/api')
+
+// The sidebar reads GET /api/config through TanStack Query.
+function render(ui: ReactElement) {
+  return rtlRender(<QueryClientProvider client={createTestQueryClient()}>{ui}</QueryClientProvider>)
+}
+
+beforeEach(() => {
+  vi.resetAllMocks()
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false })
+})
 
 describe('Layout', () => {
   it('renders the sidebar', () => {
@@ -73,6 +89,37 @@ describe('Layout', () => {
       </MemoryRouter>
     )
     expect(screen.getByRole('link', { name: 'Mangas' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('shows the media section when qbittorrent is configured', async () => {
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true })
+    render(
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    )
+    expect(await screen.findByText('Mídia')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Torrents' })).toHaveAttribute('href', '/torrents')
+  })
+
+  it('hides the media section while loading, on error and when disabled', async () => {
+    const outcomes = [
+      () => new Promise<never>(() => {}),
+      () => Promise.reject(new Error('offline')),
+      () => Promise.resolve({ qbittorrent: false }),
+    ]
+    for (const outcome of outcomes) {
+      vi.mocked(configApi.fetchServerConfig).mockImplementation(outcome)
+      render(
+        <MemoryRouter>
+          <Layout />
+        </MemoryRouter>
+      )
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(screen.queryByText('Mídia')).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Torrents' })).not.toBeInTheDocument()
+      cleanup()
+    }
   })
 
   describe('theme', () => {

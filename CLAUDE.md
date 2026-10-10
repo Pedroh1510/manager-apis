@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev          # Start dev server
-npm run build        # Type-check + production build
+npm run dev          # Vite (:5173) + Express server (:3002, tsx watch); Vite proxies /api
+npm run build        # Type-check + Vite build (dist/) + server build (dist-server/)
+npm run start        # Run the built server: SPA + /api on :3002
 npm run lint         # ESLint
 npm run test         # Vitest (watch mode)
 npm run test:run     # Vitest (single run)
@@ -34,7 +35,7 @@ Tests use hardcoded production URLs from `vite.config.ts` — no local `.env` ne
 
 ## Architecture
 
-React 19 SPA with two backend APIs: **anime-rss** and **mangas**.
+React 19 SPA with two backend APIs: **anime-rss** and **mangas**, served by its own Express server (`server/`), which also exposes `/api/*` for integrations whose credentials must stay server-side (qBittorrent). Integration env (`QBITTORRENT_URL`/`_USER`/`_PASS`) is runtime env of the container, never `VITE_*`.
 
 **Entry point:** `src/main.tsx` → `App.tsx` wraps everything in `QueryClientProvider` + `RouterProvider`.
 
@@ -47,7 +48,9 @@ React 19 SPA with two backend APIs: **anime-rss** and **mangas**.
 - `hooks/use*.ts` — TanStack Query wrappers around service functions
 - `pages/*.tsx` — page components, each with a co-located `.test.tsx`
 
-**HTTP clients (`src/lib/http.ts`):** Two axios instances — `rssHttp` (points to `VITE_RSS_API_URL`) and `mangasHttp` (points to `VITE_MANGAS_API_URL`). All API calls go through one of these.
+**HTTP clients (`src/lib/http.ts`):** `rssHttp` (`VITE_RSS_API_URL`), `mangasHttp` (`VITE_MANGAS_API_URL`) and `serverHttp` (`/api`, same origin). All API calls go through one of these.
+
+**Server (`server/`):** Express + TS, compiled by `tsconfig.server.json`. `createApp(deps)` is shared by `server/index.ts` and the tests; server tests use `// @vitest-environment node` and boot the app in-process. Errors are `{ error: string }`.
 
 **Shared UI components:** `src/components/ui/` — `StatusBadge`, `LoadingSpinner`, `ErrorMessage`, `ConfirmDialog`.
 
