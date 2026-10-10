@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
 	plugins: [react()],
+	// The Express server in server/ owns /api; same path in dev and in the container.
+	server: {
+		proxy: { '/api': 'http://localhost:3002' }
+	},
 	test: {
 		globals: true,
 		environment: 'jsdom',
