@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { FakeQbittorrentGateway } from './test/FakeQbittorrentGateway.js'
+import { FakeSonarrGateway } from './test/FakeSonarrGateway.js'
 import { startTestApp, TEST_ASSET_JS, TEST_INDEX_HTML, type TestApp } from './test/startTestApp.js'
 import type { RawTorrent } from './qbittorrent/summarizeTorrents.js'
 
@@ -32,19 +33,19 @@ const oneOfEachState: RawTorrent[] = [
 
 describe('server app', () => {
   it('serves index.html for SPA paths and static files as is', async () => {
-    app = await startTestApp(null)
+    app = await startTestApp()
     expect(await get('/torrents')).toEqual({ status: 200, body: TEST_INDEX_HTML })
     expect(await get('/status')).toEqual({ status: 200, body: TEST_INDEX_HTML })
     expect(await get('/assets/app.js')).toEqual({ status: 200, body: TEST_ASSET_JS })
   })
 
   it('health returns ok', async () => {
-    app = await startTestApp(null)
+    app = await startTestApp()
     expect(await get('/api/health')).toEqual({ status: 200, body: JSON.stringify({ status: 'ok' }) })
   })
 
   it('unknown api route returns 404 json', async () => {
-    app = await startTestApp(null)
+    app = await startTestApp()
     const res = await get('/api/nao-existe')
     expect(res.status).toBe(404)
     expect(JSON.parse(res.body)).toEqual({ error: 'rota não encontrada: GET /api/nao-existe' })
@@ -52,17 +53,27 @@ describe('server app', () => {
   })
 
   it('config reports qbittorrent disabled without url', async () => {
-    app = await startTestApp(null)
-    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: false }) })
+    app = await startTestApp()
+    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: false, sonarr: false }) })
   })
 
   it('config reports qbittorrent enabled with url', async () => {
-    app = await startTestApp(new FakeQbittorrentGateway())
-    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: true }) })
+    app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway() })
+    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: true, sonarr: false }) })
+  })
+
+  it('config reports sonarr disabled without url', async () => {
+    app = await startTestApp()
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: false })
+  })
+
+  it('config reports sonarr enabled with url', async () => {
+    app = await startTestApp({ sonarr: new FakeSonarrGateway() })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true })
   })
 
   it('qbittorrent routes return 503 when not configured', async () => {
-    app = await startTestApp(null)
+    app = await startTestApp()
     for (const path of ['/api/qbittorrent/status', '/api/qbittorrent/torrents']) {
       const res = await get(path)
       expect(res.status, path).toBe(503)
@@ -71,14 +82,14 @@ describe('server app', () => {
   })
 
   it('any qbittorrent subpath returns 503 when not configured', async () => {
-    app = await startTestApp(null)
+    app = await startTestApp()
     const res = await get('/api/qbittorrent/foo')
     expect(res.status).toBe(503)
     expect(JSON.parse(res.body)).toEqual({ error: 'qBittorrent não configurado (QBITTORRENT_URL ausente)' })
   })
 
   it('torrents route returns counts, eta and active list', async () => {
-    app = await startTestApp(new FakeQbittorrentGateway({ torrents: oneOfEachState }))
+    app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway({ torrents: oneOfEachState }) })
     const res = await get('/api/qbittorrent/torrents')
     const body = JSON.parse(res.body)
 
@@ -91,7 +102,7 @@ describe('server app', () => {
 
   it('status route returns the gateway status', async () => {
     const status = { version: 'v4.6.7', apiVersion: '2.9.3', downloadSpeed: 2621440, uploadSpeed: 51200 }
-    app = await startTestApp(new FakeQbittorrentGateway({ status, torrents: oneOfEachState }))
+    app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway({ status, torrents: oneOfEachState }) })
     const res = await get('/api/qbittorrent/status')
 
     expect(res.status).toBe(200)
@@ -100,7 +111,7 @@ describe('server app', () => {
 
   it('gateway failures return 502 with the gateway message', async () => {
     const failWith = 'qBittorrent indisponível em http://qbit:8080: timeout'
-    app = await startTestApp(new FakeQbittorrentGateway({ failWith }))
+    app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway({ failWith }) })
     for (const path of ['/api/qbittorrent/status', '/api/qbittorrent/torrents']) {
       const res = await get(path)
       expect(res.status, path).toBe(502)

@@ -5,6 +5,7 @@ import { createApp } from './app.js'
 import { parseServerConfig, type ServerEnv } from './config.js'
 import { createJsonLogger, type LineWriter } from './logger.js'
 import { CtrlQbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
+import { FetchSonarrGateway } from './sonarr/sonarrGateway.js'
 
 export interface RunningServer {
   close(): Promise<void>
@@ -21,11 +22,12 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
   const config = parseServerConfig(env)
   const logger = createJsonLogger(write)
   const qbittorrent = config.qbittorrent ? new CtrlQbittorrentGateway(config.qbittorrent) : null
-  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, logger })
+  const sonarr = config.sonarr ? new FetchSonarrGateway(config.sonarr) : null
+  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(config.port, () => resolve(listening))
   })
-  logger.info('server started', { port: config.port, integrations: { qbittorrent: qbittorrent !== null } })
+  logger.info('server started', { port: config.port, integrations: { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null } })
   return { close: () => new Promise((resolve) => server.close(() => resolve())) }
 }
 
