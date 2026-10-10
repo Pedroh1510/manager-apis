@@ -16,7 +16,7 @@ function episode(overrides: Partial<EpisodeDetail>): EpisodeDetail {
 }
 
 function season(seasonNumber: number, episodes: EpisodeDetail[], counts = { episodeFileCount: 1, episodeCount: 2 }): SeasonDetail {
-  return { seasonNumber, ...counts, episodes }
+  return { seasonNumber, monitored: true, ...counts, episodes }
 }
 
 const seasonOne = season(1, [
@@ -93,7 +93,7 @@ describe('SeriesDetailPage', () => {
     fireEvent.click(seasonButton(/^Temporada 1/))
 
     const table = screen.getByText('The Buys').closest('table') as HTMLElement
-    expect(within(table).getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Episódio', 'Título', 'Exibição', 'Situação', 'Monitorado'])
+    expect(within(table).getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Episódio', 'Título', 'Exibição', 'Situação', 'Monitorado', 'Ações'])
     const buys = cellsOfRow('The Buys')
     expect(buys.slice(0, 3)).toEqual(['S01E03', 'The Buys', formatDate('2002-06-16T01:00:00Z')])
     expect(buys[2]).toMatch(/^\d{2}\/\d{2}\/\d{4}$/)
@@ -112,18 +112,16 @@ describe('SeriesDetailPage', () => {
     expect(cellsOfRow('Old Cases')[3]).toBe('Sem data')
   })
 
-  it('shows monitored as read only text', async () => {
+  // PR 3a (sonarr-actions AC 5) replaced the read-only text of PR 2's AC 30 with a switch.
+  it('shows monitored as the switch state of each row', async () => {
     vi.mocked(api.fetchSeriesDetail).mockResolvedValue(wire)
     renderDetail()
     await screen.findByRole('heading', { level: 1 })
     fireEvent.click(seasonButton(/^Temporada 1/))
 
-    expect(cellsOfRow('The Buys')[4]).toBe('Não')
-    expect(cellsOfRow('Old Cases')[4]).toBe('Sim')
-    const row = screen.getByText('The Buys').closest('tr') as HTMLElement
-    expect(within(row).queryAllByRole('button')).toHaveLength(0)
-    expect(within(row).queryAllByRole('switch')).toHaveLength(0)
-    expect(within(row).queryAllByRole('checkbox')).toHaveLength(0)
+    const row = (title: string) => screen.getByText(title).closest('tr') as HTMLElement
+    expect(within(row('The Buys')).getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+    expect(within(row('Old Cases')).getByRole('switch')).toHaveAttribute('aria-checked', 'true')
   })
 
   it('shows not found with a link back', async () => {
