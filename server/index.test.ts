@@ -2,7 +2,10 @@
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { startServer } from './index.js'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { loadEnvFileIfPresent, startServer } from './index.js'
 
 async function freePort(): Promise<number> {
   const probe = createServer()
@@ -49,5 +52,19 @@ describe('startServer', () => {
 
     expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true })
     expect(lines[0]).not.toContain('k3y-abc')
+  })
+
+  it('loads a local .env only when the file exists, without overriding the environment', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'manager-apis-env-'))
+    const file = join(dir, '.env')
+    writeFileSync(file, 'MANAGER_APIS_TEST_FROM_FILE=file\nMANAGER_APIS_TEST_PRESET=file\n')
+    process.env.MANAGER_APIS_TEST_PRESET = 'environment'
+
+    expect(loadEnvFileIfPresent(join(dir, 'missing.env'))).toBe(false)
+    expect(loadEnvFileIfPresent(file)).toBe(true)
+    expect(process.env.MANAGER_APIS_TEST_FROM_FILE).toBe('file')
+    expect(process.env.MANAGER_APIS_TEST_PRESET).toBe('environment')
+    delete process.env.MANAGER_APIS_TEST_FROM_FILE
+    delete process.env.MANAGER_APIS_TEST_PRESET
   })
 })

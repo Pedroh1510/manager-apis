@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import type { Server } from 'node:http'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -31,5 +32,19 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
   return { close: () => new Promise((resolve) => server.close(() => resolve())) }
 }
 
+/**
+ * Local dev reads manager-apis/.env (tsx does not); the container has no .env and uses its runtime env.
+ * Variables already set in the environment win over the file.
+ * @example loadEnvFileIfPresent('.env')
+ */
+export function loadEnvFileIfPresent(path: string): boolean {
+  if (!existsSync(path)) return false
+  process.loadEnvFile(path)
+  return true
+}
+
 const isEntryPoint = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
-if (isEntryPoint) await startServer(process.env)
+if (isEntryPoint) {
+  loadEnvFileIfPresent('.env')
+  await startServer(process.env)
+}
