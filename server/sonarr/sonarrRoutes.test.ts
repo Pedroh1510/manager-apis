@@ -69,7 +69,9 @@ describe('sonarr routes', () => {
       expect(res.status, id).toBe(400)
       expect(JSON.parse(res.body)).toEqual({ error: `id de série inválido: "${id}", esperado inteiro positivo` })
     }
-    expect((await get('/api/sonarr/series/abc/poster')).status).toBe(400)
+    const poster = await get('/api/sonarr/series/abc/poster')
+    expect(poster.status).toBe(400)
+    expect(JSON.parse(poster.body)).toEqual({ error: 'id de série inválido: "abc", esperado inteiro positivo' })
     expect(gateway.calls).toEqual([])
   })
 

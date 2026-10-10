@@ -108,15 +108,16 @@ describe('FetchSonarrGateway', () => {
   it('timeout, refused connection and 5xx become unavailable errors', async () => {
     const slow = await gatewayFor({ delayMs: 200 }, 50)
     const url = sonarr!.url
-    await expect(slow.readStatus()).rejects.toThrow(`Sonarr indisponível em ${url}:`)
+    const startsUnavailable = (base: string) => new RegExp(`^Sonarr indisponível em ${base.replace(/[.]/g, '\\.')}: `)
+    await expect(slow.readStatus()).rejects.toThrow(startsUnavailable(url))
     await sonarr!.close()
     sonarr = undefined
 
     const refused = new FetchSonarrGateway({ url, apiKey: API_KEY }, 50)
-    await expect(refused.listSeries()).rejects.toThrow(`Sonarr indisponível em ${url}:`)
+    await expect(refused.listSeries()).rejects.toThrow(startsUnavailable(url))
 
     const broken = await gatewayFor({ failStatus: 500 })
-    await expect(broken.listSeries()).rejects.toThrow(`Sonarr indisponível em ${sonarr!.url}:`)
+    await expect(broken.listSeries()).rejects.toThrow(startsUnavailable(sonarr!.url))
     await expect(broken.getSeriesDetail(1)).rejects.toBeInstanceOf(SonarrGatewayError)
   })
 

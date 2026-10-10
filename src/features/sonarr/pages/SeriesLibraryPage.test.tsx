@@ -34,6 +34,7 @@ describe('SeriesLibraryPage', () => {
     expect(within(links[0]).getByRole('img')).toHaveAttribute('src', '/api/sonarr/series/2/poster')
     expect(within(links[0]).getByText('2021')).toBeInTheDocument()
     expect(within(links[0]).getByText('10/12 episódios')).toBeInTheDocument()
+    expect(within(links[1]).getByRole('img')).toHaveAttribute('src', '/api/sonarr/series/1/poster')
     expect(within(links[1]).getByText('The Wire')).toBeInTheDocument()
     expect(within(links[1]).getByText('2002')).toBeInTheDocument()
     expect(within(links[1]).getByText('60/60 episódios')).toBeInTheDocument()
