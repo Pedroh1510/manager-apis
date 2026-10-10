@@ -8,6 +8,8 @@ import { MangasListPage } from './features/mangas/pages/MangasPage'
 import { MangaDetailPage } from './features/mangas/pages/MangaDetailPage'
 import { QueuesPage } from './features/queues/pages/QueuesPage'
 import { TorrentsPage } from './features/torrents/pages/TorrentsPage'
+import { SeriesLibraryPage } from './features/sonarr/pages/SeriesLibraryPage'
+import { SeriesDetailPage } from './features/sonarr/pages/SeriesDetailPage'
 
 export const routes: RouteObject[] = [
   {
@@ -18,6 +20,8 @@ export const routes: RouteObject[] = [
       { path: 'status', element: <GlobalStatusPage /> },
       { path: 'filas', element: <QueuesPage /> },
       { path: 'torrents', element: <TorrentsPage /> },
+      { path: 'sonarr', element: <SeriesLibraryPage /> },
+      { path: 'sonarr/:seriesId', element: <SeriesDetailPage /> },
       { path: 'anime-rss/rss', element: <RSSQueryPage /> },
       { path: 'anime-rss/admin', element: <AnimeRssAdminPage /> },
       { path: 'mangas/admin', element: <MangasAdminPage /> },

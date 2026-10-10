@@ -2,7 +2,10 @@
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
 import { describe, expect, it } from 'vitest'
-import { startServer } from './index.js'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { loadEnvFileIfPresent, startServer } from './index.js'
 
 async function freePort(): Promise<number> {
   const probe = createServer()
@@ -28,7 +31,7 @@ describe('startServer', () => {
     expect(lines).toHaveLength(1)
     const boot = JSON.parse(lines[0])
     expect(boot.port).toBe(port)
-    expect(boot.integrations).toEqual({ qbittorrent: true })
+    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false })
     expect(lines[0]).not.toContain('bob-user')
     expect(lines[0]).not.toContain('s3cr3t-pass')
   })
@@ -39,5 +42,29 @@ describe('startServer', () => {
     const res = await fetch(`http://127.0.0.1:${port}/api/health`)
     await running.close()
     expect(res.status).toBe(200)
+  })
+
+  it('boot line reports sonarr without the api key', async () => {
+    const port = await freePort()
+    const lines: string[] = []
+    const running = await startServer({ PORT: String(port), SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }, (line) => lines.push(line))
+    await running.close()
+
+    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true })
+    expect(lines[0]).not.toContain('k3y-abc')
+  })
+
+  it('loads a local .env only when the file exists, without overriding the environment', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'manager-apis-env-'))
+    const file = join(dir, '.env')
+    writeFileSync(file, 'MANAGER_APIS_TEST_FROM_FILE=file\nMANAGER_APIS_TEST_PRESET=file\n')
+    process.env.MANAGER_APIS_TEST_PRESET = 'environment'
+
+    expect(loadEnvFileIfPresent(join(dir, 'missing.env'))).toBe(false)
+    expect(loadEnvFileIfPresent(file)).toBe(true)
+    expect(process.env.MANAGER_APIS_TEST_FROM_FILE).toBe('file')
+    expect(process.env.MANAGER_APIS_TEST_PRESET).toBe('environment')
+    delete process.env.MANAGER_APIS_TEST_FROM_FILE
+    delete process.env.MANAGER_APIS_TEST_PRESET
   })
 })

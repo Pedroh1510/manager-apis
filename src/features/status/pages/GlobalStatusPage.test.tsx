@@ -7,6 +7,7 @@ import * as queuesApi from '../../queues/services/api'
 import * as statusApi from '../services/api'
 import * as configApi from '../../server-config/services/api'
 import * as torrentsApi from '../../torrents/services/api'
+import * as sonarrApi from '../../sonarr/services/api'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 import { queue } from '../../queues/test/fixtures'
 
@@ -16,6 +17,7 @@ vi.mock('../../queues/services/api')
 vi.mock('../services/api')
 vi.mock('../../server-config/services/api')
 vi.mock('../../torrents/services/api')
+vi.mock('../../sonarr/services/api')
 
 const loading = { isLoading: true, isSuccess: false, isError: false, data: undefined, error: null }
 const online = { isLoading: false, isSuccess: true, isError: false, data: undefined, error: null }
@@ -27,7 +29,7 @@ beforeEach(() => {
   vi.mocked(queuesApi.fetchMangasQueuesSummary).mockResolvedValue([queue('download')])
   vi.mocked(queuesApi.fetchRssQueuesSummary).mockResolvedValue([queue('Scan process')])
   vi.mocked(statusApi.fetchPendingMigrations).mockResolvedValue([])
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
 })
 
 const section = (name: string) => screen.getByRole('heading', { name, level: 2 }).closest('section') as HTMLElement
@@ -66,7 +68,7 @@ describe('GlobalStatusPage', () => {
   it('counts qbittorrent in the summary only when configured', async () => {
     vi.mocked(animeHooks.useAnimeStatus).mockReturnValue(online as ReturnType<typeof animeHooks.useAnimeStatus>)
     vi.mocked(mangasHooks.useMangasStatus).mockReturnValue(online as ReturnType<typeof mangasHooks.useMangasStatus>)
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false })
     vi.mocked(torrentsApi.fetchQbittorrentStatus).mockRejectedValue({
       isAxiosError: true, response: { status: 502, data: { error: 'qBittorrent indisponível em http://qbit:8080: timeout' } }, message: 'x',
     })
@@ -74,9 +76,26 @@ describe('GlobalStatusPage', () => {
     expect(await screen.findByText('1 sistema(s) com problema')).toBeInTheDocument()
     configured.unmount()
 
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
     renderWithProviders(<GlobalStatusPage />)
     expect(await within(section('qBittorrent')).findByText('Não configurado')).toBeInTheDocument()
+    expect(screen.getByText('Todos os sistemas operacionais')).toBeInTheDocument()
+  })
+
+  it('counts sonarr in the summary only when configured', async () => {
+    vi.mocked(animeHooks.useAnimeStatus).mockReturnValue(online as ReturnType<typeof animeHooks.useAnimeStatus>)
+    vi.mocked(mangasHooks.useMangasStatus).mockReturnValue(online as ReturnType<typeof mangasHooks.useMangasStatus>)
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true })
+    vi.mocked(sonarrApi.fetchSonarrStatus).mockRejectedValue({
+      isAxiosError: true, response: { status: 502, data: { error: 'Sonarr indisponível em http://sonarr:8989: timeout' } }, message: 'x',
+    })
+    const configured = renderWithProviders(<GlobalStatusPage />)
+    expect(await screen.findByText('1 sistema(s) com problema')).toBeInTheDocument()
+    configured.unmount()
+
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
+    renderWithProviders(<GlobalStatusPage />)
+    expect(await within(section('Sonarr')).findByText('Não configurado')).toBeInTheDocument()
     expect(screen.getByText('Todos os sistemas operacionais')).toBeInTheDocument()
   })
 })

@@ -14,7 +14,7 @@ afterEach(async () => {
 
 async function appAgainst(webUi: FakeQbittorrentWebUi, timeoutMs?: number): Promise<TestApp> {
   const gateway = new CtrlQbittorrentGateway({ url: webUi.url, username: 'bob-user', password: PASSWORD }, timeoutMs)
-  const app = await startTestApp(gateway)
+  const app = await startTestApp({ qbittorrent: gateway })
   opened.push(webUi, app)
   return app
 }
