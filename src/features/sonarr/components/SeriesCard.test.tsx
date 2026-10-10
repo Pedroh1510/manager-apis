@@ -5,7 +5,7 @@ import type { SeriesSummary } from '../services/types'
 import { renderWithProviders } from '../../../test/renderWithProviders'
 
 function series(overrides: Partial<SeriesSummary>): SeriesSummary {
-  return { id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60, ...overrides }
+  return { id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60, added: '', ...overrides }
 }
 
 describe('SeriesCard', () => {

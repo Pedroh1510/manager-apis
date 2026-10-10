@@ -144,4 +144,12 @@ describe('SeriesDetailPage', () => {
     renderDetail()
     expect(await screen.findByText('Sonarr indisponível em http://sonarr:8989: timeout')).toBeInTheDocument()
   })
+
+  it('keeps the detail poster at a fixed thumbnail width', async () => {
+    vi.mocked(api.fetchSeriesDetail).mockResolvedValue(wire)
+    renderDetail()
+    const poster = await screen.findByRole('img', { name: 'Pôster de The Wire' })
+    expect(poster).toHaveClass('w-32')
+    expect(poster).not.toHaveClass('w-full')
+  })
 })

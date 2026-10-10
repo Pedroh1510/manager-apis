@@ -58,7 +58,7 @@ describe('FetchSonarrGateway', () => {
     const gateway = await gatewayFor({
       series: [
         series({ id: 1, title: 'The Wire', sortTitle: 'wire' }),
-        series({ id: 2, title: 'Ação Total', sortTitle: 'acao total', alternateTitles: [{ title: 'Action Total' }] }),
+        series({ id: 2, title: 'Ação Total', sortTitle: 'acao total', alternateTitles: [{ title: 'Action Total' }], added: '2024-03-01T10:00:00Z' }),
         series({ id: 3, title: 'Zorro', sortTitle: 'zorro', alternateTitles: undefined }),
       ],
     })
@@ -67,8 +67,9 @@ describe('FetchSonarrGateway', () => {
     expect(list.map((item) => item.title)).toEqual(['Ação Total', 'The Wire', 'Zorro'])
     expect(list[0].alternateTitles).toEqual(['Action Total'])
     expect(list[2].alternateTitles).toEqual([])
+    expect(list[0].added).toBe('2024-03-01T10:00:00Z')
     expect(Object.keys(list[1]).sort()).toEqual(
-      ['alternateTitles', 'episodeCount', 'episodeFileCount', 'id', 'network', 'status', 'title', 'year'],
+      ['added', 'alternateTitles', 'episodeCount', 'episodeFileCount', 'id', 'network', 'status', 'title', 'year'],
     )
   })
 

@@ -11,10 +11,10 @@ vi.mock('../services/api', async (importOriginal) => ({
 }))
 
 const acao: SeriesSummary = {
-  id: 2, title: 'Ação Total', alternateTitles: ['Action Total'], year: 2021, status: 'continuing', network: 'X', episodeFileCount: 10, episodeCount: 12,
+  id: 2, title: 'Ação Total', alternateTitles: ['Action Total'], year: 2021, status: 'continuing', network: 'X', episodeFileCount: 10, episodeCount: 12, added: '2024-03-01T10:00:00Z',
 }
 const wire: SeriesSummary = {
-  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60,
+  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60, added: '2020-01-01T10:00:00Z',
 }
 const httpError = (status: number, error: string) => ({ isAxiosError: true, response: { status, data: { error } }, message: 'x' })
 const cards = () => screen.queryAllByRole('link').filter((link) => link.getAttribute('href')?.startsWith('/sonarr/'))
@@ -85,5 +85,66 @@ describe('SeriesLibraryPage', () => {
     vi.mocked(api.fetchSeriesList).mockRejectedValue(httpError(503, 'Sonarr não configurado (SONARR_URL ausente)'))
     renderWithProviders(<SeriesLibraryPage />)
     expect(await screen.findByText('Sonarr não configurado')).toBeInTheDocument()
+  })
+
+  describe('status filter and sort', () => {
+    const lost: SeriesSummary = { ...wire, id: 3, title: 'Lost', status: 'continuing', year: 2010, episodeFileCount: 1, episodeCount: 20, added: '2022-01-01T00:00:00Z' }
+    const soon: SeriesSummary = { ...wire, id: 4, title: 'Soon', status: 'upcoming', year: 2027, episodeFileCount: 0, episodeCount: 0, added: '2023-01-01T00:00:00Z' }
+    const library = [acao, lost, soon, wire]
+    const titles = () => cards().map((link) => within(link).getByText(/^(Ação Total|Lost|Soon|The Wire)$/).textContent)
+    const statusButton = (name: RegExp) => screen.getByRole('button', { name })
+
+    it('shows status filters with counts', async () => {
+      vi.mocked(api.fetchSeriesList).mockResolvedValue(library)
+      renderWithProviders(<SeriesLibraryPage />)
+      await screen.findByText('Lost')
+
+      const group = screen.getByRole('group', { name: 'Status' })
+      expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Todas (4)', 'Continuando (2)', 'Encerrada (1)', 'Em breve (1)'])
+      expect(statusButton(/^Todas/)).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('filters by status combined with name and reads it from the url', async () => {
+      vi.mocked(api.fetchSeriesList).mockResolvedValue(library)
+      const first = renderWithProviders(<SeriesLibraryPage />)
+      await screen.findByText('Lost')
+
+      fireEvent.click(statusButton(/^Continuando/))
+      expect(titles()).toEqual(['Ação Total', 'Lost'])
+      expect(screen.getByTestId('location')).toHaveTextContent('status=continuing')
+      fireEvent.change(screen.getByRole('textbox', { name: 'Filtrar por nome' }), { target: { value: 'lost' } })
+      expect(titles()).toEqual(['Lost'])
+      first.unmount()
+
+      const ended = renderWithProviders(<SeriesLibraryPage />, { route: '/sonarr?status=ended' })
+      await screen.findByText('The Wire')
+      expect(statusButton(/^Encerrada/)).toHaveAttribute('aria-pressed', 'true')
+      expect(titles()).toEqual(['The Wire'])
+      ended.unmount()
+
+      renderWithProviders(<SeriesLibraryPage />, { route: '/sonarr?status=xyz' })
+      await screen.findByText('Lost')
+      expect(statusButton(/^Todas/)).toHaveAttribute('aria-pressed', 'true')
+      expect(cards()).toHaveLength(4)
+    })
+
+    it('sorts the grid and keeps the sort in the url', async () => {
+      vi.mocked(api.fetchSeriesList).mockResolvedValue(library)
+      const first = renderWithProviders(<SeriesLibraryPage />)
+      await screen.findByText('Lost')
+      const select = screen.getByRole('combobox', { name: 'Ordenar por' })
+
+      fireEvent.change(select, { target: { value: 'missing' } })
+      expect(titles()).toEqual(['Lost', 'Ação Total', 'Soon', 'The Wire'])
+      expect(screen.getByTestId('location')).toHaveTextContent('sort=missing')
+      fireEvent.change(select, { target: { value: 'title' } })
+      expect(screen.getByTestId('location')).not.toHaveTextContent('sort=')
+      first.unmount()
+
+      renderWithProviders(<SeriesLibraryPage />, { route: '/sonarr?sort=year' })
+      await screen.findByText('Lost')
+      expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveValue('year')
+      expect(titles()).toEqual(['Soon', 'Ação Total', 'Lost', 'The Wire'])
+    })
   })
 })

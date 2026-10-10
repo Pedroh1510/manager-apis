@@ -23,7 +23,7 @@ async function withSonarr(data: FakeSonarrData = {}): Promise<FakeSonarrGateway>
 }
 
 const wire: SeriesSummary = {
-  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60,
+  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', episodeFileCount: 60, episodeCount: 60, added: '',
 }
 const wireDetail: SeriesDetail = {
   id: 1, title: 'The Wire', year: 2002, status: 'ended', network: 'HBO', overview: 'Baltimore.', sizeOnDisk: 1,

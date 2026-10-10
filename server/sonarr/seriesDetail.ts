@@ -8,6 +8,8 @@ export interface RawSeries {
   status: string
   network?: string
   overview?: string
+  /** ISO date the series was added to Sonarr */
+  added?: string
   statistics?: { episodeFileCount: number; episodeCount: number; sizeOnDisk: number }
   seasons: { seasonNumber: number; statistics?: { episodeFileCount: number; episodeCount: number } }[]
 }
@@ -34,6 +36,8 @@ export interface SeriesSummary {
   network: string
   episodeFileCount: number
   episodeCount: number
+  /** ISO date; empty when Sonarr omits it */
+  added: string
 }
 
 export interface EpisodeDetail {
@@ -52,7 +56,7 @@ export interface SeasonDetail {
   episodes: EpisodeDetail[]
 }
 
-export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles'> {
+export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles' | 'added'> {
   overview: string
   sizeOnDisk: number
   seasons: SeasonDetail[]
@@ -83,6 +87,7 @@ export function toSeriesSummary(series: RawSeries): SeriesSummary {
     network: series.network ?? '',
     episodeFileCount: series.statistics?.episodeFileCount ?? 0,
     episodeCount: series.statistics?.episodeCount ?? 0,
+    added: series.added ?? '',
   }
 }
 
