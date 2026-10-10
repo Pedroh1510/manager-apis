@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseServerConfig } from './config.js'
 
+const sonarrEnv = { SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }
 const qbitEnv = { QBITTORRENT_URL: 'http://qbit:8080', QBITTORRENT_USER: 'bob-user', QBITTORRENT_PASS: 's3cr3t-pass' }
 
 describe('parseServerConfig', () => {
@@ -37,5 +38,22 @@ describe('parseServerConfig', () => {
       username: 'bob-user',
       password: 's3cr3t-pass',
     })
+  })
+
+  it('enables sonarr with url and api key', () => {
+    expect(parseServerConfig({}).sonarr).toBeNull()
+    expect(parseServerConfig(sonarrEnv).sonarr).toEqual({ url: 'http://sonarr:8989', apiKey: 'k3y-abc' })
+  })
+
+  it('rejects malformed SONARR_URL with the received value', () => {
+    for (const value of ['sonarr:8989', 'ftp://sonarr']) {
+      const env = { ...sonarrEnv, SONARR_URL: value }
+      expect(() => parseServerConfig(env)).toThrow(value)
+      expect(() => parseServerConfig(env)).toThrow('esperado http(s)://host:porta')
+    }
+  })
+
+  it('requires SONARR_API_KEY when url is set', () => {
+    expect(() => parseServerConfig({ ...sonarrEnv, SONARR_API_KEY: undefined })).toThrow('SONARR_API_KEY')
   })
 })
