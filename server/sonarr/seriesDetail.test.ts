@@ -11,7 +11,7 @@ function episode(overrides: Partial<RawEpisode>): RawEpisode {
 const series: RawSeries = {
   id: 1, title: 'The Wire', sortTitle: 'wire', year: 2002, status: 'ended', network: 'HBO', overview: 'Baltimore.',
   statistics: { episodeFileCount: 4, episodeCount: 5, sizeOnDisk: 100 },
-  seasons: [0, 1, 3, 2].map((seasonNumber) => ({ seasonNumber, statistics: { episodeFileCount: 1, episodeCount: 2 } })),
+  seasons: [0, 1, 3, 2].map((seasonNumber) => ({ seasonNumber, monitored: seasonNumber !== 0, statistics: { episodeFileCount: 1, episodeCount: 2 } })),
 }
 
 describe('deriveEpisodeState', () => {
@@ -47,8 +47,9 @@ describe('buildSeriesDetail', () => {
       sizeOnDisk: 100, episodeFileCount: 4, episodeCount: 5,
     })
     expect(detail.seasons.find((s) => s.seasonNumber === 2)).toEqual({
-      seasonNumber: 2, episodeFileCount: 1, episodeCount: 2,
+      seasonNumber: 2, monitored: true, episodeFileCount: 1, episodeCount: 2,
       episodes: [{ id: 9, episodeNumber: 4, title: 'Final', airDateUtc: '2020-01-01T00:00:00Z', state: 'downloaded', monitored: true }],
     })
+    expect(detail.seasons.find((s) => s.seasonNumber === 0)?.monitored).toBe(false)
   })
 })
