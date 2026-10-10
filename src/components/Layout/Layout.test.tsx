@@ -1,4 +1,4 @@
-import { render as rtlRender, screen, fireEvent, cleanup } from '@testing-library/react'
+import { render as rtlRender, screen, fireEvent, cleanup, within } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
@@ -131,8 +131,9 @@ describe('Layout', () => {
     )
     const series = await screen.findByRole('link', { name: 'Séries' })
     expect(series).toHaveAttribute('href', '/sonarr')
-    const hrefs = screen.getAllByRole('link').map((link) => link.getAttribute('href'))
-    expect(hrefs.indexOf('/sonarr')).toBeLessThan(hrefs.indexOf('/torrents'))
+    const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
+    const mediaHrefs = within(mediaSection).getAllByRole('link').map((link) => link.getAttribute('href'))
+    expect(mediaHrefs).toEqual(['/sonarr', '/torrents'])
   })
 
   it('hides Séries unless sonarr is configured and drops an empty media section', async () => {
