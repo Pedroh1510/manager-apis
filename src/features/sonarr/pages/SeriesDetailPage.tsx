@@ -27,7 +27,7 @@ function SeriesNotFound() {
 function SeriesHeader({ series }: { series: SeriesDetail }) {
 	return (
 		<header className='flex gap-5'>
-			<SeriesPoster seriesId={series.id} title={series.title} className='w-36 shrink-0' />
+			<SeriesPoster seriesId={series.id} title={series.title} className='w-32 shrink-0 self-start' />
 			<div className='min-w-0 space-y-2'>
 				<h1 className='text-xl font-semibold tracking-tight text-text'>{series.title}</h1>
 				<p className='flex flex-wrap items-center gap-2 text-sm text-text-muted'>

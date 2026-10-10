@@ -12,6 +12,8 @@ export interface SeriesSummary {
 	episodeFileCount: number;
 	/** monitored episodes that already aired */
 	episodeCount: number;
+	/** ISO date the series was added to Sonarr; empty when unknown */
+	added: string;
 }
 
 export interface EpisodeDetail {
@@ -31,7 +33,7 @@ export interface SeasonDetail {
 }
 
 /** `GET /api/sonarr/series/:id` */
-export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles'> {
+export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles' | 'added'> {
 	overview: string;
 	sizeOnDisk: number;
 	seasons: SeasonDetail[];

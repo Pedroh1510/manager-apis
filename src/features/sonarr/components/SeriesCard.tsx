@@ -14,7 +14,7 @@ export function SeriesCard({ series }: { series: SeriesSummary }) {
 			to={`/sonarr/${series.id}`}
 			className={`group flex flex-col gap-2 rounded-lg p-1.5 transition-colors hover:bg-surface-raised ${FOCUS_RING}`}
 		>
-			<SeriesPoster seriesId={series.id} title={series.title} className='transition-transform group-hover:-translate-y-0.5' />
+			<SeriesPoster seriesId={series.id} title={series.title} className='w-full transition-transform group-hover:-translate-y-0.5' />
 			<div className='space-y-1 px-0.5'>
 				<p className='truncate text-sm font-medium text-text'>{series.title}</p>
 				<p className='flex items-center justify-between gap-2 text-xs text-text-muted'>
