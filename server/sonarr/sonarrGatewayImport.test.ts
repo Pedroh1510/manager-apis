@@ -108,13 +108,15 @@ describe('FetchSonarrGateway manual import', () => {
   })
 
   it('reads a command state and maps a missing command', async () => {
-    const gateway = await gatewayFor({ commands: { 392: { status: 'completed', result: 'successful', message: 'Manually imported 1 files' } } })
+    let gateway = await gatewayFor({ commands: { 392: { status: 'completed', result: 'successful', message: 'Manually imported 1 files' } } })
     expect(await gateway.readCommand(392)).toEqual({ state: 'completed', message: 'Manually imported 1 files' })
     expect(sonarr!.requests[0].url).toBe('/api/v3/command/392')
+    await sonarr!.close()
 
-    const missing = gateway.readCommand(7)
+    gateway = await gatewayFor({ commands: {} })
+    const missing = gateway.readCommand(392)
     await expect(missing).rejects.toThrow(SonarrCommandNotFoundError)
-    await expect(missing).rejects.toThrow('comando 7 não encontrado no Sonarr')
+    await expect(missing).rejects.toThrow('comando 392 não encontrado no Sonarr')
   })
 
   it('an upstream 500 on the queue becomes a gateway error', async () => {

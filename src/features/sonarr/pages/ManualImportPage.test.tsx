@@ -74,7 +74,7 @@ describe('ManualImportPage', () => {
     renderPage()
     const first = (await screen.findByRole('button', { name: 'Importar Severance.S02.1080p' })).closest('li') as HTMLElement
     expect(first).toHaveTextContent('Severance.S02.1080p')
-    expect(first).toHaveTextContent('Severance')
+    expect(within(first).getByText('Severance', { exact: true })).toBeInTheDocument()
     expect(first).toHaveTextContent('Unknown episode')
     const second = screen.getByRole('button', { name: 'Importar random pack' }).closest('li') as HTMLElement
     expect(second).toHaveTextContent('Série não reconhecida')
@@ -120,9 +120,8 @@ describe('ManualImportPage', () => {
 
   it('episodes picker lists the series episodes by season', async () => {
     const drawer = await openD1()
-    expect(rowOf(drawer, 'Severance.S02E03.mkv')).toHaveTextContent('S02E03')
-    const other = rowOf(drawer, 'random name 07.mkv')
-    expect(other).toHaveTextContent('Nenhum')
+    expect(within(rowOf(drawer, 'Severance.S02E03.mkv')).getByText('S02E03', { exact: true })).toBeInTheDocument()
+    expect(within(rowOf(drawer, 'random name 07.mkv')).getByText('Nenhum', { exact: true })).toBeInTheDocument()
 
     const select = within(drawer).getByRole('combobox', { name: 'Série de random name 07.mkv' })
     await within(select).findByRole('option', { name: 'Severance' })
@@ -132,7 +131,7 @@ describe('ManualImportPage', () => {
     expect(within(picker).getAllByRole('heading').map((heading) => heading.textContent)).toEqual(['Temporada 2', 'Temporada 1'])
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E07 — Chikhai Bardo' }))
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E08 — Sweet Vitriol' }))
-    expect(rowOf(drawer, 'random name 07.mkv')).toHaveTextContent('S02E07, S02E08')
+    expect(within(rowOf(drawer, 'random name 07.mkv')).getByText('S02E07, S02E08', { exact: true })).toBeInTheDocument()
     expect(api.fetchSeriesDetail).toHaveBeenCalledWith(2)
   })
 
@@ -141,7 +140,7 @@ describe('ManualImportPage', () => {
     const select = within(drawer).getByRole('combobox', { name: 'Série de Severance.S02E03.mkv' })
     await within(select).findByRole('option', { name: 'The Wire' })
     fireEvent.change(select, { target: { value: '1' } })
-    expect(rowOf(drawer, 'Severance.S02E03.mkv')).toHaveTextContent('Nenhum')
+    expect(within(rowOf(drawer, 'Severance.S02E03.mkv')).getByText('Nenhum', { exact: true })).toBeInTheDocument()
   })
 
   it('import button counts checked files and needs complete rows', async () => {
@@ -175,7 +174,7 @@ describe('ManualImportPage', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     fireEvent.click(within(drawer).getByRole('button', { name: 'Importar (1)' }))
     await act(() => vi.advanceTimersByTimeAsync(2000))
-    expect(await screen.findByText('Manually imported 1 files')).toBeInTheDocument()
+    expect(await screen.findByRole('status', { name: '' })).toHaveTextContent('Manually imported 1 files')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await waitFor(() => expect(api.fetchStuckDownloads).toHaveBeenCalledTimes(2))
 
