@@ -1,4 +1,4 @@
-import type { EpisodeState } from '../services/types';
+import type { EpisodeState, MissingEpisode } from '../services/types';
 
 const BYTES_PER_MIB = 1024 ** 2;
 const BYTES_PER_GIB = 1024 ** 3;
@@ -26,6 +26,14 @@ export function formatBytes(bytes: number): string {
 export function formatEpisodeCode(seasonNumber: number, episodeNumber: number): string {
 	const pad = (n: number) => String(n).padStart(2, '0');
 	return `S${pad(seasonNumber)}E${pad(episodeNumber)}`;
+}
+
+/**
+ * Names a missing episode across series, e.g. in button labels.
+ * @example missingSubject(wireFinale) // 'The Wire S05E10'
+ */
+export function missingSubject(episode: MissingEpisode): string {
+	return `${episode.seriesTitle} ${formatEpisodeCode(episode.seasonNumber, episode.episodeNumber)}`;
 }
 
 /** Unknown Sonarr values pass through so a new status is visible rather than hidden. */
