@@ -66,3 +66,53 @@ export interface ReleaseSummary {
 
 /** One episode, or one season of a series. */
 export type ReleaseQuery = { episodeId: number } | { seriesId: number; seasonNumber: number };
+
+/** `GET /api/sonarr/lookup` item; `seriesId` is set when the series is already in the library */
+export interface SeriesLookupResult {
+	tvdbId: number;
+	title: string;
+	year: number;
+	network: string | null;
+	overview: string | null;
+	genres: string[];
+	remotePoster: string | null;
+	seriesId: number | null;
+}
+
+export type SeriesType = 'standard' | 'anime' | 'daily';
+
+export type MonitorOption = 'all' | 'future' | 'none' | 'firstSeason' | 'lastSeason';
+
+/** `GET /api/sonarr/add-options` */
+export interface AddOptions {
+	qualityProfiles: { id: number; name: string }[];
+	rootFolders: { path: string; freeSpace: number }[];
+}
+
+/** `POST /api/sonarr/series` body */
+export interface AddSeriesInput {
+	tvdbId: number;
+	qualityProfileId: number;
+	rootFolderPath: string;
+	seriesType: SeriesType;
+	monitor: MonitorOption;
+	searchForMissingEpisodes: boolean;
+}
+
+export interface MissingEpisode {
+	episodeId: number;
+	seriesId: number;
+	seriesTitle: string;
+	seasonNumber: number;
+	episodeNumber: number;
+	title: string;
+	airDateUtc: string | null;
+}
+
+/** `GET /api/sonarr/missing` */
+export interface MissingPage {
+	page: number;
+	pageSize: number;
+	totalRecords: number;
+	records: MissingEpisode[];
+}

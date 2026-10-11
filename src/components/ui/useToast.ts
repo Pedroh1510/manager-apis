@@ -1,7 +1,14 @@
 import { createContext, useContext } from 'react';
 
+/** A link inside a toast; `onFollow` lets a page navigate in-app (the provider sits outside the router). */
+export interface ToastAction {
+	label: string;
+	href: string;
+	onFollow?: (href: string) => void;
+}
+
 export interface ToastApi {
-	success: (text: string) => void;
+	success: (text: string, action?: ToastAction) => void;
 	error: (text: string) => void;
 }
 
