@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { episodeStateLabel, formatAge, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, seriesStatusLabel } from './formatSeries';
+import { episodeStateLabel, formatAge, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, missingSubject, seriesStatusLabel } from './formatSeries';
 
 describe('formatSeries', () => {
 	it('formats bytes in GB from 1 GiB and MB below', () => {
@@ -32,5 +32,10 @@ describe('formatSeries', () => {
 		expect(formatAge(47.9)).toBe('47h');
 		expect(formatAge(48)).toBe('2d');
 		expect(formatAge(100)).toBe('4d');
+	});
+
+	it('names a missing episode with its series', () => {
+		const episode = { episodeId: 60, seriesId: 1, seriesTitle: 'The Wire', seasonNumber: 5, episodeNumber: 10, title: '-30-', airDateUtc: null };
+		expect(missingSubject(episode)).toBe('The Wire S05E10');
 	});
 });

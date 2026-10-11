@@ -1,4 +1,5 @@
 import type { SonarrConfig } from '../config.js'
+import { MISSING_PAGE_SIZE, toMissingPage, type MissingPage, type RawMissingPage } from './missingEpisodes.js'
 import { orderReleases, toReleaseSummary, type RawRelease, type ReleaseQuery, type ReleaseSummary } from './releases.js'
 import {
   buildSeriesDetail,
@@ -8,6 +9,14 @@ import {
   type SeriesDetail,
   type SeriesSummary,
 } from './seriesDetail.js'
+import {
+  buildAddSeriesBody,
+  toLookupResult,
+  type AddOptions,
+  type AddSeriesInput,
+  type RawLookupSeries,
+  type SeriesLookupResult,
+} from './seriesLookup.js'
 
 export interface SonarrHealthItem {
   type: string
@@ -38,6 +47,13 @@ export interface SonarrGateway {
   searchSeason(seriesId: number, seasonNumber: number): Promise<void>
   listReleases(query: ReleaseQuery): Promise<ReleaseSummary[]>
   grabRelease(guid: string, indexerId: number): Promise<void>
+  lookupSeries(term: string): Promise<SeriesLookupResult[]>
+  readAddOptions(): Promise<AddOptions>
+  /** Resolves to the id Sonarr gave the new series. */
+  addSeries(input: AddSeriesInput): Promise<number>
+  listMissing(page: number): Promise<MissingPage>
+  searchEpisodes(episodeIds: number[]): Promise<void>
+  searchAllMissing(): Promise<void>
 }
 
 /** Any Sonarr failure, with a message safe to return to the browser (502). */
@@ -64,11 +80,47 @@ export class SonarrReleaseExpiredError extends Error {
   }
 }
 
+/** The tvdb id is unknown to Sonarr's lookup, so there is nothing to add (404). */
+export class SonarrLookupNotFoundError extends Error {
+  constructor(tvdbId: number) {
+    super(`série tvdb ${tvdbId} não encontrada no Sonarr`)
+  }
+}
+
+/** Sonarr's SeriesExistsValidator refused the add (409). */
+export class SonarrSeriesExistsError extends Error {
+  constructor(tvdbId: number) {
+    super(`série ${tvdbId} já está na biblioteca`)
+  }
+}
+
+/** Sonarr refused the add for a reason the admin can fix, e.g. a bad root folder (422). */
+export class SonarrRejectedError extends Error {
+  constructor(messages: string[]) {
+    super(`Sonarr recusou: ${messages.join('; ')}`)
+  }
+}
+
+interface SonarrValidationFailure {
+  errorCode?: string
+  errorMessage?: string
+}
+
+const SERIES_EXISTS_CODE = 'SeriesExistsValidator'
+
+/** Turns Sonarr's 400 validation list into the error the routes map (door 2). */
+function toAddSeriesError(tvdbId: number, failures: unknown): Error {
+  const list: SonarrValidationFailure[] = Array.isArray(failures) ? failures : []
+  if (list.some((failure) => failure.errorCode === SERIES_EXISTS_CODE)) return new SonarrSeriesExistsError(tvdbId)
+  return new SonarrRejectedError(list.map((failure) => failure.errorMessage ?? JSON.stringify(failure)))
+}
+
 export const SONARR_TIMEOUT_MS = 10000
 export const SONARR_RELEASE_TIMEOUT_MS = 90000
 
 const HTTP_UNAUTHORIZED = 401
 const HTTP_NOT_FOUND = 404
+const HTTP_BAD_REQUEST = 400
 
 type Clock = () => Date
 
@@ -77,6 +129,8 @@ interface RequestOptions {
   body?: unknown
   timeoutMs?: number
   notFound?: () => Error
+  /** Marks calls where a 400 carries Sonarr validation errors the admin can act on. */
+  badRequest?: (body: unknown) => Error
 }
 
 /**
@@ -146,7 +200,7 @@ export class FetchSonarrGateway implements SonarrGateway {
   }
 
   async searchEpisode(episodeId: number): Promise<void> {
-    await this.request('/command', { method: 'POST', body: { name: 'EpisodeSearch', episodeIds: [episodeId] } })
+    await this.searchEpisodes([episodeId])
   }
 
   async searchSeason(seriesId: number, seasonNumber: number): Promise<void> {
@@ -163,6 +217,46 @@ export class FetchSonarrGateway implements SonarrGateway {
     await this.request('/release', { method: 'POST', body: { guid, indexerId }, notFound: () => new SonarrReleaseExpiredError() })
   }
 
+  async lookupSeries(term: string): Promise<SeriesLookupResult[]> {
+    const series = await this.getJson<RawLookupSeries[]>(`/series/lookup?${new URLSearchParams({ term })}`)
+    return series.map(toLookupResult)
+  }
+
+  async readAddOptions(): Promise<AddOptions> {
+    const [profiles, rootFolders] = await Promise.all([
+      this.getJson<{ id: number; name: string }[]>('/qualityprofile'),
+      this.getJson<{ path: string; freeSpace: number }[]>('/rootfolder'),
+    ])
+    return {
+      qualityProfiles: profiles.map(({ id, name }) => ({ id, name })),
+      rootFolders: rootFolders.map(({ path, freeSpace }) => ({ path, freeSpace })),
+    }
+  }
+
+  async addSeries(input: AddSeriesInput): Promise<number> {
+    const [series] = await this.getJson<RawLookupSeries[]>(`/series/lookup?${new URLSearchParams({ term: `tvdb:${input.tvdbId}` })}`)
+    if (!series) throw new SonarrLookupNotFoundError(input.tvdbId)
+    const badRequest = (failures: unknown) => toAddSeriesError(input.tvdbId, failures)
+    const res = await this.request('/series', { method: 'POST', body: buildAddSeriesBody(series, input), badRequest })
+    return ((await res.json()) as { id: number }).id
+  }
+
+  async listMissing(page: number): Promise<MissingPage> {
+    const params = new URLSearchParams({
+      page: String(page), pageSize: String(MISSING_PAGE_SIZE), includeSeries: 'true', monitored: 'true',
+      sortKey: 'airDateUtc', sortDirection: 'descending',
+    })
+    return toMissingPage(await this.getJson<RawMissingPage>(`/wanted/missing?${params}`))
+  }
+
+  async searchEpisodes(episodeIds: number[]): Promise<void> {
+    await this.request('/command', { method: 'POST', body: { name: 'EpisodeSearch', episodeIds } })
+  }
+
+  async searchAllMissing(): Promise<void> {
+    await this.request('/command', { method: 'POST', body: { name: 'MissingEpisodeSearch', monitored: true } })
+  }
+
   private async getJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
     return (await (await this.request(path, options)).json()) as T
   }
@@ -173,6 +267,7 @@ export class FetchSonarrGateway implements SonarrGateway {
     if (res.ok) return res
     if (res.status === HTTP_UNAUTHORIZED) throw new SonarrGatewayError('Sonarr recusou a API key (SONARR_API_KEY)')
     if (res.status === HTTP_NOT_FOUND && options.notFound) throw options.notFound()
+    if (res.status === HTTP_BAD_REQUEST && options.badRequest) throw options.badRequest(await res.json().catch(() => null))
     throw this.unavailable(`HTTP ${res.status} em ${path.split('?')[0]}`)
   }
 

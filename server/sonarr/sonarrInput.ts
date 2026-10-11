@@ -3,7 +3,7 @@ import type { ReleaseQuery } from './releases.js'
 /** Request input that fails validation (400); the message names the received value. */
 export class InvalidInputError extends Error {}
 
-const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
+export const isPositiveInteger = (value: unknown): value is number => Number.isInteger(value) && (value as number) > 0
 
 function toPositiveInteger(raw: unknown): number | null {
   const value = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw
@@ -31,7 +31,8 @@ export function parseSeasonNumber(raw: string): number {
   throw new InvalidInputError(`temporada inválida: "${raw}", esperado inteiro ≥ 0`)
 }
 
-function invalidBody(reason: string, body: unknown): InvalidInputError {
+/** A 400 for a JSON body, quoting what arrived. */
+export function invalidBody(reason: string, body: unknown): InvalidInputError {
   return new InvalidInputError(`corpo inválido: ${reason}, recebido ${JSON.stringify(body ?? null)}`)
 }
 
