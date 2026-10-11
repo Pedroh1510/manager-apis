@@ -1,6 +1,7 @@
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { Toggle } from '../../../components/ui/Toggle';
 import { targetKey, type ActionTarget } from '../hooks/useSeriesActions';
+import { seasonLabel } from '../lib/formatSeries';
 import type { SeasonDetail } from '../services/types';
 import { SearchActions } from './ActionIcons';
 import { EpisodesTable, type SeriesRowActions } from './EpisodesTable';
@@ -12,14 +13,12 @@ interface SeasonSectionProps {
 	actions: SeriesRowActions;
 }
 
-const SPECIALS_SEASON = 0;
-
 /**
  * Collapsible season: header with count, monitor switch and search actions; episodes when open.
  * @example <SeasonSection season={season} isOpen onToggle={toggle} actions={actions} />
  */
 export function SeasonSection({ season, isOpen, onToggle, actions }: SeasonSectionProps) {
-	const title = season.seasonNumber === SPECIALS_SEASON ? 'Especiais' : `Temporada ${season.seasonNumber}`;
+	const title = seasonLabel(season.seasonNumber);
 	const target: ActionTarget = { kind: 'season', seasonNumber: season.seasonNumber };
 	return (
 		<section className='space-y-2'>

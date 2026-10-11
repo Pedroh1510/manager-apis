@@ -2,13 +2,17 @@ import { serverHttp } from '../../../lib/http';
 import type {
 	AddOptions,
 	AddSeriesInput,
+	CommandStatus,
+	ImportCandidate,
+	ImportChoice,
 	MissingPage,
 	ReleaseQuery,
 	ReleaseSummary,
 	SeriesDetail,
 	SeriesLookupResult,
 	SeriesSummary,
-	SonarrStatus
+	SonarrStatus,
+	StuckDownload
 } from './types';
 
 export async function fetchSeriesList(): Promise<SeriesSummary[]> {
@@ -83,4 +87,25 @@ export async function searchEpisodes(episodeIds: number[]): Promise<void> {
 
 export async function searchAllMissing(): Promise<void> {
 	await serverHttp.post('/sonarr/missing/search');
+}
+
+export async function fetchStuckDownloads(): Promise<StuckDownload[]> {
+	const { data } = await serverHttp.get<StuckDownload[]>('/sonarr/import/queue');
+	return data;
+}
+
+export async function fetchImportFiles(downloadId: string): Promise<ImportCandidate[]> {
+	const { data } = await serverHttp.get<ImportCandidate[]>('/sonarr/import/files', { params: { downloadId } });
+	return data;
+}
+
+/** Resolves to the id of the ManualImport command, to poll with fetchCommandState. */
+export async function startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
+	const { data } = await serverHttp.post<{ commandId: number }>('/sonarr/import', { downloadId, files });
+	return data.commandId;
+}
+
+export async function fetchCommandState(commandId: number): Promise<CommandStatus> {
+	const { data } = await serverHttp.get<CommandStatus>(`/sonarr/commands/${commandId}`);
+	return data;
 }

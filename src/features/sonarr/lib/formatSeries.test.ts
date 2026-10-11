@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { episodeStateLabel, formatAge, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, missingSubject, seriesStatusLabel } from './formatSeries';
+import { episodeStateLabel, formatAge, formatBytes, formatEpisodeCode, healthTypeLabel, initialsOf, missingSubject, seasonLabel, seriesStatusLabel } from './formatSeries';
 
 describe('formatSeries', () => {
 	it('formats bytes in GB from 1 GiB and MB below', () => {
@@ -37,5 +37,10 @@ describe('formatSeries', () => {
 	it('names a missing episode with its series', () => {
 		const episode = { episodeId: 60, seriesId: 1, seriesTitle: 'The Wire', seasonNumber: 5, episodeNumber: 10, title: '-30-', airDateUtc: null };
 		expect(missingSubject(episode)).toBe('The Wire S05E10');
+	});
+
+	it('labels specials and numbered seasons', () => {
+		expect(seasonLabel(0)).toBe('Especiais');
+		expect(seasonLabel(2)).toBe('Temporada 2');
 	});
 });

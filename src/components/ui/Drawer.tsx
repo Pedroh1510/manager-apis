@@ -6,7 +6,11 @@ interface DrawerProps {
 	title: string;
 	onClose: () => void;
 	children: ReactNode;
+	/** `wide` fits a table, e.g. the manual import files. */
+	size?: 'default' | 'wide';
 }
+
+const PANEL_WIDTH = { default: 'max-w-md', wide: 'max-w-4xl' };
 
 const FOCUSABLE = 'input, select, textarea, button, [href], [tabindex]:not([tabindex="-1"])';
 
@@ -14,7 +18,7 @@ const FOCUSABLE = 'input, select, textarea, button, [href], [tabindex]:not([tabi
  * Side panel for forms that should not leave the current list.
  * @example <Drawer open={open} title='Adicionar item' onClose={close}>…</Drawer>
  */
-export function Drawer({ open, title, onClose, children }: DrawerProps) {
+export function Drawer({ open, title, onClose, children, size = 'default' }: DrawerProps) {
 	const titleId = useId();
 	const panelRef = useRef<HTMLDivElement>(null);
 	const openerRef = useRef<HTMLElement | null>(null);
@@ -50,7 +54,7 @@ export function Drawer({ open, title, onClose, children }: DrawerProps) {
 				role='dialog'
 				aria-modal='true'
 				aria-labelledby={titleId}
-				className='relative flex h-full w-full max-w-md animate-drawer-in flex-col border-l border-border bg-surface shadow-overlay'
+				className={`relative flex h-full w-full ${PANEL_WIDTH[size]} animate-drawer-in flex-col border-l border-border bg-surface shadow-overlay`}
 			>
 				<header className='flex h-12 items-center justify-between border-b border-border px-4'>
 					<h2 id={titleId} className='text-sm font-semibold text-text'>

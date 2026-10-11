@@ -24,11 +24,12 @@ const navItems = [
 ]
 
 // Each link shows only when the server says its integration is configured (GET /api/config).
-// Séries matches only the library and a series detail: /sonarr/adicionar and /sonarr/faltantes have their own links.
+// Séries matches only the library and a series detail: /sonarr/adicionar, /faltantes and /importar have their own links.
 const mediaLinks: { to: string; label: string; integration: keyof ServerConfig; activeOn?: RegExp }[] = [
   { to: '/sonarr', label: 'Séries', integration: 'sonarr', activeOn: /^\/sonarr(\/\d+)?$/ },
   { to: '/sonarr/adicionar', label: 'Adicionar série', integration: 'sonarr' },
   { to: '/sonarr/faltantes', label: 'Faltantes', integration: 'sonarr' },
+  { to: '/sonarr/importar', label: 'Importar', integration: 'sonarr' },
   { to: '/torrents', label: 'Torrents', integration: 'qbittorrent' },
 ]
 
