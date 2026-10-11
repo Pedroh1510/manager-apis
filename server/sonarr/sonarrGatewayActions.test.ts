@@ -87,6 +87,12 @@ describe('FetchSonarrGateway actions', () => {
     expect(sonarr!.requests.at(-1)?.url).toBe('/api/v3/release?seriesId=1&seasonNumber=2')
   })
 
+  it('orders releases approved first through the gateway', async () => {
+    const raw = (guid: string, approved: boolean) => ({ guid, indexerId: 1, title: guid, indexer: 'x', size: 1, ageHours: 1, approved, rejections: approved ? [] : ['no'] })
+    const gateway = await gatewayFor({ releases: [raw('r1', false), raw('r2', true), raw('r3', false), raw('r4', true)] })
+    expect((await gateway.listReleases({ episodeId: 11 })).map((release) => release.guid)).toEqual(['r2', 'r4', 'r1', 'r3'])
+  })
+
   it('release search has its own 90000ms timeout', async () => {
     const defaults = new FetchSonarrGateway({ url: 'http://127.0.0.1:1', apiKey: API_KEY })
     expect(defaults.releaseTimeoutMs).toBe(90000)
