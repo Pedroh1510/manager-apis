@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 import type { JsonLogger } from '../logger.js'
 import { registerSonarrActionRoutes } from './sonarrActionRoutes.js'
+import { registerSonarrLibraryRoutes } from './sonarrLibraryRoutes.js'
 import type { SonarrGateway } from './sonarrGateway.js'
 import { parseSeriesId } from './sonarrInput.js'
 import { respondSonarr } from './sonarrRespond.js'
@@ -10,7 +11,7 @@ const POSTER_CACHE = 'max-age=86400'
 
 /**
  * `/api/sonarr/*`: 503 when the integration is off, 400/404 for bad input or a missing series,
- * 502 when Sonarr fails. Write routes live in sonarrActionRoutes.ts.
+ * 502 when Sonarr fails. Write routes live in sonarrActionRoutes.ts and sonarrLibraryRoutes.ts.
  * @example app.use('/api/sonarr', createSonarrRoutes(gateway, logger))
  */
 export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLogger): Router {
@@ -30,5 +31,6 @@ export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLo
     res.set({ 'Content-Type': poster.contentType, 'Cache-Control': POSTER_CACHE }).send(Buffer.from(poster.bytes))
   }))
   registerSonarrActionRoutes(router, gateway, run)
+  registerSonarrLibraryRoutes(router, gateway, run)
   return router
 }
