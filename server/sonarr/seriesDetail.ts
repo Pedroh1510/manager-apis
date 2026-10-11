@@ -11,7 +11,7 @@ export interface RawSeries {
   /** ISO date the series was added to Sonarr */
   added?: string
   statistics?: { episodeFileCount: number; episodeCount: number; sizeOnDisk: number }
-  seasons: { seasonNumber: number; statistics?: { episodeFileCount: number; episodeCount: number } }[]
+  seasons: { seasonNumber: number; monitored?: boolean; statistics?: { episodeFileCount: number; episodeCount: number } }[]
 }
 
 /** The fields of a Sonarr API v3 `/episode` item this server reads. */
@@ -51,6 +51,7 @@ export interface EpisodeDetail {
 
 export interface SeasonDetail {
   seasonNumber: number
+  monitored: boolean
   episodeFileCount: number
   episodeCount: number
   episodes: EpisodeDetail[]
@@ -99,6 +100,7 @@ export function buildSeriesDetail(series: RawSeries, episodes: RawEpisode[], now
   const { id, title, year, status, network, episodeFileCount, episodeCount } = toSeriesSummary(series)
   const seasons = [...series.seasons].sort(compareSeasons).map((season) => ({
     seasonNumber: season.seasonNumber,
+    monitored: season.monitored ?? false,
     episodeFileCount: season.statistics?.episodeFileCount ?? 0,
     episodeCount: season.statistics?.episodeCount ?? 0,
     episodes: episodesOfSeason(episodes, season.seasonNumber, now),

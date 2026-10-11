@@ -1,11 +1,15 @@
 import { SonarrGatewayError, SonarrNotFoundError, type SonarrGateway, type SonarrPoster, type SonarrStatusInfo } from '../sonarr/sonarrGateway.js'
 import type { SeriesDetail, SeriesSummary } from '../sonarr/seriesDetail.js'
+import type { ReleaseQuery, ReleaseSummary } from '../sonarr/releases.js'
 
 export interface FakeSonarrData {
   status?: SonarrStatusInfo
   series?: SeriesSummary[]
   details?: Record<number, SeriesDetail>
   posters?: Record<number, SonarrPoster>
+  releases?: ReleaseSummary[]
+  /** Throws this error from every write, e.g. a SonarrSeasonNotFoundError. */
+  writeError?: Error
   failWith?: string
 }
 
@@ -36,6 +40,36 @@ export class FakeSonarrGateway implements SonarrGateway {
   async getPoster(seriesId: number): Promise<SonarrPoster> {
     this.enter(`getPoster:${seriesId}`)
     return this.found(this.data.posters?.[seriesId], seriesId)
+  }
+
+  async setEpisodesMonitored(episodeIds: number[], monitored: boolean): Promise<void> {
+    this.write(`setEpisodesMonitored:${JSON.stringify(episodeIds)}:${monitored}`)
+  }
+
+  async setSeasonMonitored(seriesId: number, seasonNumber: number, monitored: boolean): Promise<void> {
+    this.write(`setSeasonMonitored:${seriesId}:${seasonNumber}:${monitored}`)
+  }
+
+  async searchEpisode(episodeId: number): Promise<void> {
+    this.write(`searchEpisode:${episodeId}`)
+  }
+
+  async searchSeason(seriesId: number, seasonNumber: number): Promise<void> {
+    this.write(`searchSeason:${seriesId}:${seasonNumber}`)
+  }
+
+  async listReleases(query: ReleaseQuery): Promise<ReleaseSummary[]> {
+    this.enter(`listReleases:${JSON.stringify(query)}`)
+    return this.data.releases ?? []
+  }
+
+  async grabRelease(guid: string, indexerId: number): Promise<void> {
+    this.write(`grabRelease:${guid}:${indexerId}`)
+  }
+
+  private write(call: string): void {
+    this.enter(call)
+    if (this.data.writeError) throw this.data.writeError
   }
 
   private enter(call: string): void {

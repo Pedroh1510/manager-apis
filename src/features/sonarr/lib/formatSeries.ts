@@ -48,3 +48,15 @@ export function healthTypeLabel(type: string): string {
 export function initialsOf(title: string): string {
 	return title.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join('');
 }
+
+const HOURS_PER_DAY = 24;
+const DAYS_FROM_HOURS = 48;
+
+/**
+ * Release age as Sonarr shows it: whole hours under two days, whole days after.
+ * @example formatAge(30.5) // '30h'
+ */
+export function formatAge(ageHours: number): string {
+	if (ageHours < DAYS_FROM_HOURS) return `${Math.floor(ageHours)}h`;
+	return `${Math.floor(ageHours / HOURS_PER_DAY)}d`;
+}

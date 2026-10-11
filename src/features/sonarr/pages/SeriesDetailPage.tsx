@@ -3,13 +3,16 @@ import { Link, useParams } from 'react-router-dom';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { getApiErrorStatus } from '../../../lib/apiError';
+import type { SeriesRowActions } from '../components/EpisodesTable';
+import { ReleasesDrawer } from '../components/ReleasesDrawer';
 import { SeasonSection } from '../components/SeasonSection';
 import { SeriesPoster } from '../components/SeriesPoster';
 import { SeriesStatusBadge } from '../components/SeriesStatusBadge';
 import { SonarrError } from '../components/SonarrError';
 import { useSeriesDetail } from '../hooks/useSeries';
+import { useSeriesActions, type ActionTarget } from '../hooks/useSeriesActions';
 import { formatBytes } from '../lib/formatSeries';
-import type { SeriesDetail } from '../services/types';
+import type { ReleaseQuery, SeriesDetail } from '../services/types';
 
 const HTTP_NOT_FOUND = 404;
 
@@ -46,7 +49,7 @@ function SeriesHeader({ series }: { series: SeriesDetail }) {
 }
 
 /** Only the first (newest) season starts open; each header toggles its own season. */
-function SeasonList({ series }: { series: SeriesDetail }) {
+function SeasonList({ series, actions }: { series: SeriesDetail; actions: SeriesRowActions }) {
 	const [openSeasons, setOpenSeasons] = useState(() => new Set(series.seasons.slice(0, 1).map((s) => s.seasonNumber)));
 	const toggle = (seasonNumber: number) =>
 		setOpenSeasons((current) => {
@@ -63,6 +66,7 @@ function SeasonList({ series }: { series: SeriesDetail }) {
 					season={season}
 					isOpen={openSeasons.has(season.seasonNumber)}
 					onToggle={() => toggle(season.seasonNumber)}
+					actions={actions}
 				/>
 			))}
 		</div>
@@ -80,10 +84,28 @@ export function SeriesDetailPage() {
 	if (getApiErrorStatus(error) === HTTP_NOT_FOUND) return <SeriesNotFound />;
 	if (error && !data) return <SonarrError error={error} />;
 	if (!data) return null;
+	return <SeriesDetailContent series={data} />;
+}
+
+function toReleaseQuery(seriesId: number, target: ActionTarget): ReleaseQuery {
+	return target.kind === 'episode' ? { episodeId: target.episodeId } : { seriesId, seasonNumber: target.seasonNumber };
+}
+
+function SeriesDetailContent({ series }: { series: SeriesDetail }) {
+	const { toggleMonitored, search, busyMonitorKey, busySearchKey } = useSeriesActions(series.id);
+	const [releaseSearch, setReleaseSearch] = useState<{ query: ReleaseQuery; subject: string } | null>(null);
+	const actions: SeriesRowActions = {
+		toggleMonitored,
+		search,
+		busyMonitorKey,
+		busySearchKey,
+		openReleases: (target, subject) => setReleaseSearch({ query: toReleaseQuery(series.id, target), subject })
+	};
 	return (
 		<div className='mx-auto max-w-6xl space-y-6'>
-			<SeriesHeader series={data} />
-			<SeasonList series={data} />
+			<SeriesHeader series={series} />
+			<SeasonList series={series} actions={actions} />
+			<ReleasesDrawer search={releaseSearch} onClose={() => setReleaseSearch(null)} />
 		</div>
 	);
 }
