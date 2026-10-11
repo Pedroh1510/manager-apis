@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { FakeSonarrApi, type FakeSonarrOptions } from '../test/FakeSonarrApi.js'
-import { FetchSonarrGateway, SonarrGatewayError } from './sonarrGateway.js'
+import {
+  FetchSonarrGateway,
+  SonarrGatewayError,
+  SonarrLookupNotFoundError,
+  SonarrRejectedError,
+  SonarrSeriesExistsError,
+} from './sonarrGateway.js'
 import type { RawMissingPage } from './missingEpisodes.js'
 import type { AddSeriesInput, RawLookupSeries } from './seriesLookup.js'
 
@@ -68,19 +74,25 @@ describe('FetchSonarrGateway library', () => {
 
   it('unknown tvdb id throws without posting', async () => {
     const gateway = await gatewayFor({ lookup: [wire] })
-    await expect(gateway.addSeries({ ...addInput, tvdbId: 999 })).rejects.toThrow('série tvdb 999 não encontrada no Sonarr')
+    const failure = gateway.addSeries({ ...addInput, tvdbId: 999 })
+    await expect(failure).rejects.toThrow(SonarrLookupNotFoundError)
+    await expect(failure).rejects.toThrow('série tvdb 999 não encontrada no Sonarr')
     expect(sonarr!.writes).toEqual([])
   })
 
   it('sonarr validation errors become duplicate or rejected errors', async () => {
     const exists = [{ errorCode: 'SeriesExistsValidator', errorMessage: 'This series has already been added' }]
     let gateway = await gatewayFor({ lookup: [{ ...wire, id: undefined }], addStatus: 400, addResponse: exists })
-    await expect(gateway.addSeries({ ...addInput, tvdbId: 79126 })).rejects.toThrow('série 79126 já está na biblioteca')
+    const duplicate = gateway.addSeries({ ...addInput, tvdbId: 79126 })
+    await expect(duplicate).rejects.toThrow(SonarrSeriesExistsError)
+    await expect(duplicate).rejects.toThrow('série 79126 já está na biblioteca')
     await sonarr!.close()
 
     const rejected = [{ errorCode: 'RootFolderValidator', errorMessage: 'Invalid path' }, { errorCode: 'X', errorMessage: 'Other' }]
     gateway = await gatewayFor({ lookup: [severance], addStatus: 400, addResponse: rejected })
-    await expect(gateway.addSeries(addInput)).rejects.toThrow('Sonarr recusou: Invalid path; Other')
+    const refused = gateway.addSeries(addInput)
+    await expect(refused).rejects.toThrow(SonarrRejectedError)
+    await expect(refused).rejects.toThrow('Sonarr recusou: Invalid path; Other')
   })
 
   it('missing asks for one page of monitored episodes, newest first', async () => {
