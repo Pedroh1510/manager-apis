@@ -25,6 +25,16 @@ export function initialSelection(candidates: ImportCandidate[], defaultSeriesId:
 	return Object.fromEntries(entries);
 }
 
+/**
+ * A file that just became complete (series and episodes chosen) gets checked: choosing episodes
+ * means "import this" (decision I1). Any other change, including a manual uncheck, is kept as is.
+ * @example applyFileChange(previous, { ...previous, episodes: [s2e5] }).isChecked // true
+ */
+export function applyFileChange(previous: FileSelection, next: FileSelection): FileSelection {
+	const becameComplete = !isComplete(previous) && isComplete(next);
+	return becameComplete ? { ...next, isChecked: true } : next;
+}
+
 /** @example checkedFiles(selection).length // what "Importar (n)" counts */
 export function checkedFiles(selection: ImportSelection): [string, FileSelection][] {
 	return Object.entries(selection).filter(([, file]) => file.isChecked);

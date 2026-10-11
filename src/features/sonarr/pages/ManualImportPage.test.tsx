@@ -132,6 +132,8 @@ describe('ManualImportPage', () => {
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E07 — Chikhai Bardo' }))
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E08 — Sweet Vitriol' }))
     expect(within(rowOf(drawer, 'random name 07.mkv')).getByText('S02E07, S02E08', { exact: true })).toBeInTheDocument()
+    expect(within(drawer).getByRole('checkbox', { name: 'Importar random name 07.mkv' })).toBeChecked()
+    expect(within(drawer).getByRole('button', { name: 'Importar (2)' })).toBeEnabled()
     expect(api.fetchSeriesDetail).toHaveBeenCalledWith(2)
   })
 

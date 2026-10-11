@@ -8,7 +8,7 @@ import { Table, Th } from '../../../components/ui/Table';
 import { getApiErrorMessage } from '../../../lib/apiError';
 import { useManualImport } from '../hooks/useManualImport';
 import { useSeriesList } from '../hooks/useSeries';
-import { canImport, checkedFiles, initialSelection, toImportChoices, type ImportSelection } from '../lib/importSelection';
+import { applyFileChange, canImport, checkedFiles, initialSelection, toImportChoices, type ImportSelection } from '../lib/importSelection';
 import { fetchImportFiles } from '../services/api';
 import type { ImportCandidate, ImportFileSource } from '../services/types';
 import { ImportFileRow } from './ImportFileRow';
@@ -44,7 +44,7 @@ function ImportFiles({ target, files, onImported }: ImportFilesProps) {
 				</thead>
 				<tbody>
 					{files.map((file) => (
-						<ImportFileRow key={file.path} file={file} selection={selection[file.path]} series={series} onChange={(next) => setSelection((current) => ({ ...current, [file.path]: next }))} />
+						<ImportFileRow key={file.path} file={file} selection={selection[file.path]} series={series} onChange={(next) => setSelection((current) => ({ ...current, [file.path]: applyFileChange(current[file.path], next) }))} />
 					))}
 				</tbody>
 			</Table>
