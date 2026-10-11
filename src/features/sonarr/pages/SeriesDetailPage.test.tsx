@@ -5,11 +5,13 @@ import * as api from '../services/api'
 import type { EpisodeDetail, SeasonDetail, SeriesDetail } from '../services/types'
 import { formatDate } from '../../../lib/formatDate'
 import { renderWithProviders } from '../../../test/renderWithProviders'
+import * as configApi from '../../server-config/services/api'
 
 vi.mock('../services/api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
   fetchSeriesDetail: vi.fn(),
 }))
+vi.mock('../../server-config/services/api')
 
 function episode(overrides: Partial<EpisodeDetail>): EpisodeDetail {
   return { id: 1, episodeNumber: 1, title: 'Ep', airDateUtc: '2002-06-03T01:00:00Z', state: 'downloaded', monitored: true, ...overrides }
@@ -149,5 +151,19 @@ describe('SeriesDetailPage', () => {
     const poster = await screen.findByRole('img', { name: 'Pôster de The Wire' })
     expect(poster).toHaveClass('w-32')
     expect(poster).not.toHaveClass('w-full')
+  })
+
+  it('shows the upload shortcut only when upload is on', async () => {
+    vi.mocked(api.fetchSeriesDetail).mockResolvedValue(wire)
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: true })
+    const on = renderDetail()
+    expect(await screen.findByRole('link', { name: 'Enviar arquivos' })).toHaveAttribute('href', '/sonarr/importar?serie=1')
+    on.unmount()
+
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    renderDetail()
+    await screen.findByRole('heading', { level: 1, name: 'The Wire' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.queryByRole('link', { name: 'Enviar arquivos' })).not.toBeInTheDocument()
   })
 })

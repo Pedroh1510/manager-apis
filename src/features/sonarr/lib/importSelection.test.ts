@@ -13,6 +13,11 @@ describe('import selection', () => {
     expect([selection.a.isChecked, selection.b.isChecked, selection.c.isChecked]).toEqual([true, false, false])
   })
 
+  it('fills unrecognized files with the default series', () => {
+    const selection = initialSelection([candidate('a', 2, [103]), candidate('b', null, [])], 5)
+    expect([selection.a.seriesId, selection.b.seriesId, selection.b.episodes]).toEqual([2, 5, []])
+  })
+
   it('can import only when every checked file has series and episodes', () => {
     const ready = { isChecked: true, seriesId: 2, episodes: [{ id: 103, seasonNumber: 2, episodeNumber: 3 }] }
     expect(canImport({})).toBe(false)

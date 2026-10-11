@@ -5,6 +5,7 @@ import type {
 	CommandStatus,
 	ImportCandidate,
 	ImportChoice,
+	ImportFileSource,
 	MissingPage,
 	ReleaseQuery,
 	ReleaseSummary,
@@ -12,7 +13,8 @@ import type {
 	SeriesLookupResult,
 	SeriesSummary,
 	SonarrStatus,
-	StuckDownload
+	StuckDownload,
+	UploadedFile
 } from './types';
 
 export async function fetchSeriesList(): Promise<SeriesSummary[]> {
@@ -94,18 +96,39 @@ export async function fetchStuckDownloads(): Promise<StuckDownload[]> {
 	return data;
 }
 
-export async function fetchImportFiles(downloadId: string): Promise<ImportCandidate[]> {
-	const { data } = await serverHttp.get<ImportCandidate[]>('/sonarr/import/files', { params: { downloadId } });
+export async function fetchImportFiles(source: ImportFileSource): Promise<ImportCandidate[]> {
+	const { data } = await serverHttp.get<ImportCandidate[]>('/sonarr/import/files', { params: source });
 	return data;
 }
 
 /** Resolves to the id of the ManualImport command, to poll with fetchCommandState. */
-export async function startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
-	const { data } = await serverHttp.post<{ commandId: number }>('/sonarr/import', { downloadId, files });
+export async function startManualImport(source: ImportFileSource, files: ImportChoice[]): Promise<number> {
+	const body = 'downloadId' in source ? { downloadId: source.downloadId, files } : { source: 'upload', files };
+	const { data } = await serverHttp.post<{ commandId: number }>('/sonarr/import', body);
 	return data.commandId;
 }
 
 export async function fetchCommandState(commandId: number): Promise<CommandStatus> {
 	const { data } = await serverHttp.get<CommandStatus>(`/sonarr/commands/${commandId}`);
 	return data;
+}
+
+export async function fetchUploads(): Promise<UploadedFile[]> {
+	const { data } = await serverHttp.get<UploadedFile[]>('/sonarr/uploads');
+	return data;
+}
+
+/**
+ * Sends one file as the raw body; `onProgress` gets 0-100.
+ * @example await uploadFile(file, (percent) => setPercent(percent))
+ */
+export async function uploadFile(file: File, onProgress: (percent: number) => void): Promise<void> {
+	await serverHttp.put(`/sonarr/uploads/${encodeURIComponent(file.name)}`, file, {
+		headers: { 'Content-Type': 'application/octet-stream' },
+		onUploadProgress: (event) => onProgress(event.total ? Math.round((event.loaded / event.total) * 100) : 0)
+	});
+}
+
+export async function deleteUpload(name: string): Promise<void> {
+	await serverHttp.delete(`/sonarr/uploads/${encodeURIComponent(name)}`);
 }

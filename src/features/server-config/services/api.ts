@@ -4,6 +4,8 @@ import { serverHttp } from '../../../lib/http';
 export interface ServerConfig {
 	qbittorrent: boolean;
 	sonarr: boolean;
+	/** SONARR_UPLOAD_DIR is set: the upload sections and shortcut show. */
+	sonarrUpload: boolean;
 }
 
 export async function fetchServerConfig(): Promise<ServerConfig> {

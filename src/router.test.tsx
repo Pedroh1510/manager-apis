@@ -36,7 +36,7 @@ beforeEach(() => {
   vi.mocked(mangasApi.fetchChapters).mockResolvedValue([])
   vi.mocked(queuesApi.fetchMangasQueuesSummary).mockResolvedValue([])
   vi.mocked(queuesApi.fetchRssQueuesSummary).mockResolvedValue([])
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false })
   vi.mocked(sonarrApi.fetchSeriesList).mockResolvedValue([])
   vi.mocked(sonarrApi.fetchSeriesDetail).mockResolvedValue({
     id: 1, title: 'The Wire', year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0, seasons: [],

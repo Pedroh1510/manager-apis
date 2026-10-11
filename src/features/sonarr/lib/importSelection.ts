@@ -14,11 +14,12 @@ const isComplete = (file: FileSelection) => file.seriesId !== null && file.episo
 
 /**
  * Starts from Sonarr's detection; a file is pre-checked only when it is ready to import.
+ * `defaultSeriesId` fills files Sonarr could not tie to a series (the detail-page shortcut).
  * @example initialSelection(candidates)['/dl/a.mkv'].isChecked
  */
-export function initialSelection(candidates: ImportCandidate[]): ImportSelection {
+export function initialSelection(candidates: ImportCandidate[], defaultSeriesId: number | null = null): ImportSelection {
 	const entries = candidates.map((candidate): [string, FileSelection] => {
-		const file = { isChecked: false, seriesId: candidate.seriesId, episodes: candidate.episodes };
+		const file = { isChecked: false, seriesId: candidate.seriesId ?? defaultSeriesId, episodes: candidate.episodes };
 		return [candidate.path, { ...file, isChecked: isComplete(file) }];
 	});
 	return Object.fromEntries(entries);
