@@ -31,9 +31,16 @@ describe('startServer', () => {
     expect(lines).toHaveLength(1)
     const boot = JSON.parse(lines[0])
     expect(boot.port).toBe(port)
-    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false })
+    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false, sonarrUpload: false })
     expect(lines[0]).not.toContain('bob-user')
     expect(lines[0]).not.toContain('s3cr3t-pass')
+  })
+
+  it('sets a two hour request timeout', async () => {
+    const running = await startServer({ PORT: String(await freePort()) }, () => {})
+    const timeout = running.server.requestTimeout
+    await running.close()
+    expect(timeout).toBe(7200000)
   })
 
   it('listens on the configured port', async () => {
@@ -50,7 +57,7 @@ describe('startServer', () => {
     const running = await startServer({ PORT: String(port), SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }, (line) => lines.push(line))
     await running.close()
 
-    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true })
+    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false })
     expect(lines[0]).not.toContain('k3y-abc')
   })
 

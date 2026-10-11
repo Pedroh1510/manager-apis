@@ -16,6 +16,18 @@ async function gatewayFor(options: FakeSonarrOptions) {
   return new FetchSonarrGateway({ url: sonarr.url, apiKey: 'k3y' })
 }
 
+const D1 = { kind: 'download', downloadId: 'D1' } as const
+const UPLOADS = { kind: 'folder', folder: '/uploads' } as const
+const inFolder: RawImportCandidate = { ...unknownCandidate(), path: '/uploads/a.mkv', relativePath: 'a.mkv' }
+
+function unknownCandidate(): RawImportCandidate {
+  return {
+    path: '/dl/random name 07.mkv', relativePath: 'random name 07.mkv', size: 1000,
+    quality: { quality: { name: 'HDTV-720p' } }, languages: [{ id: 0, name: 'Unknown' }], releaseGroup: 'mi',
+    releaseType: 'unknown', indexerFlags: 0, rejections: [{ reason: 'Unknown Series' }],
+  }
+}
+
 const queueRecord = (overrides: Partial<RawQueueRecord>): RawQueueRecord => ({ title: 'Severance.S02.1080p', size: 4000, ...overrides })
 const recognized: RawImportCandidate = {
   path: '/dl/Severance.S02E03.mkv', relativePath: 'Severance.S02E03.mkv', size: 2000000,
@@ -23,11 +35,7 @@ const recognized: RawImportCandidate = {
   quality: { quality: { name: 'WEBDL-1080p' } }, languages: [{ id: 1, name: 'English' }],
   releaseType: 'singleEpisode', indexerFlags: 0, rejections: [{ reason: 'Unable to determine if file is a sample' }],
 }
-const unknown: RawImportCandidate = {
-  path: '/dl/random name 07.mkv', relativePath: 'random name 07.mkv', size: 1000,
-  quality: { quality: { name: 'HDTV-720p' } }, languages: [{ id: 0, name: 'Unknown' }], releaseGroup: 'mi',
-  releaseType: 'unknown', indexerFlags: 0, rejections: [{ reason: 'Unknown Series' }],
-}
+const unknown = unknownCandidate()
 
 describe('FetchSonarrGateway manual import', () => {
   it('stuck downloads keep only pending or blocked, one per download', async () => {
@@ -63,7 +71,7 @@ describe('FetchSonarrGateway manual import', () => {
 
   it('import files normalize the manual import candidates', async () => {
     const gateway = await gatewayFor({ importCandidates: [recognized, unknown] })
-    const files = await gateway.listImportFiles('D1')
+    const files = await gateway.listImportFiles(D1)
 
     expect(sonarr!.requests[0].url).toBe('/api/v3/manualimport?downloadId=D1&filterExistingFiles=true')
     expect(files).toEqual([
@@ -81,7 +89,7 @@ describe('FetchSonarrGateway manual import', () => {
 
   it('manual import rebuilds each file from its candidate', async () => {
     const gateway = await gatewayFor({ importCandidates: [recognized, unknown], commandId: 392 })
-    const commandId = await gateway.startManualImport('D1', [{ path: '/dl/random name 07.mkv', seriesId: 2, episodeIds: [123, 124] }])
+    const commandId = await gateway.startManualImport(D1, [{ path: '/dl/random name 07.mkv', seriesId: 2, episodeIds: [123, 124] }])
 
     expect(commandId).toBe(392)
     expect(sonarr!.requests[0]).toMatchObject({ method: 'GET', url: '/api/v3/manualimport?downloadId=D1&filterExistingFiles=true' })
@@ -101,7 +109,7 @@ describe('FetchSonarrGateway manual import', () => {
 
   it('unknown path throws without sending the command', async () => {
     const gateway = await gatewayFor({ importCandidates: [recognized] })
-    const failure = gateway.startManualImport('D1', [{ path: '/dl/outro.mkv', seriesId: 2, episodeIds: [1] }])
+    const failure = gateway.startManualImport(D1, [{ path: '/dl/outro.mkv', seriesId: 2, episodeIds: [1] }])
     await expect(failure).rejects.toThrow(SonarrImportFileNotFoundError)
     await expect(failure).rejects.toThrow('arquivo não encontrado no download D1: /dl/outro.mkv')
     expect(sonarr!.writes).toEqual([])
@@ -117,6 +125,39 @@ describe('FetchSonarrGateway manual import', () => {
     const missing = gateway.readCommand(392)
     await expect(missing).rejects.toThrow(SonarrCommandNotFoundError)
     await expect(missing).rejects.toThrow('comando 392 não encontrado no Sonarr')
+  })
+
+  it('upload folder candidates ask manualimport by folder and series', async () => {
+    const gateway = await gatewayFor({ importCandidates: [inFolder] })
+    await gateway.listImportFiles({ ...UPLOADS, seriesId: 2 })
+    await gateway.listImportFiles(UPLOADS)
+    expect(sonarr!.requests.map((request) => request.url)).toEqual([
+      '/api/v3/manualimport?folder=%2Fuploads&filterExistingFiles=true&seriesId=2',
+      '/api/v3/manualimport?folder=%2Fuploads&filterExistingFiles=true',
+    ])
+  })
+
+  it('upload import moves files and leaves out the download id', async () => {
+    const gateway = await gatewayFor({ importCandidates: [inFolder], commandId: 7 })
+    expect(await gateway.startManualImport(UPLOADS, [{ path: '/uploads/a.mkv', seriesId: 2, episodeIds: [125] }])).toBe(7)
+    expect(sonarr!.writes[0].body).toEqual({
+      name: 'ManualImport',
+      importMode: 'move',
+      files: [{
+        path: '/uploads/a.mkv', seriesId: 2, episodeIds: [125],
+        quality: inFolder.quality, languages: inFolder.languages, releaseGroup: 'mi', releaseType: 'unknown', indexerFlags: 0,
+      }],
+    })
+  })
+
+  it('upload import refuses paths outside the folder or the candidates', async () => {
+    const gateway = await gatewayFor({ importCandidates: [inFolder, { ...inFolder, path: '/etc/a.mkv' }] })
+    for (const path of ['/etc/a.mkv', '/uploads/../etc/a.mkv', '/uploads/b.mkv']) {
+      const failure = gateway.startManualImport(UPLOADS, [{ path, seriesId: 2, episodeIds: [1] }])
+      await expect(failure, path).rejects.toThrow(SonarrImportFileNotFoundError)
+      await expect(failure, path).rejects.toThrow(`arquivo não encontrado na pasta de upload: ${path}`)
+    }
+    expect(sonarr!.writes).toEqual([])
   })
 
   it('an upstream 500 on the queue becomes a gateway error', async () => {

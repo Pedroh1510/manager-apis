@@ -4,6 +4,9 @@ export interface QbittorrentConfig {
   password: string
 }
 
+import { accessSync, constants, statSync } from 'node:fs'
+import { isAbsolute } from 'node:path'
+
 export interface SonarrConfig {
   url: string
   apiKey: string
@@ -15,6 +18,13 @@ export interface ServerConfig {
   qbittorrent: QbittorrentConfig | null
   /** null when SONARR_URL is absent. */
   sonarr: SonarrConfig | null
+  /** null when SONARR_UPLOAD_DIR is absent: uploads are off, the queue import still works. */
+  sonarrUpload: SonarrUploadConfig | null
+}
+
+/** The folder both this server and Sonarr see at the same path (decision Q3). */
+export interface SonarrUploadConfig {
+  dir: string
 }
 
 export type ServerEnv = Record<string, string | undefined>
@@ -28,7 +38,8 @@ const MAX_PORT = 65535
  * @example const config = parseServerConfig(process.env)
  */
 export function parseServerConfig(env: ServerEnv): ServerConfig {
-  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr: parseSonarr(env) }
+  const sonarr = parseSonarr(env)
+  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr, sonarrUpload: parseSonarrUpload(env, sonarr) }
 }
 
 function parsePort(raw: string | undefined): number {
@@ -51,6 +62,26 @@ function parseSonarr(env: ServerEnv): SonarrConfig | null {
   if (!url) return null
   assertHttpUrl('SONARR_URL', url)
   return { url, apiKey: requireVar(env, 'SONARR_API_KEY', 'SONARR_URL') }
+}
+
+function parseSonarrUpload(env: ServerEnv, sonarr: SonarrConfig | null): SonarrUploadConfig | null {
+  const dir = env.SONARR_UPLOAD_DIR
+  if (!dir) return null
+  const invalid = (reason: string) => new Error(`SONARR_UPLOAD_DIR inválida: "${dir}", ${reason}`)
+  if (!sonarr) throw invalid('exige SONARR_URL definida')
+  if (!isAbsolute(dir)) throw invalid('esperado caminho absoluto')
+  if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) throw invalid('esperado pasta existente')
+  if (!isWritable(dir)) throw invalid('pasta sem permissão de escrita')
+  return { dir }
+}
+
+function isWritable(dir: string): boolean {
+  try {
+    accessSync(dir, constants.W_OK)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function assertHttpUrl(name: string, raw: string): void {

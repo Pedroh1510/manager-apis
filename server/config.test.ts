@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseServerConfig } from './config.js'
 
@@ -55,5 +58,34 @@ describe('parseServerConfig', () => {
 
   it('requires SONARR_API_KEY when url is set', () => {
     expect(() => parseServerConfig({ ...sonarrEnv, SONARR_API_KEY: undefined })).toThrow('SONARR_API_KEY')
+  })
+
+  it('upload dir is off without SONARR_UPLOAD_DIR', () => {
+    expect(parseServerConfig(sonarrEnv).sonarrUpload).toBeNull()
+  })
+
+  it('upload dir accepts an absolute writable folder', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'uploads-'))
+    expect(parseServerConfig({ ...sonarrEnv, SONARR_UPLOAD_DIR: dir }).sonarrUpload).toEqual({ dir })
+  })
+
+  it('upload dir rejects relative, missing, non-folder, read-only or sonarr-less values', () => {
+    const base = mkdtempSync(join(tmpdir(), 'uploads-'))
+    const file = join(base, 'a-file')
+    writeFileSync(file, 'x')
+    const readOnly = mkdtempSync(join(tmpdir(), 'uploads-ro-'))
+    chmodSync(readOnly, 0o555)
+    const cases: [Record<string, string>, string][] = [
+      [{ ...sonarrEnv, SONARR_UPLOAD_DIR: 'uploads' }, 'uploads'],
+      [{ ...sonarrEnv, SONARR_UPLOAD_DIR: join(base, 'nao-existe') }, join(base, 'nao-existe')],
+      [{ ...sonarrEnv, SONARR_UPLOAD_DIR: file }, file],
+      [{ ...sonarrEnv, SONARR_UPLOAD_DIR: readOnly }, readOnly],
+      [{ SONARR_UPLOAD_DIR: base }, base],
+    ]
+    for (const [env, value] of cases) {
+      expect(() => parseServerConfig(env), value).toThrow('SONARR_UPLOAD_DIR')
+      expect(() => parseServerConfig(env), value).toThrow(`"${value}"`)
+    }
+    chmodSync(readOnly, 0o755)
   })
 })

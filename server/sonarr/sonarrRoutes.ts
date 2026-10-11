@@ -13,9 +13,10 @@ const POSTER_CACHE = 'max-age=86400'
 /**
  * `/api/sonarr/*`: 503 when the integration is off, 400/404 for bad input or a missing series,
  * 502 when Sonarr fails. Write routes live in sonarrActionRoutes.ts, sonarrLibraryRoutes.ts and sonarrImportRoutes.ts.
- * @example app.use('/api/sonarr', createSonarrRoutes(gateway, logger))
+ * `uploadDir` is SONARR_UPLOAD_DIR, or null when uploads are off.
+ * @example app.use('/api/sonarr', createSonarrRoutes(gateway, logger, '/downloads/manual'))
  */
-export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLogger): Router {
+export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLogger, uploadDir: string | null = null): Router {
   const router = Router()
   if (!gateway) {
     router.use((_req, res) => void res.status(503).json({ error: NOT_CONFIGURED }))
@@ -33,6 +34,6 @@ export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLo
   }))
   registerSonarrActionRoutes(router, gateway, run)
   registerSonarrLibraryRoutes(router, gateway, run)
-  registerSonarrImportRoutes(router, gateway, run)
+  registerSonarrImportRoutes(router, gateway, run, uploadDir)
   return router
 }

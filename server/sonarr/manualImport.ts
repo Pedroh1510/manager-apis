@@ -48,6 +48,13 @@ export interface ImportCandidate {
   rejections: string[]
 }
 
+/** Where the files to import come from: a stuck download, or the upload folder (door 2 of PR 4b). */
+export type ImportSource = { kind: 'download'; downloadId: string } | { kind: 'folder'; folder: string; seriesId?: number }
+
+/** Shown in errors, e.g. `arquivo não encontrado no download D1: …`. */
+export const describeSource = (source: ImportSource) =>
+  source.kind === 'download' ? `no download ${source.downloadId}` : 'na pasta de upload'
+
 /** What the admin chose for one file. */
 export interface ImportChoice {
   path: string
@@ -115,15 +122,16 @@ export function toImportCandidate(candidate: RawImportCandidate): ImportCandidat
 }
 
 /**
- * One `ManualImport` file: the admin's series and episodes over Sonarr's own detection (door 1).
- * @example buildImportFile(candidate, { path, seriesId: 2, episodeIds: [123] }, 'D1')
+ * One `ManualImport` file: the admin's series and episodes over Sonarr's own detection (door 1);
+ * a folder file has no download to tie it to.
+ * @example buildImportFile(candidate, { path, seriesId: 2, episodeIds: [123] }, { kind: 'download', downloadId: 'D1' })
  */
-export function buildImportFile(candidate: RawImportCandidate, choice: ImportChoice, downloadId: string): Record<string, unknown> {
+export function buildImportFile(candidate: RawImportCandidate, choice: ImportChoice, source: ImportSource): Record<string, unknown> {
   return {
     path: choice.path,
     seriesId: choice.seriesId,
     episodeIds: choice.episodeIds,
-    downloadId,
+    ...(source.kind === 'download' ? { downloadId: source.downloadId } : {}),
     quality: candidate.quality,
     languages: candidate.languages,
     releaseGroup: candidate.releaseGroup,
@@ -144,3 +152,6 @@ export function toCommandState(command: RawCommand): CommandStatus {
   const isSuccess = command.status === 'completed' && command.result === 'successful'
   return { state: isSuccess ? 'completed' : 'failed', message }
 }
+
+/** The queue keeps the seed going (`auto`); an upload leaves its folder (`move`, decision Q5). */
+export const importModeOf = (source: ImportSource) => (source.kind === 'download' ? 'auto' : 'move')
