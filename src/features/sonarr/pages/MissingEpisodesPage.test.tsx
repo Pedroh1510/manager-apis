@@ -123,9 +123,19 @@ describe('MissingEpisodesPage', () => {
     await waitFor(() => expect(api.searchAllMissing).toHaveBeenCalled())
     expect(await screen.findByText('Busca enviada')).toBeInTheDocument()
 
-    vi.mocked(api.searchEpisodes).mockRejectedValue(httpError('Sonarr indisponível'))
+    vi.mocked(api.searchEpisodes).mockRejectedValue(httpError('falha selecionados'))
     fireEvent.click(checkbox('Selecionar The Wire S05E10'))
     fireEvent.click(screen.getByRole('button', { name: 'Buscar selecionados (1)' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Sonarr indisponível')
+    expect(await screen.findByText('falha selecionados')).toBeInTheDocument()
+
+    vi.mocked(api.searchAllMissing).mockRejectedValue(httpError('falha todos'))
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar todos' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+    expect(await screen.findByText('falha todos')).toBeInTheDocument()
+
+    vi.mocked(api.searchEpisode).mockRejectedValue(httpError('falha linha'))
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar The Wire S05E09' }))
+    expect(await screen.findByText('falha linha')).toBeInTheDocument()
+    expect(screen.getAllByRole('alert')).toHaveLength(3)
   })
 })

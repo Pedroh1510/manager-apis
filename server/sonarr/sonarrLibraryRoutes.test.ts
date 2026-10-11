@@ -92,16 +92,16 @@ describe('sonarr library routes', () => {
   })
 
   it('add series maps missing, duplicate and rejected to 404, 409 and 422', async () => {
-    const cases: [Error, number][] = [
-      [new SonarrLookupNotFoundError(999), 404],
-      [new SonarrSeriesExistsError(371980), 409],
-      [new SonarrRejectedError(['Invalid path', 'Other']), 422],
+    const cases: [Error, number, string][] = [
+      [new SonarrLookupNotFoundError(999), 404, 'série tvdb 999 não encontrada no Sonarr'],
+      [new SonarrSeriesExistsError(371980), 409, 'série 371980 já está na biblioteca'],
+      [new SonarrRejectedError(['Invalid path', 'Other']), 422, 'Sonarr recusou: Invalid path; Other'],
     ]
-    for (const [writeError, status] of cases) {
+    for (const [writeError, status, error] of cases) {
       await withSonarr({ writeError })
       const res = await call('POST', '/api/sonarr/series', addBody)
-      expect(res.status, writeError.message).toBe(status)
-      expect(JSON.parse(res.body)).toEqual({ error: writeError.message })
+      expect(res.status, error).toBe(status)
+      expect(JSON.parse(res.body)).toEqual({ error })
       await app!.close()
       app = undefined
     }

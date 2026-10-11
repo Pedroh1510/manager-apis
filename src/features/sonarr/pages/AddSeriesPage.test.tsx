@@ -59,6 +59,7 @@ describe('AddSeriesPage', () => {
     fireEvent.change(screen.getByLabelText('Buscar série'), { target: { value: 'frieren' } })
     fireEvent.click(screen.getByRole('button', { name: 'Buscar' }))
     await waitFor(() => expect(api.lookupSeries).toHaveBeenCalledWith('frieren'))
+    expect(screen.getByTestId('location')).toHaveTextContent('/sonarr/adicionar?q=frieren')
   })
 
   it('shows loading, empty and error states', async () => {
@@ -85,7 +86,7 @@ describe('AddSeriesPage', () => {
     expect(card).toHaveTextContent('Severance')
     expect(card).toHaveTextContent('2022')
     expect(card).toHaveTextContent('Apple TV')
-    expect(card).toHaveTextContent('Mark leads a team.')
+    expect(within(card).getByText('Mark leads a team.')).toHaveClass('line-clamp-3')
     expect(within(screen.getByRole('button', { name: 'Adicionar Frieren' })).getByLabelText('Sem pôster: Frieren')).toHaveTextContent('F')
 
     fireEvent.error(within(card).getByRole('img'))
@@ -135,6 +136,7 @@ describe('AddSeriesPage', () => {
       qualityProfileId: 4, rootFolderPath: '/anime', monitor: 'lastSeason', searchForMissingEpisodes: false,
     })
     finish(7)
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
   it('after adding stays on the search and marks the card', async () => {
