@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ToastProvider } from './Toast'
 import { useToast } from './useToast'
@@ -41,5 +41,24 @@ describe('Toast', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }))
     expect(screen.queryByText('falhou')).not.toBeInTheDocument()
+  })
+
+  it('success toast can carry a link', () => {
+    const onFollow = vi.fn()
+    function LinkTrigger() {
+      const toast = useToast()
+      return <button onClick={() => toast.success('Série adicionada', { label: 'Ver série', href: '/sonarr/7', onFollow })}>disparar</button>
+    }
+    render(
+      <ToastProvider>
+        <LinkTrigger />
+      </ToastProvider>
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'disparar' }))
+
+    const link = within(screen.getByRole('status')).getByRole('link', { name: 'Ver série' })
+    expect(link).toHaveAttribute('href', '/sonarr/7')
+    fireEvent.click(link)
+    expect(onFollow).toHaveBeenCalledWith('/sonarr/7')
   })
 })
