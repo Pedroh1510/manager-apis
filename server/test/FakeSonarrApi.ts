@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import type { RawCommand, RawImportCandidate, RawQueueRecord } from '../sonarr/manualImport.js'
 import type { RawMissingPage } from '../sonarr/missingEpisodes.js'
 import type { RawEpisode, RawSeries } from '../sonarr/seriesDetail.js'
 import type { RawLookupSeries } from '../sonarr/seriesLookup.js'
@@ -22,6 +23,12 @@ export interface FakeSonarrOptions {
   /** Status and body for POST /series (default 201 echoing the request). */
   addStatus?: number
   addResponse?: unknown
+  queue?: RawQueueRecord[]
+  importCandidates?: RawImportCandidate[]
+  /** id returned by POST /command (default 1). */
+  commandId?: number
+  /** GET /command/:id answers; unknown ids get 404. */
+  commands?: Record<number, RawCommand>
   /** Answer every request with this status instead of data. */
   failStatus?: number
   delayMs?: number
@@ -83,6 +90,8 @@ export class FakeSonarrApi {
     const { series = [], episodes = [] } = this.options
     const one = url.pathname.match(/^\/api\/v3\/series\/(\d+)$/)
     if (one) return series.find((item) => item.id === Number(one[1]))
+    const command = url.pathname.match(/^\/api\/v3\/command\/(\d+)$/)
+    if (command) return this.options.commands?.[Number(command[1])]
     const routes: Record<string, unknown> = {
       '/api/v3/system/status': { version: '4.0.9.2244' },
       '/api/v3/health': this.options.health ?? [],
@@ -92,6 +101,8 @@ export class FakeSonarrApi {
       '/api/v3/release': this.options.releases ?? [],
       '/api/v3/series/lookup': this.lookup(url.searchParams.get('term') ?? ''),
       '/api/v3/qualityprofile': this.options.qualityProfiles ?? [],
+      '/api/v3/queue': { page: 1, pageSize: 200, totalRecords: this.options.queue?.length ?? 0, records: this.options.queue ?? [] },
+      '/api/v3/manualimport': this.options.importCandidates ?? [],
       '/api/v3/wanted/missing': this.options.missing ?? { page: 1, pageSize: 20, totalRecords: 0, records: [] },
       // One series per fake: every episode belongs to whichever seriesId is asked.
       '/api/v3/episode': url.searchParams.has('seriesId') ? episodes : [],
@@ -115,7 +126,9 @@ export class FakeSonarrApi {
     const isSeriesPut = method === 'PUT' && /^\/api\/v3\/series\/\d+$/.test(path)
     const status = isSeriesPut ? 202 : statuses[`${method} ${path}`]
     if (!status) return void res.writeHead(404).end('Not Found')
-    res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body ?? {}))
+    // Sonarr answers a command with the queued command, including its id.
+    const answer = path === '/api/v3/command' ? { ...(body as object), id: this.options.commandId ?? 1, status: 'queued' } : body ?? {}
+    res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(answer))
   }
 
   private sendPoster(seriesId: number, res: ServerResponse): void {

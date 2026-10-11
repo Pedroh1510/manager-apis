@@ -1,6 +1,7 @@
 import { SonarrGatewayError, SonarrNotFoundError, type SonarrGateway, type SonarrPoster, type SonarrStatusInfo } from '../sonarr/sonarrGateway.js'
 import type { SeriesDetail, SeriesSummary } from '../sonarr/seriesDetail.js'
 import type { ReleaseQuery, ReleaseSummary } from '../sonarr/releases.js'
+import type { CommandStatus, ImportCandidate, ImportChoice, StuckDownload } from '../sonarr/manualImport.js'
 import type { MissingPage } from '../sonarr/missingEpisodes.js'
 import type { AddOptions, AddSeriesInput, SeriesLookupResult } from '../sonarr/seriesLookup.js'
 
@@ -14,6 +15,12 @@ export interface FakeSonarrData {
   addOptions?: AddOptions
   addedSeriesId?: number
   missing?: MissingPage
+  stuckDownloads?: StuckDownload[]
+  importFiles?: ImportCandidate[]
+  importCommandId?: number
+  commandStatus?: CommandStatus
+  /** Throws this error from readCommand, e.g. a SonarrCommandNotFoundError. */
+  readError?: Error
   /** Throws this error from every write, e.g. a SonarrSeasonNotFoundError. */
   writeError?: Error
   failWith?: string
@@ -99,6 +106,27 @@ export class FakeSonarrGateway implements SonarrGateway {
 
   async searchAllMissing(): Promise<void> {
     this.write('searchAllMissing')
+  }
+
+  async listStuckDownloads(): Promise<StuckDownload[]> {
+    this.enter('listStuckDownloads')
+    return this.data.stuckDownloads ?? []
+  }
+
+  async listImportFiles(downloadId: string): Promise<ImportCandidate[]> {
+    this.enter(`listImportFiles:${downloadId}`)
+    return this.data.importFiles ?? []
+  }
+
+  async startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
+    this.write(`startManualImport:${downloadId}:${JSON.stringify(files)}`)
+    return this.data.importCommandId ?? 1
+  }
+
+  async readCommand(commandId: number): Promise<CommandStatus> {
+    this.enter(`readCommand:${commandId}`)
+    if (this.data.readError) throw this.data.readError
+    return this.data.commandStatus ?? { state: 'completed', message: null }
   }
 
   private write(call: string): void {
