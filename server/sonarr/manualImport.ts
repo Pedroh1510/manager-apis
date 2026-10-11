@@ -69,11 +69,20 @@ export interface RawCommand {
   message?: string
 }
 
+type RawStatusMessage = NonNullable<RawQueueRecord['statusMessages']>[number]
+
+/** Sonarr titles each warning (often the file name) and lists its reasons; a bare title is a warning on its own (decision M1). */
+function statusTexts(status: RawStatusMessage): string[] {
+  const messages = status.messages ?? []
+  if (messages.length === 0) return status.title ? [status.title] : []
+  return messages.map((message) => (status.title ? `${status.title}: ${message}` : message))
+}
+
 const isStuck = (record: RawQueueRecord) => (STUCK_STATES as readonly string[]).includes(record.trackedDownloadState ?? '')
 
 /**
  * One entry per stuck download: Sonarr lists a download once per episode it maps to.
- * @example toStuckDownloads(queue.records)[0].messages // ['Unknown episode']
+ * @example toStuckDownloads(queue.records)[0].messages // ['random name 07.mkv: Invalid season or episode']
  */
 export function toStuckDownloads(records: RawQueueRecord[]): StuckDownload[] {
   const byDownload = new Map<string, StuckDownload>()
@@ -83,7 +92,7 @@ export function toStuckDownloads(records: RawQueueRecord[]): StuckDownload[] {
       downloadId, title: record.title, seriesTitle: record.series?.title ?? null,
       state: record.trackedDownloadState ?? '', messages: [], size: record.size,
     }
-    const texts = (record.statusMessages ?? []).flatMap((status) => status.messages ?? [])
+    const texts = (record.statusMessages ?? []).flatMap(statusTexts)
     byDownload.set(downloadId, { ...current, messages: [...new Set([...current.messages, ...texts])] })
   }
   return [...byDownload.values()]

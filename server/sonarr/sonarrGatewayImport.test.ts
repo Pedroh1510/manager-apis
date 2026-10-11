@@ -33,8 +33,17 @@ describe('FetchSonarrGateway manual import', () => {
   it('stuck downloads keep only pending or blocked, one per download', async () => {
     const gateway = await gatewayFor({
       queue: [
-        queueRecord({ downloadId: 'D1', trackedDownloadState: 'importBlocked', series: { title: 'Severance' }, statusMessages: [{ messages: ['Unknown episode'] }] }),
-        queueRecord({ downloadId: 'D1', trackedDownloadState: 'importBlocked', series: { title: 'Severance' }, statusMessages: [{ messages: ['Unknown episode', 'Sample'] }] }),
+        queueRecord({
+          downloadId: 'D1', trackedDownloadState: 'importBlocked', series: { title: 'Severance' },
+          statusMessages: [
+            { title: 'One or more episodes expected in this release were not imported', messages: [] },
+            { title: 'random name 07.mkv', messages: ['Invalid season or episode'] },
+          ],
+        }),
+        queueRecord({
+          downloadId: 'D1', trackedDownloadState: 'importBlocked', series: { title: 'Severance' },
+          statusMessages: [{ title: 'random name 07.mkv', messages: ['Invalid season or episode', 'Sample'] }],
+        }),
         queueRecord({ downloadId: 'D2', title: 'random', size: 10, trackedDownloadState: 'importPending' }),
         queueRecord({ downloadId: 'D3', trackedDownloadState: 'downloading' }),
       ],
@@ -46,7 +55,8 @@ describe('FetchSonarrGateway manual import', () => {
     expect(url.searchParams.get('pageSize')).toBe('200')
     expect(url.searchParams.get('includeSeries')).toBe('true')
     expect(stuck).toEqual([
-      { downloadId: 'D1', title: 'Severance.S02.1080p', seriesTitle: 'Severance', state: 'importBlocked', messages: ['Unknown episode', 'Sample'], size: 4000 },
+      { downloadId: 'D1', title: 'Severance.S02.1080p', seriesTitle: 'Severance', state: 'importBlocked', size: 4000,
+        messages: ['One or more episodes expected in this release were not imported', 'random name 07.mkv: Invalid season or episode', 'random name 07.mkv: Sample'] },
       { downloadId: 'D2', title: 'random', seriesTitle: null, state: 'importPending', messages: [], size: 10 },
     ])
   })
