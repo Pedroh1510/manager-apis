@@ -75,12 +75,13 @@ describe('FetchSonarrGateway', () => {
 
   it('series detail joins the series and its episodes', async () => {
     const gateway = await gatewayFor({
-      series: [series({ seasons: [{ seasonNumber: 1, statistics: { episodeFileCount: 1, episodeCount: 1 } }] })],
+      series: [series({ seasons: [{ seasonNumber: 1, monitored: false, statistics: { episodeFileCount: 1, episodeCount: 1 } }] })],
       episodes: [{ id: 10, seasonNumber: 1, episodeNumber: 1, title: 'The Target', airDateUtc: '2002-06-03T01:00:00Z', hasFile: true, monitored: true }],
     })
     const detail = await gateway.getSeriesDetail(1)
 
     expect(detail.title).toBe('The Wire')
+    expect(detail.seasons[0].monitored).toBe(false)
     expect(detail.seasons[0].episodes).toEqual([
       { id: 10, episodeNumber: 1, title: 'The Target', airDateUtc: '2002-06-03T01:00:00Z', state: 'downloaded', monitored: true },
     ])

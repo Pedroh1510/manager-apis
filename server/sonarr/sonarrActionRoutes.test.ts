@@ -64,12 +64,13 @@ describe('sonarr action routes', () => {
   })
 
   it('invalid or unknown season returns 400 or 404', async () => {
-    await withSonarr({ writeError: new SonarrSeasonNotFoundError(1, 9) })
+    const gateway = await withSonarr({ writeError: new SonarrSeasonNotFoundError(1, 9) })
     for (const season of ['x', '-1']) {
       const res = await call('PUT', `/api/sonarr/series/1/seasons/${season}/monitor`, { monitored: true })
       expect(res.status, season).toBe(400)
       expect(JSON.parse(res.body).error).toContain(`temporada inválida: "${season}"`)
     }
+    expect(gateway.calls).toEqual([])
     const missing = await call('PUT', '/api/sonarr/series/1/seasons/9/monitor', { monitored: true })
     expect(missing.status).toBe(404)
     expect(JSON.parse(missing.body)).toEqual({ error: 'temporada 9 não encontrada na série 1' })
@@ -99,10 +100,13 @@ describe('sonarr action routes', () => {
 
   it('releases query is validated and forwarded', async () => {
     const gateway = await withSonarr({ releases: [] })
-    for (const query of ['', '?episodeId=abc', '?seriesId=1', '?seriesId=1&seasonNumber=x']) {
+    const invalid: [string, Record<string, string>][] = [
+      ['', {}], ['?episodeId=abc', { episodeId: 'abc' }], ['?seriesId=1', { seriesId: '1' }], ['?seriesId=1&seasonNumber=x', { seriesId: '1', seasonNumber: 'x' }],
+    ]
+    for (const [query, received] of invalid) {
       const res = await call('GET', `/api/sonarr/releases${query}`)
       expect(res.status, query).toBe(400)
-      expect(JSON.parse(res.body).error.startsWith('consulta inválida: esperado episodeId ou seriesId+seasonNumber')).toBe(true)
+      expect(JSON.parse(res.body)).toEqual({ error: `consulta inválida: esperado episodeId ou seriesId+seasonNumber, recebido ${JSON.stringify(received)}` })
     }
     expect((await call('GET', '/api/sonarr/releases?episodeId=11')).status).toBe(200)
     expect((await call('GET', '/api/sonarr/releases?seriesId=1&seasonNumber=2')).status).toBe(200)
@@ -113,7 +117,11 @@ describe('sonarr action routes', () => {
     const gateway = await withSonarr()
     expect((await call('POST', '/api/sonarr/releases', { guid: 'g1', indexerId: 3 })).status).toBe(204)
     for (const body of [{ guid: '', indexerId: 3 }, { guid: 'g1', indexerId: 0 }]) {
-      expect((await call('POST', '/api/sonarr/releases', body)).status, JSON.stringify(body)).toBe(400)
+      const res = await call('POST', '/api/sonarr/releases', body)
+      expect(res.status, JSON.stringify(body)).toBe(400)
+      expect(JSON.parse(res.body)).toEqual({
+        error: `corpo inválido: esperado { guid: texto não vazio, indexerId: inteiro positivo }, recebido ${JSON.stringify(body)}`,
+      })
     }
     expect(gateway.calls).toEqual(['grabRelease:g1:3'])
   })
