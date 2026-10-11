@@ -1,6 +1,8 @@
 import { SonarrGatewayError, SonarrNotFoundError, type SonarrGateway, type SonarrPoster, type SonarrStatusInfo } from '../sonarr/sonarrGateway.js'
 import type { SeriesDetail, SeriesSummary } from '../sonarr/seriesDetail.js'
 import type { ReleaseQuery, ReleaseSummary } from '../sonarr/releases.js'
+import type { MissingPage } from '../sonarr/missingEpisodes.js'
+import type { AddOptions, AddSeriesInput, SeriesLookupResult } from '../sonarr/seriesLookup.js'
 
 export interface FakeSonarrData {
   status?: SonarrStatusInfo
@@ -8,6 +10,10 @@ export interface FakeSonarrData {
   details?: Record<number, SeriesDetail>
   posters?: Record<number, SonarrPoster>
   releases?: ReleaseSummary[]
+  lookup?: SeriesLookupResult[]
+  addOptions?: AddOptions
+  addedSeriesId?: number
+  missing?: MissingPage
   /** Throws this error from every write, e.g. a SonarrSeasonNotFoundError. */
   writeError?: Error
   failWith?: string
@@ -65,6 +71,34 @@ export class FakeSonarrGateway implements SonarrGateway {
 
   async grabRelease(guid: string, indexerId: number): Promise<void> {
     this.write(`grabRelease:${guid}:${indexerId}`)
+  }
+
+  async lookupSeries(term: string): Promise<SeriesLookupResult[]> {
+    this.enter(`lookupSeries:${term}`)
+    return this.data.lookup ?? []
+  }
+
+  async readAddOptions(): Promise<AddOptions> {
+    this.enter('readAddOptions')
+    return this.data.addOptions ?? { qualityProfiles: [], rootFolders: [] }
+  }
+
+  async addSeries(input: AddSeriesInput): Promise<number> {
+    this.write(`addSeries:${JSON.stringify(input)}`)
+    return this.data.addedSeriesId ?? 1
+  }
+
+  async listMissing(page: number): Promise<MissingPage> {
+    this.enter(`listMissing:${page}`)
+    return this.data.missing ?? { page, pageSize: 20, totalRecords: 0, records: [] }
+  }
+
+  async searchEpisodes(episodeIds: number[]): Promise<void> {
+    this.write(`searchEpisodes:${JSON.stringify(episodeIds)}`)
+  }
+
+  async searchAllMissing(): Promise<void> {
+    this.write('searchAllMissing')
   }
 
   private write(call: string): void {

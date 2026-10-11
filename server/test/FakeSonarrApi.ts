@@ -1,6 +1,8 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import type { RawMissingPage } from '../sonarr/missingEpisodes.js'
 import type { RawEpisode, RawSeries } from '../sonarr/seriesDetail.js'
+import type { RawLookupSeries } from '../sonarr/seriesLookup.js'
 
 export interface FakeSonarrOptions {
   series?: RawSeries[]
@@ -13,6 +15,13 @@ export interface FakeSonarrOptions {
   releases?: unknown[]
   /** Status for POST /release; 404 simulates a release that left Sonarr's cache. */
   grabStatus?: number
+  /** Every `/series/lookup` answer; a `tvdb:<id>` term narrows it to that id. */
+  lookup?: RawLookupSeries[]
+  qualityProfiles?: unknown[]
+  missing?: RawMissingPage
+  /** Status and body for POST /series (default 201 echoing the request). */
+  addStatus?: number
+  addResponse?: unknown
   /** Answer every request with this status instead of data. */
   failStatus?: number
   delayMs?: number
@@ -81,14 +90,27 @@ export class FakeSonarrApi {
       '/api/v3/rootfolder': this.options.rootFolders ?? [],
       '/api/v3/series': series,
       '/api/v3/release': this.options.releases ?? [],
+      '/api/v3/series/lookup': this.lookup(url.searchParams.get('term') ?? ''),
+      '/api/v3/qualityprofile': this.options.qualityProfiles ?? [],
+      '/api/v3/wanted/missing': this.options.missing ?? { page: 1, pageSize: 20, totalRecords: 0, records: [] },
       // One series per fake: every episode belongs to whichever seriesId is asked.
       '/api/v3/episode': url.searchParams.has('seriesId') ? episodes : [],
     }
     return routes[url.pathname]
   }
 
+  private lookup(term: string): RawLookupSeries[] {
+    const all = this.options.lookup ?? []
+    const tvdb = term.match(/^tvdb:(\d+)$/)
+    return tvdb ? all.filter((series) => series.tvdbId === Number(tvdb[1])) : all
+  }
+
   private answerWrite(method: string, path: string, body: unknown, res: ServerResponse): void {
     if (method === 'POST' && path === '/api/v3/release') return void res.writeHead(this.options.grabStatus ?? 200).end('{}')
+    if (method === 'POST' && path === '/api/v3/series') {
+      const answer = JSON.stringify(this.options.addResponse ?? body ?? {})
+      return void res.writeHead(this.options.addStatus ?? 201, { 'Content-Type': 'application/json' }).end(answer)
+    }
     const statuses: Record<string, number> = { 'PUT /api/v3/episode/monitor': 202, 'POST /api/v3/command': 201 }
     const isSeriesPut = method === 'PUT' && /^\/api\/v3\/series\/\d+$/.test(path)
     const status = isSeriesPut ? 202 : statuses[`${method} ${path}`]

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { FakeSonarrGateway, type FakeSonarrData } from '../test/FakeSonarrGateway.js'
+import { callApp } from '../test/callApp.js'
 import { startTestApp, type TestApp } from '../test/startTestApp.js'
 import { SonarrReleaseExpiredError, SonarrSeasonNotFoundError } from './sonarrGateway.js'
 
@@ -11,13 +12,8 @@ afterEach(async () => {
   app = undefined
 })
 
-async function call(method: string, path: string, body?: unknown): Promise<{ status: number; body: string }> {
-  const res = await fetch(`${app!.url}${path}`, {
-    method,
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body),
-  })
-  return { status: res.status, body: await res.text() }
+function call(method: string, path: string, body?: unknown) {
+  return callApp(app!, method, path, body)
 }
 
 async function withSonarr(data: FakeSonarrData = {}): Promise<FakeSonarrGateway> {
