@@ -35,7 +35,7 @@ Tests use hardcoded production URLs from `vite.config.ts` — no local `.env` ne
 
 ## Architecture
 
-React 19 SPA with two backend APIs: **anime-rss** and **mangas**, served by its own Express server (`server/`), which also exposes `/api/*` for integrations whose credentials must stay server-side (qBittorrent, Sonarr). Integration env (`QBITTORRENT_URL`/`_USER`/`_PASS`, `SONARR_URL`/`_API_KEY`) is runtime env of the container, never `VITE_*`.
+React 19 SPA with two backend APIs: **anime-rss** and **mangas**, served by its own Express server (`server/`), which also exposes `/api/*` for integrations whose credentials must stay server-side (qBittorrent, Sonarr). Integration env (`QBITTORRENT_URL`/`_USER`/`_PASS`, `SONARR_URL`/`_API_KEY`, optional `SONARR_UPLOAD_DIR`) is runtime env of the container, never `VITE_*`. `SONARR_UPLOAD_DIR` must be mounted at the same path in this container and in Sonarr's.
 
 **Entry point:** `src/main.tsx` → `App.tsx` wraps everything in `QueryClientProvider` + `RouterProvider`.
 
