@@ -127,14 +127,11 @@ describe('FetchSonarrGateway manual import', () => {
     await expect(missing).rejects.toThrow('comando 392 não encontrado no Sonarr')
   })
 
-  it('upload folder candidates ask manualimport by folder and series', async () => {
+  it('upload folder candidates ask manualimport by folder only', async () => {
     const gateway = await gatewayFor({ importCandidates: [inFolder] })
-    await gateway.listImportFiles({ ...UPLOADS, seriesId: 2 })
     await gateway.listImportFiles(UPLOADS)
-    expect(sonarr!.requests.map((request) => request.url)).toEqual([
-      '/api/v3/manualimport?folder=%2Fuploads&filterExistingFiles=true&seriesId=2',
-      '/api/v3/manualimport?folder=%2Fuploads&filterExistingFiles=true',
-    ])
+    // With seriesId, Sonarr ignores `folder` and lists the series folder instead (decision K2).
+    expect(sonarr!.requests.map((request) => request.url)).toEqual(['/api/v3/manualimport?folder=%2Fuploads&filterExistingFiles=true'])
   })
 
   it('upload import moves files and leaves out the download id', async () => {

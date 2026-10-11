@@ -26,9 +26,8 @@ export interface FakeSonarrData {
   failWith?: string
 }
 
-/** `D1` for a download, `folder:/uploads[:2]` for the upload folder, so call logs stay short. */
-const sourceKey = (source: ImportSource) =>
-  source.kind === 'download' ? source.downloadId : ['folder', source.folder, source.seriesId].filter((part) => part !== undefined).join(':')
+/** `D1` for a download, `folder:/uploads` for the upload folder, so call logs stay short. */
+const sourceKey = (source: ImportSource) => (source.kind === 'download' ? source.downloadId : `folder:${source.folder}`)
 
 /**
  * In-memory gateway for route tests; unknown ids throw SonarrNotFoundError like the real one.

@@ -24,29 +24,30 @@ export function parseCommandId(raw: string): number {
   throw new InvalidInputError(`id de comando inválido: "${raw}"`)
 }
 
-function uploadSource(uploadDir: string | null, seriesId?: number): ImportSource {
+function uploadSource(uploadDir: string | null): ImportSource {
   if (uploadDir === null) throw new UploadDisabledError()
-  return seriesId === undefined ? { kind: 'folder', folder: uploadDir } : { kind: 'folder', folder: uploadDir, seriesId }
+  return { kind: 'folder', folder: uploadDir }
 }
 
 const invalidQuery = (query: Record<string, unknown>) =>
   new InvalidInputError(`consulta inválida: esperado downloadId ou source=upload, recebido ${JSON.stringify(query)}`)
 
-function parseOptionalSeriesId(raw: unknown, query: Record<string, unknown>): number | undefined {
-  if (raw === undefined) return undefined
+/** The screen sends the preselected series; it is checked but never reaches Sonarr (decision K2). */
+function assertOptionalSeriesId(raw: unknown, query: Record<string, unknown>): void {
+  if (raw === undefined) return
   const seriesId = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN
-  if (isPositiveInteger(seriesId)) return seriesId
-  throw invalidQuery(query)
+  if (!isPositiveInteger(seriesId)) throw invalidQuery(query)
 }
 
 /**
  * Which files `GET /import/files` lists: a download's, or the upload folder's (decision K1 for the messages).
- * @example parseImportFilesQuery({ source: 'upload', seriesId: '2' }, '/uploads') // { kind: 'folder', folder: '/uploads', seriesId: 2 }
+ * @example parseImportFilesQuery({ source: 'upload', seriesId: '2' }, '/uploads') // { kind: 'folder', folder: '/uploads' }
  */
 export function parseImportFilesQuery(query: Record<string, unknown>, uploadDir: string | null): ImportSource {
   if (query.downloadId !== undefined && query.source === undefined) return { kind: 'download', downloadId: parseDownloadId(query.downloadId) }
   if (query.source !== UPLOAD_SOURCE || query.downloadId !== undefined) throw invalidQuery(query)
-  return uploadSource(uploadDir, parseOptionalSeriesId(query.seriesId, query))
+  assertOptionalSeriesId(query.seriesId, query)
+  return uploadSource(uploadDir)
 }
 
 function isImportChoice(value: unknown): value is ImportChoice {

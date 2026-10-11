@@ -144,7 +144,7 @@ describe('sonarr import routes', () => {
     expect(res.status).toBe(200)
     expect(JSON.parse(res.body)).toEqual([candidate])
     expect((await call('GET', '/api/sonarr/import/files?source=upload')).status).toBe(200)
-    expect(gateway.calls).toEqual([`listImportFiles:folder:${uploadDir}:2`, `listImportFiles:folder:${uploadDir}`])
+    expect(gateway.calls).toEqual([`listImportFiles:folder:${uploadDir}`, `listImportFiles:folder:${uploadDir}`])
   })
 
   it('invalid import file queries return 400', async () => {

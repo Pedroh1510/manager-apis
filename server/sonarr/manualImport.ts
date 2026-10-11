@@ -49,7 +49,7 @@ export interface ImportCandidate {
 }
 
 /** Where the files to import come from: a stuck download, or the upload folder (door 2 of PR 4b). */
-export type ImportSource = { kind: 'download'; downloadId: string } | { kind: 'folder'; folder: string; seriesId?: number }
+export type ImportSource = { kind: 'download'; downloadId: string } | { kind: 'folder'; folder: string }
 
 /** Shown in errors, e.g. `arquivo não encontrado no download D1: …`. */
 export const describeSource = (source: ImportSource) =>

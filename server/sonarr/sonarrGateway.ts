@@ -155,9 +155,8 @@ const QUEUE_PAGE_SIZE = 200
 
 function manualImportParams(source: ImportSource): URLSearchParams {
   if (source.kind === 'download') return new URLSearchParams({ downloadId: source.downloadId, filterExistingFiles: 'true' })
-  const params = new URLSearchParams({ folder: source.folder, filterExistingFiles: 'true' })
-  if (source.seriesId !== undefined) params.set('seriesId', String(source.seriesId))
-  return params
+  // Never with seriesId: Sonarr then ignores `folder` and lists the series folder (decision K2).
+  return new URLSearchParams({ folder: source.folder, filterExistingFiles: 'true' })
 }
 
 /** A folder import may only touch files under that folder, whatever Sonarr would accept. */
