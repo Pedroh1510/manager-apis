@@ -45,6 +45,7 @@ function renderPage(route = '/sonarr/importar') {
 
 const chooseFiles = async (files: File[]) => {
   const input = (await screen.findByText('Escolher arquivos')).querySelector('input') as HTMLInputElement
+  expect(input).toHaveAttribute('multiple')
   fireEvent.change(input, { target: { files } })
 }
 const rowOf = (name: string) => screen.getByTestId(`upload-${name}`)
