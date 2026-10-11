@@ -157,6 +157,14 @@ describe('sonarr import routes', () => {
     expect(gateway.calls).toEqual([])
   })
 
+  it('upload source maps a file outside the folder to 404', async () => {
+    await withSonarr({ writeError: new SonarrImportFileNotFoundError({ kind: 'folder', folder: uploadDir }, '/etc/a.mkv') }, uploadStore)
+    const files = [{ path: '/etc/a.mkv', seriesId: 2, episodeIds: [125] }]
+    const res = await call('POST', '/api/sonarr/import', { source: 'upload', files })
+    expect(res.status).toBe(404)
+    expect(JSON.parse(res.body)).toEqual({ error: 'arquivo não encontrado na pasta de upload: /etc/a.mkv' })
+  })
+
   it('upload source imports from the configured folder', async () => {
     const gateway = await withSonarr({ importCommandId: 7 }, uploadStore)
     const files = [{ path: `${uploadDir}/a.mkv`, seriesId: 2, episodeIds: [125] }]

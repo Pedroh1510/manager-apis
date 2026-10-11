@@ -1,10 +1,10 @@
 // @vitest-environment node
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PassThrough, Readable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
-import { FsUploadStore, UploadTooLargeError } from './uploadStore.js'
+import { FsUploadStore, UploadExistsError, UploadTooLargeError } from './uploadStore.js'
 
 const newDir = () => mkdtempSync(join(tmpdir(), 'upload-store-'))
 
@@ -41,5 +41,18 @@ describe('FsUploadStore', () => {
     await expect(saving).rejects.toThrow('connection reset')
     expect(existsSync(join(dir, 'x.mkv'))).toBe(false)
     expect(existsSync(join(dir, 'x.mkv.part'))).toBe(false)
+  })
+
+  it('a name that appears mid-upload keeps the other file and removes our part', async () => {
+    const dir = newDir()
+    const body = new PassThrough()
+    const saving = new FsUploadStore(dir).save('race.mkv', body, null)
+    body.write(Buffer.alloc(100))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    writeFileSync(join(dir, 'race.mkv'), 'other upload won')
+    body.end()
+    await expect(saving).rejects.toThrow(UploadExistsError)
+    expect(readdirSync(dir)).toEqual(['race.mkv'])
+    expect(readFileSync(join(dir, 'race.mkv'), 'utf8')).toBe('other upload won')
   })
 })

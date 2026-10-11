@@ -76,12 +76,16 @@ export class FsUploadStore implements UploadStore {
     if (declaredSize !== null && declaredSize > this.maxBytes) throw new UploadTooLargeError(declaredSize)
     const [finalPath, partPath] = [join(this.dir, name), join(this.dir, name + PART_SUFFIX)]
     if (await this.exists(finalPath)) throw new UploadExistsError(name)
+    // `wx` fails when the .part exists: a second upload of the same name never shares a file.
+    const partFile = createWriteStream(partPath, { flags: 'wx' })
+    let ownsPart = false
+    partFile.once('open', () => (ownsPart = true))
     try {
-      // `wx` fails when the .part exists: a second upload of the same name never shares a file.
-      await pipeline(body, sizeLimit(this.maxBytes), createWriteStream(partPath, { flags: 'wx' }))
+      await pipeline(body, sizeLimit(this.maxBytes), partFile)
       await link(partPath, finalPath)
     } catch (error: unknown) {
-      if (!isErrorCode(error, 'EEXIST')) await unlink(partPath).catch(() => undefined)
+      // Only our own .part is removed: another upload's .part, or the final name created meanwhile, stay.
+      if (ownsPart) await unlink(partPath).catch(() => undefined)
       throw isErrorCode(error, 'EEXIST') ? new UploadExistsError(name) : error
     }
     await unlink(partPath)

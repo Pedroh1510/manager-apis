@@ -27,6 +27,15 @@ async function put(path: string, body: Buffer, headers: Record<string, string> =
   return { status: res.status, body: await res.text() }
 }
 
+/** Polls instead of sleeping a fixed time; fails the test after 2 s. */
+async function waitUntil(condition: () => boolean): Promise<void> {
+  const deadline = Date.now() + 2000
+  while (!condition()) {
+    if (Date.now() > deadline) throw new Error('condition not met within 2000 ms')
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+}
+
 const INVALID_NAME = (name: string) =>
   `nome de arquivo inválido: "${name}", esperado nome simples com extensão .mkv, .mp4, .avi, .srt ou .ass`
 
@@ -102,9 +111,9 @@ describe('upload routes', () => {
     const req = request(`${app!.url}/api/sonarr/uploads/cut.mkv`, { method: 'PUT', headers: { 'Content-Length': '100000' } })
     req.on('error', () => undefined)
     req.write(Buffer.alloc(1000))
-    await new Promise((resolve) => setTimeout(resolve, 50))
+    await waitUntil(() => existsSync(join(dir, 'cut.mkv.part')))
     req.destroy()
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await waitUntil(() => readdirSync(dir).length === 0)
     expect(readdirSync(dir)).toEqual([])
   })
 

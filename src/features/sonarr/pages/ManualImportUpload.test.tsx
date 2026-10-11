@@ -5,6 +5,7 @@ import * as api from '../services/api'
 import * as configApi from '../../server-config/services/api'
 import type { ImportCandidate, SeriesSummary, UploadedFile } from '../services/types'
 import { renderWithProviders } from '../../../test/renderWithProviders'
+import { formatDateTime } from '../../../lib/formatDate'
 
 vi.mock('../services/api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
@@ -118,7 +119,7 @@ describe('ManualImportPage upload', () => {
     const folder = (await screen.findByRole('heading', { name: 'Pasta de upload' })).closest('section') as HTMLElement
     const row = (await within(folder).findByText('new.mkv')).closest('li') as HTMLElement
     expect(row).toHaveTextContent('1.5 GB')
-    expect(row).toHaveTextContent('2026')
+    expect(row).toHaveTextContent(formatDateTime(newFile.modifiedAt))
     fireEvent.click(within(row).getByRole('button', { name: 'Excluir new.mkv' }))
     expect(screen.getByRole('dialog')).toHaveTextContent('Excluir new.mkv da pasta de upload?')
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
@@ -150,6 +151,8 @@ describe('ManualImportPage upload', () => {
   })
 
   it('imports from the upload folder with the same drawer', async () => {
+    const ready: ImportCandidate = { ...candidate, path: '/uploads/Severance.S02E06.mkv', relativePath: 'Severance.S02E06.mkv', seriesId: 2, episodes: [{ id: 126, seasonNumber: 2, episodeNumber: 6 }] }
+    vi.mocked(api.fetchImportFiles).mockResolvedValue([candidate, ready])
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: 'Importar da pasta' }))
     const drawer = await screen.findByRole('dialog', { name: 'Importar — Pasta de upload' })
@@ -157,6 +160,10 @@ describe('ManualImportPage upload', () => {
     const select = await within(drawer).findByRole('combobox', { name: 'Série de random 05.mkv' })
     await within(select).findByRole('option', { name: 'Severance' })
     expect(select).toHaveValue('')
+    expect(within(drawer).getByRole('checkbox', { name: 'Importar Severance.S02E06.mkv' })).toBeChecked()
+
+    fireEvent.click(within(drawer).getByRole('button', { name: 'Importar (1)' }))
+    await waitFor(() => expect(api.startManualImport).toHaveBeenCalledWith({ source: 'upload' }, [{ path: '/uploads/Severance.S02E06.mkv', seriesId: 2, episodeIds: [126] }]))
   })
 
   it('a series in the url preselects it for unrecognized files', async () => {

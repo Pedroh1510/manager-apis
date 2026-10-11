@@ -77,6 +77,10 @@ describe('server app', () => {
   })
 
   it('config reports the upload integration', async () => {
+    app = await startTestApp({ sonarr: new FakeSonarrGateway() })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    await app.close()
+
     app = await startTestApp({ sonarr: new FakeSonarrGateway(), uploads: new FsUploadStore(mkdtempSync(join(tmpdir(), 'cfg-'))) })
     expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: true })
   })
