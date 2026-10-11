@@ -127,4 +127,21 @@ describe('ReleasesDrawer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Sonarr indisponível em http://sonarr:8989: timeout')
     expect(within(row('g2')).getByRole('button', { name: 'Baixar' })).toBeEnabled()
   })
+
+  it('sorts releases by newest without a new search', async () => {
+    const older = { ...approved, guid: 'g3', title: 'Show.S01E03.720p', ageHours: 200 }
+    vi.mocked(api.fetchReleases).mockResolvedValue([approved, older, rejected])
+    await openEpisodeSearch()
+    await screen.findByTestId('release-g1')
+    const order = () => within(drawer()).getAllByTestId(/^release-/).map((item) => item.dataset.testid)
+
+    const select = within(drawer()).getByRole('combobox', { name: 'Ordenar por' })
+    expect(within(select).getAllByRole('option').map((option) => option.textContent)).toEqual(['Sonarr', 'Mais recentes'])
+    expect(select).toHaveValue('sonarr')
+    expect(order()).toEqual(['release-g1', 'release-g3', 'release-g2'])
+
+    fireEvent.change(select, { target: { value: 'newest' } })
+    expect(order()).toEqual(['release-g1', 'release-g2', 'release-g3'])
+    expect(api.fetchReleases).toHaveBeenCalledTimes(1)
+  })
 })

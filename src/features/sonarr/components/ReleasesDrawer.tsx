@@ -7,7 +7,9 @@ import { ErrorMessage } from '../../../components/ui/ErrorMessage';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { useToast } from '../../../components/ui/useToast';
 import { getApiErrorMessage } from '../../../lib/apiError';
+import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { formatAge, formatBytes } from '../lib/formatSeries';
+import { RELEASE_SORTS, sortReleases, type ReleaseSort } from '../lib/sortReleases';
 import { fetchReleases, grabRelease } from '../services/api';
 import type { ReleaseQuery, ReleaseSummary } from '../services/types';
 
@@ -66,6 +68,7 @@ function ReleaseList({ query }: { query: ReleaseQuery }) {
 	const releases = useQuery({ queryKey: ['sonarr', 'releases', query], queryFn: () => fetchReleases(query), retry: false, gcTime: 0 });
 	const { send, sentGuids, sendingGuid } = useGrab();
 	const [pendingRejected, setPendingRejected] = useState<ReleaseSummary | null>(null);
+	const [sort, setSort] = useState<ReleaseSort>('sonarr');
 
 	if (releases.isPending) {
 		return (
@@ -79,8 +82,22 @@ function ReleaseList({ query }: { query: ReleaseQuery }) {
 	if (releases.data.length === 0) return <p className='py-8 text-center text-sm text-text-muted'>Nenhum release encontrado</p>;
 	return (
 		<>
+			<div className='mb-2 flex justify-end'>
+				<select
+					aria-label='Ordenar por'
+					value={sort}
+					onChange={(event) => setSort(event.target.value as ReleaseSort)}
+					className={`h-8 rounded-md border border-border bg-surface px-2 text-sm text-text ${FOCUS_RING}`}
+				>
+					{RELEASE_SORTS.map((option) => (
+						<option key={option.value} value={option.value}>
+							{option.label}
+						</option>
+					))}
+				</select>
+			</div>
 			<ul>
-				{releases.data.map((release) => (
+				{sortReleases(releases.data, sort).map((release) => (
 					<ReleaseRow
 						key={release.guid}
 						release={release}
