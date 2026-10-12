@@ -149,7 +149,8 @@ describe('sonarr import routes', () => {
 
   it('invalid import file queries return 400', async () => {
     const gateway = await withSonarr({}, uploadStore)
-    for (const query of [{}, { source: 'outra' }, { source: 'upload', seriesId: 'x' }]) {
+    const queries: Record<string, string>[] = [{}, { source: 'outra' }, { source: 'upload', seriesId: 'x' }]
+    for (const query of queries) {
       const res = await call('GET', `/api/sonarr/import/files?${new URLSearchParams(query)}`)
       expect(res.status, JSON.stringify(query)).toBe(400)
       expect(JSON.parse(res.body)).toEqual({ error: `consulta inválida: esperado downloadId ou source=upload, recebido ${JSON.stringify(query)}` })
