@@ -176,3 +176,23 @@ export interface UploadedFile {
 	size: number;
 	modifiedAt: string;
 }
+
+export type CalendarStatus = 'downloaded' | 'missing' | 'unaired' | 'unmonitored';
+
+/** `GET /api/sonarr/calendar` item; always has an air date. */
+export interface CalendarItem {
+	episodeId: number;
+	seriesId: number;
+	seriesTitle: string;
+	seasonNumber: number;
+	episodeNumber: number;
+	title: string;
+	airDateUtc: string;
+	status: CalendarStatus;
+}
+
+export interface CalendarQuery {
+	start: string;
+	end: string;
+	unmonitored: boolean;
+}

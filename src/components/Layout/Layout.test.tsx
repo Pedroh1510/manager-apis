@@ -3,7 +3,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { THEME_STORAGE_KEY } from '../../lib/theme'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { routes } from '../../router'
 import { Layout } from './Layout'
 import * as configApi from '../../features/server-config/services/api'
 import { createTestQueryClient } from '../../test/renderWithProviders'
@@ -132,7 +133,7 @@ describe('Layout', () => {
     await screen.findByRole('link', { name: 'Séries' })
     const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
     const mediaLinks = within(mediaSection).getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
-    expect(mediaLinks).toEqual([['Séries', '/sonarr'], ['Adicionar série', '/sonarr/adicionar'], ['Faltantes', '/sonarr/faltantes'], ['Importar', '/sonarr/importar']])
+    expect(mediaLinks).toEqual([['Séries', '/sonarr'], ['Calendário', '/sonarr/calendario'], ['Adicionar série', '/sonarr/adicionar'], ['Faltantes', '/sonarr/faltantes'], ['Importar', '/sonarr/importar']])
     expect(screen.getByRole('link', { name: 'Faltantes' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Séries' })).not.toHaveAttribute('aria-current')
     cleanup()
@@ -144,7 +145,20 @@ describe('Layout', () => {
       </MemoryRouter>
     )
     await screen.findByRole('link', { name: 'Torrents' })
-    for (const name of ['Séries', 'Adicionar série', 'Faltantes', 'Importar']) expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+    for (const name of ['Séries', 'Calendário', 'Adicionar série', 'Faltantes', 'Importar']) expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+  })
+
+  it('calendar link sits below series and is the only active one', async () => {
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    const router = createMemoryRouter(routes, { initialEntries: ['/sonarr/calendario'] })
+    render(<RouterProvider router={router} />)
+    const calendarLink = await screen.findByRole('link', { name: 'Calendário' })
+    const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
+    const labels = within(mediaSection).getAllByRole('link').map((link) => link.textContent)
+    expect(labels.slice(0, 2)).toEqual(['Séries', 'Calendário'])
+    expect(calendarLink).toHaveAttribute('href', '/sonarr/calendario')
+    expect(within(mediaSection).getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page')).toEqual([calendarLink])
+    expect(screen.getByRole('heading', { level: 1, name: 'Calendário' })).toBeInTheDocument()
   })
 
   it('shows Séries before Torrents when sonarr is configured', async () => {
@@ -158,7 +172,7 @@ describe('Layout', () => {
     expect(series).toHaveAttribute('href', '/sonarr')
     const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
     const mediaHrefs = within(mediaSection).getAllByRole('link').map((link) => link.getAttribute('href'))
-    expect(mediaHrefs).toEqual(['/sonarr', '/sonarr/adicionar', '/sonarr/faltantes', '/sonarr/importar', '/torrents'])
+    expect(mediaHrefs).toEqual(['/sonarr', '/sonarr/calendario', '/sonarr/adicionar', '/sonarr/faltantes', '/sonarr/importar', '/torrents'])
   })
 
   it('hides Séries unless sonarr is configured and drops an empty media section', async () => {

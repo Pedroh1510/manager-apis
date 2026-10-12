@@ -1,5 +1,7 @@
 import { serverHttp } from '../../../lib/http';
 import type {
+	CalendarItem,
+	CalendarQuery,
 	AddOptions,
 	AddSeriesInput,
 	CommandStatus,
@@ -131,4 +133,9 @@ export async function uploadFile(file: File, onProgress: (percent: number) => vo
 
 export async function deleteUpload(name: string): Promise<void> {
 	await serverHttp.delete(`/sonarr/uploads/${encodeURIComponent(name)}`);
+}
+
+export async function fetchCalendar(query: CalendarQuery): Promise<CalendarItem[]> {
+	const { data } = await serverHttp.get<CalendarItem[]>('/sonarr/calendar', { params: query });
+	return data;
 }
