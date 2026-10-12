@@ -3,6 +3,7 @@ import type { SeriesDetail, SeriesSummary } from '../sonarr/seriesDetail.js'
 import type { ReleaseQuery, ReleaseSummary } from '../sonarr/releases.js'
 import type { CommandStatus, ImportCandidate, ImportChoice, ImportSource, StuckDownload } from '../sonarr/manualImport.js'
 import type { MissingPage } from '../sonarr/missingEpisodes.js'
+import type { CalendarItem, CalendarWindow } from '../sonarr/calendarEpisodes.js'
 import type { AddOptions, AddSeriesInput, SeriesLookupResult } from '../sonarr/seriesLookup.js'
 
 export interface FakeSonarrData {
@@ -15,6 +16,7 @@ export interface FakeSonarrData {
   addOptions?: AddOptions
   addedSeriesId?: number
   missing?: MissingPage
+  calendar?: CalendarItem[]
   stuckDownloads?: StuckDownload[]
   importFiles?: ImportCandidate[]
   importCommandId?: number
@@ -130,6 +132,11 @@ export class FakeSonarrGateway implements SonarrGateway {
     this.enter(`readCommand:${commandId}`)
     if (this.data.readError) throw this.data.readError
     return this.data.commandStatus ?? { state: 'completed', message: null }
+  }
+
+  async listCalendar(window: CalendarWindow): Promise<CalendarItem[]> {
+    this.enter(`listCalendar:${JSON.stringify(window)}`)
+    return this.data.calendar ?? []
   }
 
   private write(call: string): void {

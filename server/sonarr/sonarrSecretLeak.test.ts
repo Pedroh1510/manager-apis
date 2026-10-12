@@ -33,4 +33,14 @@ describe('sonarr api key', () => {
       for (const text of output) expect(text).not.toContain(API_KEY)
     }
   })
+  it('calendar never leaks the api key', async () => {
+    const path = '/api/sonarr/calendar?start=2026-10-11T03:00:00.000Z&end=2026-10-18T03:00:00.000Z'
+    const ok = await appAgainst({ calendar: [] })
+    const failing = await appAgainst({ failStatus: 401 })
+    const okRes = await fetch(`${ok.url}${path}`)
+    const failRes = await fetch(`${failing.url}${path}`)
+    expect([okRes.status, failRes.status]).toEqual([200, 502])
+    const output = [await okRes.text(), await failRes.text(), ...ok.logLines, ...failing.logLines]
+    for (const text of output) expect(text).not.toContain(API_KEY)
+  })
 })
