@@ -45,6 +45,14 @@ export function statusTablesBody(list: keyof TdarrStats['errors']) {
   return { data: { start: 0, pageSize: TDARR_ERROR_PAGE_SIZE, filters: [], sorts: [{ id: dateField, desc: true }], opts: { table } } }
 }
 
+/** fetch hides ECONNREFUSED and friends in `cause`; surface it so the admin sees why. */
+function describeFetchFailure(error: unknown): string {
+  if (!(error instanceof Error)) return String(error)
+  const cause = error.cause as { code?: unknown; message?: unknown } | undefined
+  const detail = typeof cause?.code === 'string' ? cause.code : cause?.message
+  return typeof detail === 'string' ? `${error.message} (${detail})` : error.message
+}
+
 const getAllBody = (collection: string) => ({ data: { collection, mode: 'getAll' } })
 
 /**
@@ -80,7 +88,7 @@ export class FetchTdarrGateway implements TdarrGateway {
 
   private async call<T>(method: 'GET' | 'POST', path: string, body?: object): Promise<T> {
     const res = await this.fetchOrFail(method, path, body)
-    if (res.status === HTTP_UNAUTHORIZED) throw new TdarrGatewayError('Tdarr recusou a API key (TDARR_API_KEY)')
+    if (res.status === HTTP_UNAUTHORIZED) throw new TdarrGatewayError(`Tdarr recusou a API key (TDARR_API_KEY) em /api/v2${path}`)
     if (!res.ok) throw this.unavailable(`HTTP ${res.status} em /api/v2${path}`)
     try {
       return (await res.json()) as T
@@ -101,7 +109,7 @@ export class FetchTdarrGateway implements TdarrGateway {
         signal: AbortSignal.timeout(this.timeoutMs),
       })
     } catch (error: unknown) {
-      throw this.unavailable(error instanceof Error ? error.message : String(error))
+      throw this.unavailable(`${describeFetchFailure(error)} em /api/v2${path}`)
     }
   }
 

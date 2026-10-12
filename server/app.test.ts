@@ -68,6 +68,9 @@ describe('server app', () => {
   })
 
   it('config reports the tdarr flag', async () => {
+    app = await startTestApp()
+    expect(JSON.parse((await get('/api/config')).body).tdarr).toBe(false)
+    await app.close()
     app = await startTestApp({ tdarr: new FakeTdarrGateway() })
     expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: true })
   })

@@ -89,9 +89,9 @@ describe('FetchTdarrGateway', () => {
 
   it('upstream failures become gateway errors', async () => {
     const cases: [string, () => Promise<FetchTdarrGateway>, RegExp][] = [
-      ['timeout', () => gatewayFor({ delayMs: 300 }, null, 50), /Tdarr indisponível em .*: .*(timeout|aborted)/i],
+      ['timeout', () => gatewayFor({ delayMs: 300 }, null, 50), /Tdarr indisponível em .*: .*(timeout|aborted).* em \/api\/v2\/status$/i],
       ['status 500', () => gatewayFor({ failStatus: 500 }), /Tdarr indisponível em .*: HTTP 500 em \/api\/v2\/status/],
-      ['status 401', () => gatewayFor({ failStatus: 401 }), /Tdarr recusou a API key \(TDARR_API_KEY\)/],
+      ['status 401', () => gatewayFor({ failStatus: 401 }), /^Tdarr recusou a API key \(TDARR_API_KEY\) em \/api\/v2\/status$/],
       ['broken json', () => gatewayFor({ brokenJson: true }), /Tdarr indisponível em .*: resposta não é JSON em \/api\/v2\/status/],
     ]
     for (const [name, build, message] of cases) {
@@ -102,8 +102,12 @@ describe('FetchTdarrGateway', () => {
       tdarr = undefined
     }
 
-    const refused = new FetchTdarrGateway({ url: 'http://127.0.0.1:1', apiKey: null }, 2000, () => NOW)
-    await expect(refused.readStats()).rejects.toThrow(/Tdarr indisponível em http:\/\/127\.0\.0\.1:1: /)
+    const closed = await FakeTdarrApi.start()
+    const closedUrl = closed.url
+    await closed.close()
+    const refused = new FetchTdarrGateway({ url: closedUrl, apiKey: null }, 2000, () => NOW)
+    await expect(refused.readStats()).rejects.toThrow(TdarrGatewayError)
+    await expect(refused.readStats()).rejects.toThrow(`Tdarr indisponível em ${closedUrl}: fetch failed (ECONNREFUSED) em /api/v2/cruddb`)
   })
 
   it('only read endpoints are called', async () => {
