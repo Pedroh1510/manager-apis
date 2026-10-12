@@ -5,10 +5,16 @@ import { GlobalStatusSummary } from '../components/GlobalStatusSummary'
 import { AnimeRssStatusSection } from '../components/AnimeRssStatusSection'
 import { MangasStatusSection } from '../components/MangasStatusSection'
 import { MigrationsSection } from '../components/MigrationsSection'
+import { QbittorrentStatusSection } from '../components/QbittorrentStatusSection'
+import { useServerConfig } from '../../server-config/hooks/useServerConfig'
+import { useQbittorrentStatus } from '../../torrents/hooks/useQbittorrentStatus'
 
 export function GlobalStatusPage() {
   const anime = useAnimeStatus()
   const mangas = useMangasStatus()
+  const isQbittorrentOn = useServerConfig().data?.qbittorrent === true
+  const qbittorrent = useQbittorrentStatus(isQbittorrentOn)
+  const qbittorrentProject = { label: 'qBittorrent', isLoading: qbittorrent.isPending, isSuccess: qbittorrent.isSuccess }
 
   return (
     <div className='mx-auto max-w-6xl'>
@@ -17,6 +23,8 @@ export function GlobalStatusPage() {
         projects={[
           { label: 'Anime RSS', isLoading: anime.isLoading, isSuccess: anime.isSuccess },
           { label: 'Mangas Manager', isLoading: mangas.isLoading, isSuccess: mangas.isSuccess },
+          // Not configured is a choice, not an outage: it stays out of the count.
+          ...(isQbittorrentOn ? [qbittorrentProject] : []),
         ]}
       />
       <div className='grid gap-4 lg:grid-cols-2'>
@@ -27,6 +35,7 @@ export function GlobalStatusPage() {
           <MigrationsSection />
           <QueuesSummaryBlock api='mangas' />
         </MangasStatusSection>
+        <QbittorrentStatusSection />
       </div>
     </div>
   )

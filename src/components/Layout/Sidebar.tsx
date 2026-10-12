@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { getPreferredTheme, setTheme, type Theme } from '../../lib/theme'
+import { useServerConfig } from '../../features/server-config/hooks/useServerConfig'
 import { Button } from '../ui/Button'
 import { FOCUS_RING } from '../ui/focusRing'
 
@@ -21,6 +22,12 @@ const navItems = [
   },
 ]
 
+// Shown only when the server says the integration is configured (GET /api/config).
+const mediaSection = {
+  section: 'Mídia',
+  links: [{ to: '/torrents', label: 'Torrents' }],
+}
+
 const linkBase = `flex h-7 items-center rounded-md px-2 text-[13px] transition-colors ${FOCUS_RING}`
 const activeCls = 'bg-surface-raised font-medium text-text'
 const inactiveCls = 'text-text-muted hover:bg-surface-raised hover:text-text'
@@ -32,6 +39,8 @@ export function Sidebar() {
   const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme())
   const { pathname } = useLocation()
   const isMangaDetail = MANGA_DETAIL_PATH.test(pathname)
+  const isQbittorrentOn = useServerConfig().data?.qbittorrent === true
+  const sections = isQbittorrentOn ? [...navItems, mediaSection] : navItems
 
   function toggleTheme() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
@@ -53,7 +62,7 @@ export function Sidebar() {
       <NavLink to='/filas' className={linkClass}>
         Filas
       </NavLink>
-      {navItems.map(({ section, links }) => (
+      {sections.map(({ section, links }) => (
         <div key={section} className='mt-5'>
           <p className='mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>{section}</p>
           <ul className='space-y-0.5'>

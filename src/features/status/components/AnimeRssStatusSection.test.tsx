@@ -39,7 +39,20 @@ describe('AnimeRssStatusSection', () => {
     render(<AnimeRssStatusSection />, { wrapper })
     expect(screen.getByText('Online')).toBeInTheDocument()
     expect(screen.getByText('16.2')).toBeInTheDocument()
-    expect(screen.getByText('v5.1.4')).toBeInTheDocument()
+  })
+
+  it('no longer renders the qbittorrent block', () => {
+    vi.mocked(hooks.useAnimeStatus).mockReturnValue({
+      isLoading: false, isSuccess: true, isError: false,
+      data: {
+        database: { version: '16.2', maxConnections: 100, activeConnections: 3 },
+        qbittorrent: { version: 'v4.6.7', apiVersion: '2.9.3' },
+      },
+      error: null,
+    } as ReturnType<typeof hooks.useAnimeStatus>)
+    render(<AnimeRssStatusSection />, { wrapper })
+    expect(screen.queryByText('qBittorrent')).not.toBeInTheDocument()
+    expect(screen.queryByText('v4.6.7')).not.toBeInTheDocument()
   })
 
   it('shows offline badge and error message when service errors', () => {

@@ -7,9 +7,13 @@ import { ToastProvider } from './components/ui/Toast'
 import { createTestQueryClient } from './test/renderWithProviders'
 import * as mangasApi from './features/mangas/services/api'
 import * as queuesApi from './features/queues/services/api'
+import * as configApi from './features/server-config/services/api'
+import * as torrentsApi from './features/torrents/services/api'
 
 vi.mock('./features/mangas/services/api')
 vi.mock('./features/queues/services/api')
+vi.mock('./features/server-config/services/api')
+vi.mock('./features/torrents/services/api')
 
 function renderAt(path: string) {
   render(
@@ -30,6 +34,10 @@ beforeEach(() => {
   vi.mocked(mangasApi.fetchChapters).mockResolvedValue([])
   vi.mocked(queuesApi.fetchMangasQueuesSummary).mockResolvedValue([])
   vi.mocked(queuesApi.fetchRssQueuesSummary).mockResolvedValue([])
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true })
+  vi.mocked(torrentsApi.fetchTorrents).mockResolvedValue({
+    counts: { downloading: 0, completed: 0, queued: 0, stopped: 0 }, overallEtaSeconds: null, etaUnknownCount: 0, active: [],
+  })
 })
 
 describe('router', () => {
@@ -52,5 +60,11 @@ describe('router', () => {
   it('resolves fixed routes before the manga detail route (queues)', async () => {
     renderAt('/filas')
     expect(await screen.findByRole('heading', { name: 'Filas', level: 1 })).toBeInTheDocument()
+  })
+
+  it('renders the torrents page at /torrents', async () => {
+    renderAt('/torrents')
+    expect(await screen.findByRole('heading', { name: 'Torrents', level: 1 })).toBeInTheDocument()
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 })
