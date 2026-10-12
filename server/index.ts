@@ -33,7 +33,7 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
 }
 
 /**
- * Local dev reads manager-apis/.env (tsx does not); the container has no .env and uses its runtime env.
+ * Local dev reads manager-apis/.env.local and .env (tsx does not); the container has neither and uses its runtime env.
  * Variables already set in the environment win over the file.
  * @example loadEnvFileIfPresent('.env')
  */
@@ -45,6 +45,8 @@ export function loadEnvFileIfPresent(path: string): boolean {
 
 const isEntryPoint = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 if (isEntryPoint) {
+  // .env.local first: loadEnvFile never overrides, so it wins over .env (e.g. a dev Sonarr).
+  loadEnvFileIfPresent('.env.local')
   loadEnvFileIfPresent('.env')
   await startServer(process.env)
 }
