@@ -11,6 +11,7 @@ import {
   SonarrSeasonNotFoundError,
   SonarrSeriesExistsError,
 } from './sonarrGateway.js'
+import { UploadDisabledError } from './sonarrImportInput.js'
 import { InvalidInputError } from './sonarrInput.js'
 
 const ERROR_STATUSES: [new (...args: never[]) => Error, number][] = [
@@ -23,6 +24,7 @@ const ERROR_STATUSES: [new (...args: never[]) => Error, number][] = [
   [SonarrCommandNotFoundError, 404],
   [SonarrSeriesExistsError, 409],
   [SonarrRejectedError, 422],
+  [UploadDisabledError, 503],
 ]
 
 /**

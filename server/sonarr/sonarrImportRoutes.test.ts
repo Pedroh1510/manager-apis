@@ -5,6 +5,7 @@ import { FakeSonarrGateway, type FakeSonarrData } from '../test/FakeSonarrGatewa
 import { startTestApp, type TestApp } from '../test/startTestApp.js'
 import { SonarrCommandNotFoundError, SonarrImportFileNotFoundError } from './sonarrGateway.js'
 import type { ImportCandidate, StuckDownload } from './manualImport.js'
+import type { UploadStore } from '../uploads/uploadStore.js'
 
 let app: TestApp | undefined
 
@@ -17,11 +18,14 @@ function call(method: string, path: string, body?: unknown) {
   return callApp(app!, method, path, body)
 }
 
-async function withSonarr(data: FakeSonarrData = {}): Promise<FakeSonarrGateway> {
+async function withSonarr(data: FakeSonarrData = {}, uploads: UploadStore | null = null): Promise<FakeSonarrGateway> {
   const gateway = new FakeSonarrGateway(data)
-  app = await startTestApp({ sonarr: gateway })
+  app = await startTestApp({ sonarr: gateway, uploads })
   return gateway
 }
+
+const uploadDir = '/srv/uploads'
+const uploadStore = { dir: uploadDir } as UploadStore
 
 const importBody = { downloadId: 'D1', files: [{ path: '/dl/a.mkv', seriesId: 2, episodeIds: [123, 124] }] }
 const stuck: StuckDownload = { downloadId: 'D1', title: 'Severance.S02', seriesTitle: 'Severance', state: 'importBlocked', messages: ['Unknown episode'], size: 1 }
@@ -54,11 +58,14 @@ describe('sonarr import routes', () => {
 
   it('blank download id returns 400 without calling sonarr', async () => {
     const gateway = await withSonarr()
-    for (const [query, received] of [['', ''], ['?downloadId=', ''], ['?downloadId=%20', ' ']]) {
+    for (const [query, received] of [['?downloadId=', ''], ['?downloadId=%20', ' ']]) {
       const res = await call('GET', `/api/sonarr/import/files${query}`)
       expect(res.status, query).toBe(400)
       expect(JSON.parse(res.body)).toEqual({ error: `downloadId vazio: recebido "${received}"` })
     }
+    const noParams = await call('GET', '/api/sonarr/import/files')
+    expect(noParams.status).toBe(400)
+    expect(JSON.parse(noParams.body)).toEqual({ error: 'consulta inválida: esperado downloadId ou source=upload, recebido {}' })
     expect(gateway.calls).toEqual([])
   })
 
@@ -100,7 +107,7 @@ describe('sonarr import routes', () => {
   })
 
   it('import and command map missing things to 404', async () => {
-    await withSonarr({ writeError: new SonarrImportFileNotFoundError('D1', '/dl/x.mkv') })
+    await withSonarr({ writeError: new SonarrImportFileNotFoundError({ kind: 'download', downloadId: 'D1' }, '/dl/x.mkv') })
     const missingFile = await call('POST', '/api/sonarr/import', importBody)
     expect(missingFile.status).toBe(404)
     expect(JSON.parse(missingFile.body)).toEqual({ error: 'arquivo não encontrado no download D1: /dl/x.mkv' })
@@ -129,5 +136,41 @@ describe('sonarr import routes', () => {
       expect(res.status, `${method} ${path}`).toBe(502)
       expect(JSON.parse(res.body)).toEqual({ error: failWith })
     }
+  })
+
+  it('upload source reads the configured folder', async () => {
+    const gateway = await withSonarr({ importFiles: [candidate] }, uploadStore)
+    const res = await call('GET', '/api/sonarr/import/files?source=upload&seriesId=2')
+    expect(res.status).toBe(200)
+    expect(JSON.parse(res.body)).toEqual([candidate])
+    expect((await call('GET', '/api/sonarr/import/files?source=upload')).status).toBe(200)
+    expect(gateway.calls).toEqual([`listImportFiles:folder:${uploadDir}`, `listImportFiles:folder:${uploadDir}`])
+  })
+
+  it('invalid import file queries return 400', async () => {
+    const gateway = await withSonarr({}, uploadStore)
+    for (const query of [{}, { source: 'outra' }, { source: 'upload', seriesId: 'x' }]) {
+      const res = await call('GET', `/api/sonarr/import/files?${new URLSearchParams(query)}`)
+      expect(res.status, JSON.stringify(query)).toBe(400)
+      expect(JSON.parse(res.body)).toEqual({ error: `consulta inválida: esperado downloadId ou source=upload, recebido ${JSON.stringify(query)}` })
+    }
+    expect(gateway.calls).toEqual([])
+  })
+
+  it('upload source maps a file outside the folder to 404', async () => {
+    await withSonarr({ writeError: new SonarrImportFileNotFoundError({ kind: 'folder', folder: uploadDir }, '/etc/a.mkv') }, uploadStore)
+    const files = [{ path: '/etc/a.mkv', seriesId: 2, episodeIds: [125] }]
+    const res = await call('POST', '/api/sonarr/import', { source: 'upload', files })
+    expect(res.status).toBe(404)
+    expect(JSON.parse(res.body)).toEqual({ error: 'arquivo não encontrado na pasta de upload: /etc/a.mkv' })
+  })
+
+  it('upload source imports from the configured folder', async () => {
+    const gateway = await withSonarr({ importCommandId: 7 }, uploadStore)
+    const files = [{ path: `${uploadDir}/a.mkv`, seriesId: 2, episodeIds: [125] }]
+    const res = await call('POST', '/api/sonarr/import', { source: 'upload', files })
+    expect(res.status).toBe(202)
+    expect(JSON.parse(res.body)).toEqual({ commandId: 7 })
+    expect(gateway.calls).toEqual([`startManualImport:folder:${uploadDir}:${JSON.stringify(files)}`])
   })
 })

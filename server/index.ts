@@ -7,10 +7,16 @@ import { parseServerConfig, type ServerEnv } from './config.js'
 import { createJsonLogger, type LineWriter } from './logger.js'
 import { CtrlQbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
 import { FetchSonarrGateway } from './sonarr/sonarrGateway.js'
+import { FsUploadStore } from './uploads/uploadStore.js'
 
 export interface RunningServer {
+  /** The listening HTTP server, exposed for its timeouts. */
+  server: Server
   close(): Promise<void>
 }
+
+/** Uploads of a few GB over the internet outlast Node's 5 min default (decision U4). */
+export const REQUEST_TIMEOUT_MS = 2 * 60 * 60 * 1000
 
 // dist-server/index.js and server/index.ts both sit one level below the Vite output.
 const STATIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
@@ -24,12 +30,15 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
   const logger = createJsonLogger(write)
   const qbittorrent = config.qbittorrent ? new CtrlQbittorrentGateway(config.qbittorrent) : null
   const sonarr = config.sonarr ? new FetchSonarrGateway(config.sonarr) : null
-  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, logger })
+  const uploads = config.sonarrUpload ? new FsUploadStore(config.sonarrUpload.dir) : null
+  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, uploads, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(config.port, () => resolve(listening))
   })
-  logger.info('server started', { port: config.port, integrations: { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null } })
-  return { close: () => new Promise((resolve) => server.close(() => resolve())) }
+  server.requestTimeout = REQUEST_TIMEOUT_MS
+  const integrations = { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null, sonarrUpload: uploads !== null }
+  logger.info('server started', { port: config.port, integrations })
+  return { server, close: () => new Promise((resolve) => server.close(() => resolve())) }
 }
 
 /**

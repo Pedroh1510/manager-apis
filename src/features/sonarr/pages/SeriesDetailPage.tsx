@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { getApiErrorStatus } from '../../../lib/apiError';
+import { useServerConfig } from '../../server-config/hooks/useServerConfig';
 import type { SeriesRowActions } from '../components/EpisodesTable';
 import { ReleasesDrawer } from '../components/ReleasesDrawer';
 import { SeasonSection } from '../components/SeasonSection';
@@ -27,6 +28,19 @@ function SeriesNotFound() {
 	);
 }
 
+/** Shown only with SONARR_UPLOAD_DIR set: opens the import screen with this series preselected (decision Q4). */
+function UploadShortcut({ seriesId }: { seriesId: number }) {
+	if (useServerConfig().data?.sonarrUpload !== true) return null;
+	return (
+		<Link
+			to={`/sonarr/importar?serie=${seriesId}`}
+			className={`inline-flex h-7 items-center rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-text hover:bg-surface-raised ${FOCUS_RING}`}
+		>
+			Enviar arquivos
+		</Link>
+	);
+}
+
 function SeriesHeader({ series }: { series: SeriesDetail }) {
 	return (
 		<header className='flex gap-5'>
@@ -43,6 +57,7 @@ function SeriesHeader({ series }: { series: SeriesDetail }) {
 					<span>{formatBytes(series.sizeOnDisk)}</span>
 					<span>{`${series.episodeFileCount}/${series.episodeCount} episódios`}</span>
 				</p>
+				<UploadShortcut seriesId={series.id} />
 			</div>
 		</header>
 	);

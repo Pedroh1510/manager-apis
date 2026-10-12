@@ -159,3 +159,13 @@ export interface CommandStatus {
 	state: 'pending' | 'completed' | 'failed';
 	message: string | null;
 }
+
+/** Where a manual import reads its files: a stuck download, or the upload folder (optionally parsed against one series). */
+export type ImportFileSource = { downloadId: string } | { source: 'upload'; seriesId?: number };
+
+/** `GET /api/sonarr/uploads` item */
+export interface UploadedFile {
+	name: string;
+	size: number;
+	modifiedAt: string;
+}

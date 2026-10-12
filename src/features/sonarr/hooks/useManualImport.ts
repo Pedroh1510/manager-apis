@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useToast } from '../../../components/ui/useToast';
 import { getApiErrorMessage } from '../../../lib/apiError';
 import { fetchCommandState, startManualImport } from '../services/api';
-import type { CommandStatus, ImportChoice } from '../services/types';
+import type { CommandStatus, ImportChoice, ImportFileSource } from '../services/types';
 
 /** Sonarr finishes a ManualImport in seconds, so the screen follows it (decision Q8). */
 export const COMMAND_POLL_MS = 2000;
@@ -34,9 +34,9 @@ export function useManualImport(onCompleted: () => void) {
 				.catch((error: unknown) => stopWithError(getApiErrorMessage(error)));
 		}, COMMAND_POLL_MS);
 	};
-	const start = (downloadId: string, files: ImportChoice[]) => {
+	const start = (source: ImportFileSource, files: ImportChoice[]) => {
 		setIsImporting(true);
-		startManualImport(downloadId, files)
+		startManualImport(source, files)
 			.then(scheduleCheck)
 			.catch((error: unknown) => stopWithError(getApiErrorMessage(error)));
 	};

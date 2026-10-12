@@ -1,7 +1,7 @@
 import { SonarrGatewayError, SonarrNotFoundError, type SonarrGateway, type SonarrPoster, type SonarrStatusInfo } from '../sonarr/sonarrGateway.js'
 import type { SeriesDetail, SeriesSummary } from '../sonarr/seriesDetail.js'
 import type { ReleaseQuery, ReleaseSummary } from '../sonarr/releases.js'
-import type { CommandStatus, ImportCandidate, ImportChoice, StuckDownload } from '../sonarr/manualImport.js'
+import type { CommandStatus, ImportCandidate, ImportChoice, ImportSource, StuckDownload } from '../sonarr/manualImport.js'
 import type { MissingPage } from '../sonarr/missingEpisodes.js'
 import type { AddOptions, AddSeriesInput, SeriesLookupResult } from '../sonarr/seriesLookup.js'
 
@@ -25,6 +25,9 @@ export interface FakeSonarrData {
   writeError?: Error
   failWith?: string
 }
+
+/** `D1` for a download, `folder:/uploads` for the upload folder, so call logs stay short. */
+const sourceKey = (source: ImportSource) => (source.kind === 'download' ? source.downloadId : `folder:${source.folder}`)
 
 /**
  * In-memory gateway for route tests; unknown ids throw SonarrNotFoundError like the real one.
@@ -113,13 +116,13 @@ export class FakeSonarrGateway implements SonarrGateway {
     return this.data.stuckDownloads ?? []
   }
 
-  async listImportFiles(downloadId: string): Promise<ImportCandidate[]> {
-    this.enter(`listImportFiles:${downloadId}`)
+  async listImportFiles(source: ImportSource): Promise<ImportCandidate[]> {
+    this.enter(`listImportFiles:${sourceKey(source)}`)
     return this.data.importFiles ?? []
   }
 
-  async startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
-    this.write(`startManualImport:${downloadId}:${JSON.stringify(files)}`)
+  async startManualImport(source: ImportSource, files: ImportChoice[]): Promise<number> {
+    this.write(`startManualImport:${sourceKey(source)}:${JSON.stringify(files)}`)
     return this.data.importCommandId ?? 1
   }
 

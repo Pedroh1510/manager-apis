@@ -7,6 +7,7 @@ import { createApp } from '../app.js'
 import { createJsonLogger } from '../logger.js'
 import type { QbittorrentGateway } from '../qbittorrent/qbittorrentGateway.js'
 import type { SonarrGateway } from '../sonarr/sonarrGateway.js'
+import type { UploadStore } from '../uploads/uploadStore.js'
 
 export const TEST_INDEX_HTML = '<!doctype html><div id="root"></div>'
 export const TEST_ASSET_JS = 'console.log("app")'
@@ -31,12 +32,12 @@ function createTestDist(): string {
  * @example const app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway() }); await fetch(`${app.url}/api/health`)
  */
 export async function startTestApp(
-  gateways: { qbittorrent?: QbittorrentGateway | null; sonarr?: SonarrGateway | null } = {},
+  gateways: { qbittorrent?: QbittorrentGateway | null; sonarr?: SonarrGateway | null; uploads?: UploadStore | null } = {},
 ): Promise<TestApp> {
   const logLines: string[] = []
   const logger = createJsonLogger((line) => logLines.push(line))
-  const { qbittorrent = null, sonarr = null } = gateways
-  const app = createApp({ staticDir: createTestDist(), qbittorrent, sonarr, logger })
+  const { qbittorrent = null, sonarr = null, uploads = null } = gateways
+  const app = createApp({ staticDir: createTestDist(), qbittorrent, sonarr, uploads, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(0, '127.0.0.1', () => resolve(listening))
   })

@@ -13,7 +13,7 @@ const valueOf = (label: string) => within(section()).getByText(label).nextElemen
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false })
 })
 
 describe('QbittorrentStatusSection', () => {
@@ -43,7 +43,7 @@ describe('QbittorrentStatusSection', () => {
   })
 
   it('shows not configured without a badge', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false })
     renderWithProviders(<QbittorrentStatusSection />)
 
     expect(await within(section()).findByText('Não configurado')).toBeInTheDocument()

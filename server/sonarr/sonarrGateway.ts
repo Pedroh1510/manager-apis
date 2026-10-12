@@ -1,12 +1,16 @@
+import { isAbsolute, relative } from 'node:path'
 import type { SonarrConfig } from '../config.js'
 import {
   buildImportFile,
+  describeSource,
+  importModeOf,
   toCommandState,
   toImportCandidate,
   toStuckDownloads,
   type CommandStatus,
   type ImportCandidate,
   type ImportChoice,
+  type ImportSource,
   type RawCommand,
   type RawImportCandidate,
   type RawQueueRecord,
@@ -68,9 +72,9 @@ export interface SonarrGateway {
   searchEpisodes(episodeIds: number[]): Promise<void>
   searchAllMissing(): Promise<void>
   listStuckDownloads(): Promise<StuckDownload[]>
-  listImportFiles(downloadId: string): Promise<ImportCandidate[]>
+  listImportFiles(source: ImportSource): Promise<ImportCandidate[]>
   /** Resolves to the id of the queued ManualImport command. */
-  startManualImport(downloadId: string, files: ImportChoice[]): Promise<number>
+  startManualImport(source: ImportSource, files: ImportChoice[]): Promise<number>
   readCommand(commandId: number): Promise<CommandStatus>
 }
 
@@ -133,10 +137,10 @@ function toAddSeriesError(tvdbId: number, failures: unknown): Error {
   return new SonarrRejectedError(list.map((failure) => failure.errorMessage ?? JSON.stringify(failure)))
 }
 
-/** A requested file is not among the download's import candidates (404). */
+/** A requested file is not among the source's import candidates, or lies outside the upload folder (404). */
 export class SonarrImportFileNotFoundError extends Error {
-  constructor(downloadId: string, path: string) {
-    super(`arquivo não encontrado no download ${downloadId}: ${path}`)
+  constructor(source: ImportSource, path: string) {
+    super(`arquivo não encontrado ${describeSource(source)}: ${path}`)
   }
 }
 
@@ -148,6 +152,19 @@ export class SonarrCommandNotFoundError extends Error {
 }
 
 const QUEUE_PAGE_SIZE = 200
+
+function manualImportParams(source: ImportSource): URLSearchParams {
+  if (source.kind === 'download') return new URLSearchParams({ downloadId: source.downloadId, filterExistingFiles: 'true' })
+  // Never with seriesId: Sonarr then ignores `folder` and lists the series folder (decision K2).
+  return new URLSearchParams({ folder: source.folder, filterExistingFiles: 'true' })
+}
+
+/** A folder import may only touch files under that folder, whatever Sonarr would accept. */
+function isInsideSource(source: ImportSource, path: string): boolean {
+  if (source.kind === 'download') return true
+  const relativePath = relative(source.folder, path)
+  return relativePath !== '' && !relativePath.startsWith('..') && !isAbsolute(relativePath)
+}
 
 export const SONARR_TIMEOUT_MS = 10000
 export const SONARR_RELEASE_TIMEOUT_MS = 90000
@@ -297,18 +314,19 @@ export class FetchSonarrGateway implements SonarrGateway {
     return toStuckDownloads(queue.records)
   }
 
-  async listImportFiles(downloadId: string): Promise<ImportCandidate[]> {
-    return (await this.readImportCandidates(downloadId)).map(toImportCandidate)
+  async listImportFiles(source: ImportSource): Promise<ImportCandidate[]> {
+    return (await this.readImportCandidates(source)).map(toImportCandidate)
   }
 
-  async startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
-    const candidates = await this.readImportCandidates(downloadId)
+  async startManualImport(source: ImportSource, files: ImportChoice[]): Promise<number> {
+    const candidates = await this.readImportCandidates(source)
     const importFiles = files.map((choice) => {
-      const candidate = candidates.find((item) => item.path === choice.path)
-      if (!candidate) throw new SonarrImportFileNotFoundError(downloadId, choice.path)
-      return buildImportFile(candidate, choice, downloadId)
+      const candidate = isInsideSource(source, choice.path) ? candidates.find((item) => item.path === choice.path) : undefined
+      if (!candidate) throw new SonarrImportFileNotFoundError(source, choice.path)
+      return buildImportFile(candidate, choice, source)
     })
-    const res = await this.request('/command', { method: 'POST', body: { name: 'ManualImport', importMode: 'auto', files: importFiles } })
+    const body = { name: 'ManualImport', importMode: importModeOf(source), files: importFiles }
+    const res = await this.request('/command', { method: 'POST', body })
     return ((await res.json()) as { id: number }).id
   }
 
@@ -317,9 +335,8 @@ export class FetchSonarrGateway implements SonarrGateway {
     return toCommandState(command)
   }
 
-  private readImportCandidates(downloadId: string): Promise<RawImportCandidate[]> {
-    const params = new URLSearchParams({ downloadId, filterExistingFiles: 'true' })
-    return this.getJson<RawImportCandidate[]>(`/manualimport?${params}`)
+  private readImportCandidates(source: ImportSource): Promise<RawImportCandidate[]> {
+    return this.getJson<RawImportCandidate[]>(`/manualimport?${manualImportParams(source)}`)
   }
 
   private async getJson<T>(path: string, options: RequestOptions = {}): Promise<T> {

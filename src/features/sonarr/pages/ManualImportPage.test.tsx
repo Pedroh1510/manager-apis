@@ -98,7 +98,7 @@ describe('ManualImportPage', () => {
 
   it('opens the download files with what sonarr recognized', async () => {
     const drawer = await openD1()
-    expect(api.fetchImportFiles).toHaveBeenCalledWith('D1')
+    expect(api.fetchImportFiles).toHaveBeenCalledWith({ downloadId: 'D1' })
     const known = rowOf(drawer, 'Severance.S02E03.mkv')
     expect(within(known).getByRole('checkbox', { name: 'Importar Severance.S02E03.mkv' })).toBeChecked()
     expect(known).toHaveTextContent('1.5 GB')
@@ -132,6 +132,8 @@ describe('ManualImportPage', () => {
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E07 — Chikhai Bardo' }))
     fireEvent.click(within(picker).getByRole('checkbox', { name: 'S02E08 — Sweet Vitriol' }))
     expect(within(rowOf(drawer, 'random name 07.mkv')).getByText('S02E07, S02E08', { exact: true })).toBeInTheDocument()
+    expect(within(drawer).getByRole('checkbox', { name: 'Importar random name 07.mkv' })).toBeChecked()
+    expect(within(drawer).getByRole('button', { name: 'Importar (2)' })).toBeEnabled()
     expect(api.fetchSeriesDetail).toHaveBeenCalledWith(2)
   })
 
@@ -159,7 +161,7 @@ describe('ManualImportPage', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     fireEvent.click(within(drawer).getByRole('button', { name: 'Importar (1)' }))
 
-    await waitFor(() => expect(api.startManualImport).toHaveBeenCalledWith('D1', [{ path: '/dl/Severance.S02E03.mkv', seriesId: 2, episodeIds: [119] }]))
+    await waitFor(() => expect(api.startManualImport).toHaveBeenCalledWith({ downloadId: 'D1' }, [{ path: '/dl/Severance.S02E03.mkv', seriesId: 2, episodeIds: [119] }]))
     expect(within(drawer).getByRole('button', { name: 'Importando…' })).toBeDisabled()
     expect(api.fetchCommandState).not.toHaveBeenCalled()
     await act(() => vi.advanceTimersByTimeAsync(2000))
