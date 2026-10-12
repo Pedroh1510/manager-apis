@@ -20,7 +20,9 @@ export default defineConfig({
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'lcov'],
-			exclude: ['src/main.tsx', 'src/test/**']
+			exclude: ['src/main.tsx', 'src/test/**'],
+			// Floor at the line coverage measured on 2026-10-12 (96.62%), rounded down: CI fails on regression, not below the 80% target.
+			thresholds: { lines: 96 }
 		}
 	}
 });
