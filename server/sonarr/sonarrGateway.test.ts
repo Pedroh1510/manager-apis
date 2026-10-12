@@ -58,7 +58,7 @@ describe('FetchSonarrGateway', () => {
     const gateway = await gatewayFor({
       series: [
         series({ id: 1, title: 'The Wire', sortTitle: 'wire' }),
-        series({ id: 2, title: 'Ação Total', sortTitle: 'acao total', alternateTitles: [{ title: 'Action Total' }], added: '2024-03-01T10:00:00Z' }),
+        series({ id: 2, title: 'Ação Total', sortTitle: 'acao total', alternateTitles: [{ title: 'Action Total', seasonNumber: 1 }], added: '2024-03-01T10:00:00Z' }),
         series({ id: 3, title: 'Zorro', sortTitle: 'zorro', alternateTitles: undefined }),
       ],
     })
@@ -85,6 +85,14 @@ describe('FetchSonarrGateway', () => {
     expect(detail.seasons[0].episodes).toEqual([
       { id: 10, episodeNumber: 1, title: 'The Target', airDateUtc: '2002-06-03T01:00:00Z', state: 'downloaded', monitored: true },
     ])
+  })
+
+  it('series detail carries grouped alternate titles', async () => {
+    const alternateTitles = [{ title: 'Separación', seasonNumber: -1 }, { title: 'Scissione', seasonNumber: -1 }, { title: 'Separacion', seasonNumber: -1 }]
+    const gateway = await gatewayFor({ series: [series({ title: 'Severance', alternateTitles })], episodes: [] })
+    const detail = await gateway.getSeriesDetail(1)
+
+    expect(detail.alternateTitles).toEqual([{ title: 'Separación', seasonNumbers: [] }, { title: 'Scissione', seasonNumbers: [] }])
   })
 
   it('poster reads poster-500 from mediacover', async () => {

@@ -3,7 +3,8 @@ export interface RawSeries {
   id: number
   title: string
   sortTitle: string
-  alternateTitles?: { title: string }[]
+  /** Scene mappings; `seasonNumber` -1 or absent means the whole series. */
+  alternateTitles?: { title: string; seasonNumber?: number }[]
   year: number
   status: string
   network?: string
@@ -57,7 +58,14 @@ export interface SeasonDetail {
   episodes: EpisodeDetail[]
 }
 
+/** One name across its seasons; `seasonNumbers: []` means the whole series (door 3). */
+export interface AlternateTitle {
+  title: string
+  seasonNumbers: number[]
+}
+
 export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles' | 'added'> {
+  alternateTitles: AlternateTitle[]
   overview: string
   sizeOnDisk: number
   seasons: SeasonDetail[]
@@ -107,10 +115,39 @@ export function buildSeriesDetail(series: RawSeries, episodes: RawEpisode[], now
   }))
   return {
     id, title, year, status, network, episodeFileCount, episodeCount,
+    alternateTitles: groupAlternateTitles(title, series.alternateTitles ?? []),
     overview: series.overview ?? '',
     sizeOnDisk: series.statistics?.sizeOnDisk ?? 0,
     seasons,
   }
+}
+
+/** Lowercase without diacritics, so "Kyojín" and "kyojin" are one name; same rule as the library search. */
+function normalizeTitle(text: string): string {
+  return text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
+const WHOLE_SERIES = -1
+
+/** null stands for "whole series" while grouping, so one such entry wins over any season list. */
+function mergeSeason(seasons: number[] | null, seasonNumber: number | undefined): number[] | null {
+  if (seasons === null || seasonNumber === undefined || seasonNumber === WHOLE_SERIES) return null
+  return seasons.includes(seasonNumber) ? seasons : [...seasons, seasonNumber]
+}
+
+/**
+ * Sonarr repeats a name per season and spelling; door 3 groups them and drops the main title.
+ * @example groupAlternateTitles('Severance', [{ title: 'Scissione', seasonNumber: -1 }]) // [{ title: 'Scissione', seasonNumbers: [] }]
+ */
+function groupAlternateTitles(mainTitle: string, entries: { title: string; seasonNumber?: number }[]): AlternateTitle[] {
+  const groups = new Map<string, { title: string; seasons: number[] | null }>()
+  for (const entry of entries) {
+    const key = normalizeTitle(entry.title)
+    if (key === normalizeTitle(mainTitle)) continue
+    const group = groups.get(key) ?? { title: entry.title, seasons: [] }
+    groups.set(key, { title: group.title, seasons: mergeSeason(group.seasons, entry.seasonNumber) })
+  }
+  return [...groups.values()].map(({ title, seasons }) => ({ title, seasonNumbers: seasons ? [...seasons].sort((a, b) => a - b) : [] }))
 }
 
 function compareSeasons(a: { seasonNumber: number }, b: { seasonNumber: number }): number {
