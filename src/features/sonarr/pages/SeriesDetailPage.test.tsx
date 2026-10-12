@@ -27,7 +27,7 @@ const seasonOne = season(1, [
 ], { episodeFileCount: 3, episodeCount: 13 })
 
 const wire: SeriesDetail = {
-  id: 1, title: 'The Wire', year: 2002, status: 'ended', network: 'HBO', overview: 'Baltimore.', sizeOnDisk: 53687091200,
+  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', overview: 'Baltimore.', sizeOnDisk: 53687091200,
   episodeFileCount: 60, episodeCount: 60,
   seasons: [
     season(2, [
@@ -165,5 +165,43 @@ describe('SeriesDetailPage', () => {
     await screen.findByRole('heading', { level: 1, name: 'The Wire' })
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(screen.queryByRole('link', { name: 'Enviar arquivos' })).not.toBeInTheDocument()
+  })
+})
+
+describe('SeriesDetailPage alternate titles', () => {
+  const withTitles = (alternateTitles: SeriesDetail['alternateTitles']) => vi.mocked(api.fetchSeriesDetail).mockResolvedValue({ ...wire, alternateTitles })
+  const names = (count: number) => Array.from({ length: count }, (_, index) => ({ title: `Nome ${index + 1}`, seasonNumbers: [] }))
+
+  it('shows alternate titles under the title', async () => {
+    withTitles([{ title: 'Shingeki no Kyojin', seasonNumbers: [1, 2, 3] }, { title: 'Attack on Titan', seasonNumbers: [] }])
+    renderDetail()
+    const heading = await screen.findByRole('heading', { level: 1, name: 'The Wire' })
+    const line = screen.getByText(/Também conhecida como:/)
+    expect(line).toHaveTextContent('Também conhecida como: Shingeki no Kyojin (T1–T3) · Attack on Titan')
+    expect(heading.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('hides the alternate titles line when empty', async () => {
+    withTitles([])
+    renderDetail()
+    await screen.findByRole('heading', { level: 1, name: 'The Wire' })
+    expect(screen.queryByText(/Também conhecida como/)).not.toBeInTheDocument()
+  })
+
+  it('shows five alternate titles and expands the rest', async () => {
+    withTitles(names(7))
+    const seven = renderDetail()
+    const line = await screen.findByText(/Também conhecida como:/)
+    expect(line).toHaveTextContent('Também conhecida como: Nome 1 · Nome 2 · Nome 3 · Nome 4 · Nome 5')
+    expect(line).not.toHaveTextContent('Nome 6')
+    fireEvent.click(screen.getByRole('button', { name: '+2' }))
+    expect(screen.getByText(/Também conhecida como:/)).toHaveTextContent('Nome 1 · Nome 2 · Nome 3 · Nome 4 · Nome 5 · Nome 6 · Nome 7')
+    expect(screen.queryByRole('button', { name: '+2' })).not.toBeInTheDocument()
+    seven.unmount()
+
+    withTitles(names(5))
+    renderDetail()
+    await screen.findByText(/Também conhecida como:/)
+    expect(screen.queryByRole('button', { name: /^\+/ })).not.toBeInTheDocument()
   })
 })

@@ -13,7 +13,7 @@ vi.mock('../services/api', async (importOriginal) => ({
 }))
 
 const wire: SeriesDetail = {
-  id: 1, title: 'The Wire', year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 1,
+  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 1,
   seasons: [{
     seasonNumber: 1, monitored: true, episodeFileCount: 0, episodeCount: 1,
     episodes: [{ id: 11, episodeNumber: 3, title: 'The Buys', airDateUtc: null, state: 'missing', monitored: true }],

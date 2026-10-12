@@ -34,8 +34,15 @@ export interface SeasonDetail {
 	episodes: EpisodeDetail[];
 }
 
+/** One alternate name across its seasons; `seasonNumbers: []` means the whole series. */
+export interface AlternateTitle {
+	title: string;
+	seasonNumbers: number[];
+}
+
 /** `GET /api/sonarr/series/:id` */
 export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles' | 'added'> {
+	alternateTitles: AlternateTitle[];
 	overview: string;
 	sizeOnDisk: number;
 	seasons: SeasonDetail[];
@@ -168,4 +175,24 @@ export interface UploadedFile {
 	name: string;
 	size: number;
 	modifiedAt: string;
+}
+
+export type CalendarStatus = 'downloaded' | 'missing' | 'unaired' | 'unmonitored';
+
+/** `GET /api/sonarr/calendar` item; always has an air date. */
+export interface CalendarItem {
+	episodeId: number;
+	seriesId: number;
+	seriesTitle: string;
+	seasonNumber: number;
+	episodeNumber: number;
+	title: string;
+	airDateUtc: string;
+	status: CalendarStatus;
+}
+
+export interface CalendarQuery {
+	start: string;
+	end: string;
+	unmonitored: boolean;
 }

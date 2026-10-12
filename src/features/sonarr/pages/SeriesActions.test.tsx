@@ -19,7 +19,7 @@ const episode = (id: number, episodeNumber: number, monitored: boolean): Episode
 })
 
 const wire: SeriesDetail = {
-  id: 1, title: 'The Wire', year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0,
+  id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0,
   seasons: [
     { seasonNumber: 2, monitored: true, episodeFileCount: 0, episodeCount: 1, episodes: [episode(21, 1, true)] },
     { seasonNumber: 1, monitored: false, episodeFileCount: 0, episodeCount: 2, episodes: [episode(11, 3, false), episode(12, 4, true)] },

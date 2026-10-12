@@ -16,6 +16,7 @@ import {
   type RawQueueRecord,
   type StuckDownload,
 } from './manualImport.js'
+import { toCalendarItems, type CalendarItem, type CalendarWindow, type RawCalendarEpisode } from './calendarEpisodes.js'
 import { MISSING_PAGE_SIZE, toMissingPage, type MissingPage, type RawMissingPage } from './missingEpisodes.js'
 import { orderReleases, toReleaseSummary, type RawRelease, type ReleaseQuery, type ReleaseSummary } from './releases.js'
 import {
@@ -76,6 +77,7 @@ export interface SonarrGateway {
   /** Resolves to the id of the queued ManualImport command. */
   startManualImport(source: ImportSource, files: ImportChoice[]): Promise<number>
   readCommand(commandId: number): Promise<CommandStatus>
+  listCalendar(window: CalendarWindow): Promise<CalendarItem[]>
 }
 
 /** Any Sonarr failure, with a message safe to return to the browser (502). */
@@ -333,6 +335,11 @@ export class FetchSonarrGateway implements SonarrGateway {
   async readCommand(commandId: number): Promise<CommandStatus> {
     const command = await this.getJson<RawCommand>(`/command/${commandId}`, { notFound: () => new SonarrCommandNotFoundError(commandId) })
     return toCommandState(command)
+  }
+
+  async listCalendar(window: CalendarWindow): Promise<CalendarItem[]> {
+    const params = new URLSearchParams({ start: window.start, end: window.end, unmonitored: String(window.unmonitored), includeSeries: 'true' })
+    return toCalendarItems(await this.getJson<RawCalendarEpisode[]>(`/calendar?${params}`), this.now())
   }
 
   private readImportCandidates(source: ImportSource): Promise<RawImportCandidate[]> {

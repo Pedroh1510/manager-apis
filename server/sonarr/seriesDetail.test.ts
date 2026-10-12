@@ -53,3 +53,36 @@ describe('buildSeriesDetail', () => {
     expect(detail.seasons.find((s) => s.seasonNumber === 0)?.monitored).toBe(false)
   })
 })
+
+describe('buildSeriesDetail alternate titles', () => {
+  const withTitles = (title: string, alternateTitles: RawSeries['alternateTitles']) => buildSeriesDetail({ ...series, title, alternateTitles }, [], NOW).alternateTitles
+
+  it('alternate titles group by normalized name keeping first spelling', () => {
+    expect(withTitles('Attack on Titan Final', [
+      { title: 'Shingeki no Kyojin', seasonNumber: 1 },
+      { title: 'Attack on Titan' },
+      { title: 'shingeki no kyojin', seasonNumber: 3 },
+      { title: 'Shingeki no Kyojín', seasonNumber: 2 },
+    ])).toEqual([
+      { title: 'Shingeki no Kyojin', seasonNumbers: [1, 2, 3] },
+      { title: 'Attack on Titan', seasonNumbers: [] },
+    ])
+  })
+
+  it('alternate titles exclude the main title', () => {
+    expect(withTitles('Ataque dos Titãs', [{ title: 'ataque dos titas', seasonNumber: -1 }, { title: 'AoT', seasonNumber: -1 }]))
+      .toEqual([{ title: 'AoT', seasonNumbers: [] }])
+  })
+
+  it('season numbers sort, dedupe and collapse to whole series', () => {
+    const seasonsOf = (entries: { seasonNumber?: number }[]) => withTitles('X', entries.map((entry) => ({ title: 'Y', ...entry })))[0].seasonNumbers
+    expect(seasonsOf([{ seasonNumber: 3 }, { seasonNumber: 1 }, { seasonNumber: 3 }])).toEqual([1, 3])
+    expect(seasonsOf([{ seasonNumber: 1 }, { seasonNumber: -1 }])).toEqual([])
+    expect(seasonsOf([{ seasonNumber: 2 }, {}])).toEqual([])
+  })
+
+  it('no alternate titles from sonarr gives an empty list', () => {
+    expect(withTitles('The Wire', undefined)).toEqual([])
+  })
+})
+

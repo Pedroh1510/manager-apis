@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import type { RawCommand, RawImportCandidate, RawQueueRecord } from '../sonarr/manualImport.js'
+import type { RawCalendarEpisode } from '../sonarr/calendarEpisodes.js'
 import type { RawMissingPage } from '../sonarr/missingEpisodes.js'
 import type { RawEpisode, RawSeries } from '../sonarr/seriesDetail.js'
 import type { RawLookupSeries } from '../sonarr/seriesLookup.js'
@@ -20,6 +21,8 @@ export interface FakeSonarrOptions {
   lookup?: RawLookupSeries[]
   qualityProfiles?: unknown[]
   missing?: RawMissingPage
+  /** Every `/calendar` answer, whatever the window. */
+  calendar?: RawCalendarEpisode[]
   /** Status and body for POST /series (default 201 echoing the request). */
   addStatus?: number
   addResponse?: unknown
@@ -103,6 +106,7 @@ export class FakeSonarrApi {
       '/api/v3/qualityprofile': this.options.qualityProfiles ?? [],
       '/api/v3/queue': { page: 1, pageSize: 200, totalRecords: this.options.queue?.length ?? 0, records: this.options.queue ?? [] },
       '/api/v3/manualimport': this.options.importCandidates ?? [],
+      '/api/v3/calendar': this.options.calendar ?? [],
       '/api/v3/wanted/missing': this.options.missing ?? { page: 1, pageSize: 20, totalRecords: 0, records: [] },
       // One series per fake: every episode belongs to whichever seriesId is asked.
       '/api/v3/episode': url.searchParams.has('seriesId') ? episodes : [],

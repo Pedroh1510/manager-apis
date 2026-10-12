@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 import type { JsonLogger } from '../logger.js'
 import { registerSonarrActionRoutes } from './sonarrActionRoutes.js'
+import { registerSonarrCalendarRoutes } from './sonarrCalendarRoutes.js'
 import { registerSonarrImportRoutes } from './sonarrImportRoutes.js'
 import { registerSonarrLibraryRoutes } from './sonarrLibraryRoutes.js'
 import type { SonarrGateway } from './sonarrGateway.js'
@@ -12,7 +13,8 @@ const POSTER_CACHE = 'max-age=86400'
 
 /**
  * `/api/sonarr/*`: 503 when the integration is off, 400/404 for bad input or a missing series,
- * 502 when Sonarr fails. Write routes live in sonarrActionRoutes.ts, sonarrLibraryRoutes.ts and sonarrImportRoutes.ts.
+ * 502 when Sonarr fails. Write routes live in sonarrActionRoutes.ts, sonarrLibraryRoutes.ts and sonarrImportRoutes.ts;
+ * the week calendar in sonarrCalendarRoutes.ts.
  * `uploadDir` is SONARR_UPLOAD_DIR, or null when uploads are off.
  * @example app.use('/api/sonarr', createSonarrRoutes(gateway, logger, '/downloads/manual'))
  */
@@ -35,5 +37,6 @@ export function createSonarrRoutes(gateway: SonarrGateway | null, logger: JsonLo
   registerSonarrActionRoutes(router, gateway, run)
   registerSonarrLibraryRoutes(router, gateway, run)
   registerSonarrImportRoutes(router, gateway, run, uploadDir)
+  registerSonarrCalendarRoutes(router, gateway, run)
   return router
 }

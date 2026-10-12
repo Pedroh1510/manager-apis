@@ -13,6 +13,7 @@ import { SeriesDetailPage } from './features/sonarr/pages/SeriesDetailPage'
 import { AddSeriesPage } from './features/sonarr/pages/AddSeriesPage'
 import { MissingEpisodesPage } from './features/sonarr/pages/MissingEpisodesPage'
 import { ManualImportPage } from './features/sonarr/pages/ManualImportPage'
+import { CalendarPage } from './features/sonarr/pages/CalendarPage'
 
 export const routes: RouteObject[] = [
   {
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       { path: 'torrents', element: <TorrentsPage /> },
       { path: 'sonarr', element: <SeriesLibraryPage /> },
       // Static segments rank above the :seriesId param, as with /mangas/*.
+      { path: 'sonarr/calendario', element: <CalendarPage /> },
       { path: 'sonarr/adicionar', element: <AddSeriesPage /> },
       { path: 'sonarr/faltantes', element: <MissingEpisodesPage /> },
       { path: 'sonarr/importar', element: <ManualImportPage /> },
