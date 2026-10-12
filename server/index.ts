@@ -7,6 +7,7 @@ import { parseServerConfig, type ServerEnv } from './config.js'
 import { createJsonLogger, type LineWriter } from './logger.js'
 import { CtrlQbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
 import { FetchSonarrGateway } from './sonarr/sonarrGateway.js'
+import { FetchTdarrGateway } from './tdarr/tdarrGateway.js'
 import { FsUploadStore } from './uploads/uploadStore.js'
 
 export interface RunningServer {
@@ -31,12 +32,13 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
   const qbittorrent = config.qbittorrent ? new CtrlQbittorrentGateway(config.qbittorrent) : null
   const sonarr = config.sonarr ? new FetchSonarrGateway(config.sonarr) : null
   const uploads = config.sonarrUpload ? new FsUploadStore(config.sonarrUpload.dir) : null
-  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, uploads, logger })
+  const tdarr = config.tdarr ? new FetchTdarrGateway(config.tdarr) : null
+  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, uploads, tdarr, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(config.port, () => resolve(listening))
   })
   server.requestTimeout = REQUEST_TIMEOUT_MS
-  const integrations = { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null, sonarrUpload: uploads !== null }
+  const integrations = { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null, sonarrUpload: uploads !== null, tdarr: tdarr !== null }
   logger.info('server started', { port: config.port, integrations })
   return { server, close: () => new Promise((resolve) => server.close(() => resolve())) }
 }

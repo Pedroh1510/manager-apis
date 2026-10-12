@@ -12,6 +12,12 @@ export interface SonarrConfig {
   apiKey: string
 }
 
+/** Tdarr's own auth is optional, so the key is too (decision Q8). */
+export interface TdarrConfig {
+  url: string
+  apiKey: string | null
+}
+
 export interface ServerConfig {
   port: number
   /** null when QBITTORRENT_URL is absent: the integration is disabled, not broken. */
@@ -20,6 +26,8 @@ export interface ServerConfig {
   sonarr: SonarrConfig | null
   /** null when SONARR_UPLOAD_DIR is absent: uploads are off, the queue import still works. */
   sonarrUpload: SonarrUploadConfig | null
+  /** null when TDARR_URL is absent. */
+  tdarr: TdarrConfig | null
 }
 
 /** The folder both this server and Sonarr see at the same path (decision Q3). */
@@ -39,7 +47,7 @@ const MAX_PORT = 65535
  */
 export function parseServerConfig(env: ServerEnv): ServerConfig {
   const sonarr = parseSonarr(env)
-  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr, sonarrUpload: parseSonarrUpload(env, sonarr) }
+  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr, sonarrUpload: parseSonarrUpload(env, sonarr), tdarr: parseTdarr(env) }
 }
 
 function parsePort(raw: string | undefined): number {
@@ -62,6 +70,17 @@ function parseSonarr(env: ServerEnv): SonarrConfig | null {
   if (!url) return null
   assertHttpUrl('SONARR_URL', url)
   return { url, apiKey: requireVar(env, 'SONARR_API_KEY', 'SONARR_URL') }
+}
+
+function parseTdarr(env: ServerEnv): TdarrConfig | null {
+  const url = env.TDARR_URL
+  const apiKey = env.TDARR_API_KEY || null
+  if (!url) {
+    if (apiKey) throw new Error('TDARR_API_KEY definida sem TDARR_URL')
+    return null
+  }
+  assertHttpUrl('TDARR_URL', url)
+  return { url, apiKey }
 }
 
 function parseSonarrUpload(env: ServerEnv, sonarr: SonarrConfig | null): SonarrUploadConfig | null {

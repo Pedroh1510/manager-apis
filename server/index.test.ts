@@ -31,7 +31,7 @@ describe('startServer', () => {
     expect(lines).toHaveLength(1)
     const boot = JSON.parse(lines[0])
     expect(boot.port).toBe(port)
-    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false, sonarrUpload: false })
+    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false })
     expect(lines[0]).not.toContain('bob-user')
     expect(lines[0]).not.toContain('s3cr3t-pass')
   })
@@ -57,8 +57,23 @@ describe('startServer', () => {
     const running = await startServer({ PORT: String(port), SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }, (line) => lines.push(line))
     await running.close()
 
-    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
     expect(lines[0]).not.toContain('k3y-abc')
+  })
+
+  it('boot wires the tdarr gateway from config', async () => {
+    const lines: string[] = []
+    const withTdarr = await startServer({ PORT: String(await freePort()), TDARR_URL: 'http://127.0.0.1:1', TDARR_API_KEY: 'k-tdarr' }, (line) => lines.push(line))
+    const tdarrAnswer = await fetch(`http://127.0.0.1:${(withTdarr.server.address() as AddressInfo).port}/api/tdarr/overview`)
+    await withTdarr.close()
+    const withoutTdarr = await startServer({ PORT: String(await freePort()) }, (line) => lines.push(line))
+    const offAnswer = await fetch(`http://127.0.0.1:${(withoutTdarr.server.address() as AddressInfo).port}/api/tdarr/overview`)
+    await withoutTdarr.close()
+
+    expect([tdarrAnswer.status, offAnswer.status]).toEqual([502, 503])
+    const boots = lines.filter((line) => line.includes('server started')).map((line) => JSON.parse(line).integrations.tdarr)
+    expect(boots).toEqual([true, false])
+    expect(lines.join('\n')).not.toContain('k-tdarr')
   })
 
   it('loads a local .env only when the file exists, without overriding the environment', () => {
