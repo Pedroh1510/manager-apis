@@ -1,4 +1,17 @@
 import type { SonarrConfig } from '../config.js'
+import {
+  buildImportFile,
+  toCommandState,
+  toImportCandidate,
+  toStuckDownloads,
+  type CommandStatus,
+  type ImportCandidate,
+  type ImportChoice,
+  type RawCommand,
+  type RawImportCandidate,
+  type RawQueueRecord,
+  type StuckDownload,
+} from './manualImport.js'
 import { MISSING_PAGE_SIZE, toMissingPage, type MissingPage, type RawMissingPage } from './missingEpisodes.js'
 import { orderReleases, toReleaseSummary, type RawRelease, type ReleaseQuery, type ReleaseSummary } from './releases.js'
 import {
@@ -54,6 +67,11 @@ export interface SonarrGateway {
   listMissing(page: number): Promise<MissingPage>
   searchEpisodes(episodeIds: number[]): Promise<void>
   searchAllMissing(): Promise<void>
+  listStuckDownloads(): Promise<StuckDownload[]>
+  listImportFiles(downloadId: string): Promise<ImportCandidate[]>
+  /** Resolves to the id of the queued ManualImport command. */
+  startManualImport(downloadId: string, files: ImportChoice[]): Promise<number>
+  readCommand(commandId: number): Promise<CommandStatus>
 }
 
 /** Any Sonarr failure, with a message safe to return to the browser (502). */
@@ -114,6 +132,22 @@ function toAddSeriesError(tvdbId: number, failures: unknown): Error {
   if (list.some((failure) => failure.errorCode === SERIES_EXISTS_CODE)) return new SonarrSeriesExistsError(tvdbId)
   return new SonarrRejectedError(list.map((failure) => failure.errorMessage ?? JSON.stringify(failure)))
 }
+
+/** A requested file is not among the download's import candidates (404). */
+export class SonarrImportFileNotFoundError extends Error {
+  constructor(downloadId: string, path: string) {
+    super(`arquivo não encontrado no download ${downloadId}: ${path}`)
+  }
+}
+
+/** Sonarr no longer knows the command, e.g. after a restart (404). */
+export class SonarrCommandNotFoundError extends Error {
+  constructor(commandId: number) {
+    super(`comando ${commandId} não encontrado no Sonarr`)
+  }
+}
+
+const QUEUE_PAGE_SIZE = 200
 
 export const SONARR_TIMEOUT_MS = 10000
 export const SONARR_RELEASE_TIMEOUT_MS = 90000
@@ -255,6 +289,37 @@ export class FetchSonarrGateway implements SonarrGateway {
 
   async searchAllMissing(): Promise<void> {
     await this.request('/command', { method: 'POST', body: { name: 'MissingEpisodeSearch', monitored: true } })
+  }
+
+  async listStuckDownloads(): Promise<StuckDownload[]> {
+    const params = new URLSearchParams({ page: '1', pageSize: String(QUEUE_PAGE_SIZE), includeSeries: 'true' })
+    const queue = await this.getJson<{ records: RawQueueRecord[] }>(`/queue?${params}`)
+    return toStuckDownloads(queue.records)
+  }
+
+  async listImportFiles(downloadId: string): Promise<ImportCandidate[]> {
+    return (await this.readImportCandidates(downloadId)).map(toImportCandidate)
+  }
+
+  async startManualImport(downloadId: string, files: ImportChoice[]): Promise<number> {
+    const candidates = await this.readImportCandidates(downloadId)
+    const importFiles = files.map((choice) => {
+      const candidate = candidates.find((item) => item.path === choice.path)
+      if (!candidate) throw new SonarrImportFileNotFoundError(downloadId, choice.path)
+      return buildImportFile(candidate, choice, downloadId)
+    })
+    const res = await this.request('/command', { method: 'POST', body: { name: 'ManualImport', importMode: 'auto', files: importFiles } })
+    return ((await res.json()) as { id: number }).id
+  }
+
+  async readCommand(commandId: number): Promise<CommandStatus> {
+    const command = await this.getJson<RawCommand>(`/command/${commandId}`, { notFound: () => new SonarrCommandNotFoundError(commandId) })
+    return toCommandState(command)
+  }
+
+  private readImportCandidates(downloadId: string): Promise<RawImportCandidate[]> {
+    const params = new URLSearchParams({ downloadId, filterExistingFiles: 'true' })
+    return this.getJson<RawImportCandidate[]>(`/manualimport?${params}`)
   }
 
   private async getJson<T>(path: string, options: RequestOptions = {}): Promise<T> {

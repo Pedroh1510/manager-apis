@@ -10,6 +10,7 @@ const EPISODE_STATE: Record<EpisodeState, string> = {
 	unaired: 'Não exibido',
 	tba: 'Sem data'
 };
+const SPECIALS_SEASON = 0;
 const HEALTH_TYPE: Record<string, string> = { warning: 'Aviso', error: 'Erro' };
 
 /**
@@ -26,6 +27,11 @@ export function formatBytes(bytes: number): string {
 export function formatEpisodeCode(seasonNumber: number, episodeNumber: number): string {
 	const pad = (n: number) => String(n).padStart(2, '0');
 	return `S${pad(seasonNumber)}E${pad(episodeNumber)}`;
+}
+
+/** @example seasonLabel(0) // 'Especiais' */
+export function seasonLabel(seasonNumber: number): string {
+	return seasonNumber === SPECIALS_SEASON ? 'Especiais' : `Temporada ${seasonNumber}`;
 }
 
 /**

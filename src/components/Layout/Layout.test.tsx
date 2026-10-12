@@ -132,7 +132,7 @@ describe('Layout', () => {
     await screen.findByRole('link', { name: 'Séries' })
     const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
     const mediaLinks = within(mediaSection).getAllByRole('link').map((link) => [link.textContent, link.getAttribute('href')])
-    expect(mediaLinks).toEqual([['Séries', '/sonarr'], ['Adicionar série', '/sonarr/adicionar'], ['Faltantes', '/sonarr/faltantes']])
+    expect(mediaLinks).toEqual([['Séries', '/sonarr'], ['Adicionar série', '/sonarr/adicionar'], ['Faltantes', '/sonarr/faltantes'], ['Importar', '/sonarr/importar']])
     expect(screen.getByRole('link', { name: 'Faltantes' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: 'Séries' })).not.toHaveAttribute('aria-current')
     cleanup()
@@ -144,7 +144,7 @@ describe('Layout', () => {
       </MemoryRouter>
     )
     await screen.findByRole('link', { name: 'Torrents' })
-    for (const name of ['Séries', 'Adicionar série', 'Faltantes']) expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+    for (const name of ['Séries', 'Adicionar série', 'Faltantes', 'Importar']) expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
   })
 
   it('shows Séries before Torrents when sonarr is configured', async () => {
@@ -158,7 +158,7 @@ describe('Layout', () => {
     expect(series).toHaveAttribute('href', '/sonarr')
     const mediaSection = screen.getByText('Mídia').closest('div') as HTMLElement
     const mediaHrefs = within(mediaSection).getAllByRole('link').map((link) => link.getAttribute('href'))
-    expect(mediaHrefs).toEqual(['/sonarr', '/sonarr/adicionar', '/sonarr/faltantes', '/torrents'])
+    expect(mediaHrefs).toEqual(['/sonarr', '/sonarr/adicionar', '/sonarr/faltantes', '/sonarr/importar', '/torrents'])
   })
 
   it('hides Séries unless sonarr is configured and drops an empty media section', async () => {

@@ -85,7 +85,7 @@ describe('router', () => {
     expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 
-  it('renders the add series and missing routes instead of a series detail', async () => {
+  it('renders the add series, missing and import routes instead of a series detail', async () => {
     vi.mocked(sonarrApi.fetchMissing).mockResolvedValue({ page: 1, pageSize: 20, totalRecords: 0, records: [] })
     renderAt('/sonarr/adicionar')
     expect(await screen.findByRole('heading', { name: 'Adicionar série', level: 1 })).toBeInTheDocument()
@@ -93,6 +93,11 @@ describe('router', () => {
 
     renderAt('/sonarr/faltantes')
     expect(await screen.findByRole('heading', { name: 'Faltantes', level: 1 })).toBeInTheDocument()
+    cleanup()
+
+    vi.mocked(sonarrApi.fetchStuckDownloads).mockResolvedValue([])
+    renderAt('/sonarr/importar')
+    expect(await screen.findByRole('heading', { name: 'Importar', level: 1 })).toBeInTheDocument()
     expect(sonarrApi.fetchSeriesDetail).not.toHaveBeenCalledWith(NaN)
   })
 })

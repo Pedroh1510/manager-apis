@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express'
 import type { JsonLogger } from '../logger.js'
 import {
+  SonarrCommandNotFoundError,
   SonarrGatewayError,
+  SonarrImportFileNotFoundError,
   SonarrLookupNotFoundError,
   SonarrNotFoundError,
   SonarrRejectedError,
@@ -17,6 +19,8 @@ const ERROR_STATUSES: [new (...args: never[]) => Error, number][] = [
   [SonarrSeasonNotFoundError, 404],
   [SonarrReleaseExpiredError, 404],
   [SonarrLookupNotFoundError, 404],
+  [SonarrImportFileNotFoundError, 404],
+  [SonarrCommandNotFoundError, 404],
   [SonarrSeriesExistsError, 409],
   [SonarrRejectedError, 422],
 ]

@@ -116,3 +116,46 @@ export interface MissingPage {
 	totalRecords: number;
 	records: MissingEpisode[];
 }
+
+/** `GET /api/sonarr/import/queue` item: a download Sonarr holds for a manual import */
+export interface StuckDownload {
+	downloadId: string;
+	title: string;
+	seriesTitle: string | null;
+	state: string;
+	messages: string[];
+	size: number;
+}
+
+export interface EpisodeRef {
+	id: number;
+	seasonNumber: number;
+	episodeNumber: number;
+}
+
+/** `GET /api/sonarr/import/files` item */
+export interface ImportCandidate {
+	path: string;
+	relativePath: string;
+	size: number;
+	seriesId: number | null;
+	seriesTitle: string | null;
+	episodes: EpisodeRef[];
+	quality: string;
+	languages: string[];
+	releaseGroup: string | null;
+	rejections: string[];
+}
+
+/** One file of `POST /api/sonarr/import` */
+export interface ImportChoice {
+	path: string;
+	seriesId: number;
+	episodeIds: number[];
+}
+
+/** `GET /api/sonarr/commands/:id` */
+export interface CommandStatus {
+	state: 'pending' | 'completed' | 'failed';
+	message: string | null;
+}
