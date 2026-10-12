@@ -6,6 +6,8 @@ export interface ServerConfig {
 	sonarr: boolean;
 	/** SONARR_UPLOAD_DIR is set: the upload sections and shortcut show. */
 	sonarrUpload: boolean;
+	/** TDARR_URL is set: the Tdarr page and its /status section show. */
+	tdarr: boolean;
 }
 
 export async function fetchServerConfig(): Promise<ServerConfig> {

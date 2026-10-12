@@ -7,6 +7,7 @@ import { MangasAdminPage } from './features/mangas/pages/AdminPage'
 import { MangasListPage } from './features/mangas/pages/MangasPage'
 import { MangaDetailPage } from './features/mangas/pages/MangaDetailPage'
 import { QueuesPage } from './features/queues/pages/QueuesPage'
+import { TdarrPage } from './features/tdarr/pages/TdarrPage'
 import { TorrentsPage } from './features/torrents/pages/TorrentsPage'
 import { SeriesLibraryPage } from './features/sonarr/pages/SeriesLibraryPage'
 import { SeriesDetailPage } from './features/sonarr/pages/SeriesDetailPage'
@@ -24,6 +25,7 @@ export const routes: RouteObject[] = [
       { path: 'status', element: <GlobalStatusPage /> },
       { path: 'filas', element: <QueuesPage /> },
       { path: 'torrents', element: <TorrentsPage /> },
+      { path: 'tdarr', element: <TdarrPage /> },
       { path: 'sonarr', element: <SeriesLibraryPage /> },
       // Static segments rank above the :seriesId param, as with /mangas/*.
       { path: 'sonarr/calendario', element: <CalendarPage /> },

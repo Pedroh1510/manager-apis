@@ -51,7 +51,7 @@ const chooseFiles = async (files: File[]) => {
 const rowOf = (name: string) => screen.getByTestId(`upload-${name}`)
 
 beforeEach(() => {
-  vi.mocked(configApi.fetchServerConfig).mockReset().mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: true })
+  vi.mocked(configApi.fetchServerConfig).mockReset().mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: true, tdarr: false })
   vi.mocked(api.fetchStuckDownloads).mockReset().mockResolvedValue([])
   vi.mocked(api.fetchUploads).mockReset().mockResolvedValue([newFile])
   vi.mocked(api.uploadFile).mockReset().mockResolvedValue()
@@ -194,7 +194,7 @@ describe('ManualImportPage upload', () => {
   })
 
   it('hides the upload sections when upload is off', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
     renderPage()
     expect(await screen.findByRole('heading', { name: 'Downloads travados' })).toBeInTheDocument()
     await waitFor(() => expect(configApi.fetchServerConfig).toHaveBeenCalled())

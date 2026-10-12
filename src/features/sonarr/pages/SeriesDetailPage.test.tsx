@@ -155,12 +155,12 @@ describe('SeriesDetailPage', () => {
 
   it('shows the upload shortcut only when upload is on', async () => {
     vi.mocked(api.fetchSeriesDetail).mockResolvedValue(wire)
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: true })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: true, tdarr: false })
     const on = renderDetail()
     expect(await screen.findByRole('link', { name: 'Enviar arquivos' })).toHaveAttribute('href', '/sonarr/importar?serie=1')
     on.unmount()
 
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
     renderDetail()
     await screen.findByRole('heading', { level: 1, name: 'The Wire' })
     await new Promise((resolve) => setTimeout(resolve, 0))
