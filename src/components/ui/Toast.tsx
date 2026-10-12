@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { FOCUS_RING } from './focusRing';
-import { ToastContext, type ToastApi } from './useToast';
+import { ToastContext, type ToastAction, type ToastApi } from './useToast';
 
 type ToastKind = 'success' | 'error';
 
@@ -8,6 +8,7 @@ interface ToastItem {
 	id: number;
 	kind: ToastKind;
 	text: string;
+	action?: ToastAction;
 }
 
 // Success confirms and gets out of the way; an error waits until it was read.
@@ -21,14 +22,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 		setItems((current) => current.filter((item) => item.id !== id));
 	}, []);
 
-	const push = useCallback((kind: ToastKind, text: string) => {
+	const push = useCallback((kind: ToastKind, text: string, action?: ToastAction) => {
 		nextId.current += 1;
-		const item = { id: nextId.current, kind, text };
+		const item = { id: nextId.current, kind, text, action };
 		setItems((current) => [...current, item]);
 	}, []);
 
 	const api = useMemo<ToastApi>(
-		() => ({ success: (text) => push('success', text), error: (text) => push('error', text) }),
+		() => ({ success: (text, action) => push('success', text, action), error: (text) => push('error', text) }),
 		[push]
 	);
 
@@ -62,6 +63,7 @@ function ToastMessage({ item, onDismiss }: { item: ToastItem; onDismiss: (id: nu
 			className={`pointer-events-auto flex animate-toast-in items-start gap-3 rounded-md border border-l-2 border-border bg-surface px-3 py-2.5 text-sm text-text shadow-overlay ${kindClasses[item.kind]}`}
 		>
 			<p className='flex-1'>{item.text}</p>
+			{item.action && <ToastLink action={item.action} />}
 			{item.kind === 'error' && (
 				<button
 					type='button'
@@ -72,5 +74,22 @@ function ToastMessage({ item, onDismiss }: { item: ToastItem; onDismiss: (id: nu
 				</button>
 			)}
 		</div>
+	);
+}
+
+function ToastLink({ action }: { action: ToastAction }) {
+	const { label, href, onFollow } = action;
+	return (
+		<a
+			href={href}
+			onClick={(event) => {
+				if (!onFollow) return;
+				event.preventDefault();
+				onFollow(href);
+			}}
+			className={`rounded-sm text-xs font-medium text-accent hover:underline ${FOCUS_RING}`}
+		>
+			{label}
+		</a>
 	);
 }

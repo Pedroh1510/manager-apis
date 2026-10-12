@@ -24,8 +24,11 @@ const navItems = [
 ]
 
 // Each link shows only when the server says its integration is configured (GET /api/config).
-const mediaLinks: { to: string; label: string; integration: keyof ServerConfig }[] = [
-  { to: '/sonarr', label: 'Séries', integration: 'sonarr' },
+// Séries matches only the library and a series detail: /sonarr/adicionar and /sonarr/faltantes have their own links.
+const mediaLinks: { to: string; label: string; integration: keyof ServerConfig; activeOn?: RegExp }[] = [
+  { to: '/sonarr', label: 'Séries', integration: 'sonarr', activeOn: /^\/sonarr(\/\d+)?$/ },
+  { to: '/sonarr/adicionar', label: 'Adicionar série', integration: 'sonarr' },
+  { to: '/sonarr/faltantes', label: 'Faltantes', integration: 'sonarr' },
   { to: '/torrents', label: 'Torrents', integration: 'qbittorrent' },
 ]
 
@@ -35,6 +38,15 @@ const inactiveCls = 'text-text-muted hover:bg-surface-raised hover:text-text'
 const linkClass = ({ isActive }: { isActive: boolean }) => `${linkBase} ${isActive ? activeCls : inactiveCls}`
 // /mangas/:idManga is reached from the list, so the list stays highlighted there.
 const MANGA_DETAIL_PATH = /^\/mangas\/\d+$/
+
+/** A link whose highlight follows `isActive` instead of NavLink's prefix match. */
+function PinnedLink({ to, label, isActive }: { to: string; label: string; isActive: boolean }) {
+  return (
+    <Link to={to} aria-current={isActive ? 'page' : undefined} className={linkClass({ isActive })}>
+      {label}
+    </Link>
+  )
+}
 
 export function Sidebar() {
   const [theme, setThemeState] = useState<Theme>(() => getPreferredTheme())
@@ -68,12 +80,12 @@ export function Sidebar() {
         <div key={section} className='mt-5'>
           <p className='mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>{section}</p>
           <ul className='space-y-0.5'>
-            {links.map(({ to, label }) => (
+            {links.map(({ to, label, activeOn }: { to: string; label: string; activeOn?: RegExp }) => (
               <li key={to}>
                 {to === '/mangas/list' && isMangaDetail ? (
-                  <Link to={to} aria-current='page' className={linkClass({ isActive: true })}>
-                    {label}
-                  </Link>
+                  <PinnedLink to={to} label={label} isActive />
+                ) : activeOn ? (
+                  <PinnedLink to={to} label={label} isActive={activeOn.test(pathname)} />
                 ) : (
                   <NavLink to={to} className={linkClass}>
                     {label}
