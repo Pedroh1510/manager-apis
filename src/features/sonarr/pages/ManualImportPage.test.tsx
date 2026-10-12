@@ -30,7 +30,7 @@ const summary = (id: number, title: string): SeriesSummary => ({
   id, title, alternateTitles: [], year: 2000, status: 'ended', network: '', episodeFileCount: 0, episodeCount: 0, added: '',
 })
 const severanceDetail: SeriesDetail = {
-  id: 2, title: 'Severance', year: 2022, status: 'continuing', network: '', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0,
+  id: 2, title: 'Severance', alternateTitles: [], year: 2022, status: 'continuing', network: '', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0,
   seasons: [
     { seasonNumber: 2, monitored: true, episodeFileCount: 0, episodeCount: 2, episodes: [
       { id: 123, episodeNumber: 7, title: 'Chikhai Bardo', airDateUtc: null, state: 'missing', monitored: true },

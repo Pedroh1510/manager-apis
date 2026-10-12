@@ -34,8 +34,15 @@ export interface SeasonDetail {
 	episodes: EpisodeDetail[];
 }
 
+/** One alternate name across its seasons; `seasonNumbers: []` means the whole series. */
+export interface AlternateTitle {
+	title: string;
+	seasonNumbers: number[];
+}
+
 /** `GET /api/sonarr/series/:id` */
 export interface SeriesDetail extends Omit<SeriesSummary, 'alternateTitles' | 'added'> {
+	alternateTitles: AlternateTitle[];
 	overview: string;
 	sizeOnDisk: number;
 	seasons: SeasonDetail[];

@@ -4,6 +4,7 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { getApiErrorStatus } from '../../../lib/apiError';
 import { useServerConfig } from '../../server-config/hooks/useServerConfig';
+import { AlternateTitlesLine } from '../components/AlternateTitlesLine';
 import type { SeriesRowActions } from '../components/EpisodesTable';
 import { ReleasesDrawer } from '../components/ReleasesDrawer';
 import { SeasonSection } from '../components/SeasonSection';
@@ -47,6 +48,7 @@ function SeriesHeader({ series }: { series: SeriesDetail }) {
 			<SeriesPoster seriesId={series.id} title={series.title} className='w-32 shrink-0 self-start' />
 			<div className='min-w-0 space-y-2'>
 				<h1 className='text-xl font-semibold tracking-tight text-text'>{series.title}</h1>
+				<AlternateTitlesLine titles={series.alternateTitles} />
 				<p className='flex flex-wrap items-center gap-2 text-sm text-text-muted'>
 					<span>{series.year}</span>
 					{series.network && <span>{series.network}</span>}
