@@ -11,7 +11,7 @@ const episode = (episodeId: number, seriesTitle: string, airDateUtc: string) => 
 async function mockSonarr(page: Page) {
 	await page.route('**/api/**', (route) => {
 		const { pathname } = new URL(route.request().url());
-		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: true, sonarrUpload: false } });
+		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false } });
 		if (pathname === '/api/sonarr/calendar') {
 			return route.fulfill({ json: [episode(1, 'The Wire', '2026-10-12T01:00:00Z'), episode(2, 'Andor', '2026-10-16T01:00:00Z')] });
 		}

@@ -32,6 +32,7 @@ const mediaLinks: { to: string; label: string; integration: keyof ServerConfig; 
   { to: '/sonarr/faltantes', label: 'Faltantes', integration: 'sonarr' },
   { to: '/sonarr/importar', label: 'Importar', integration: 'sonarr' },
   { to: '/torrents', label: 'Torrents', integration: 'qbittorrent' },
+  { to: '/tdarr', label: 'Tdarr', integration: 'tdarr' },
 ]
 
 const linkBase = `flex h-7 items-center rounded-md px-2 text-[13px] transition-colors ${FOCUS_RING}`

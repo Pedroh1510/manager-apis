@@ -5,6 +5,8 @@ import type { QbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
 import { createQbittorrentRoutes } from './qbittorrent/qbittorrentRoutes.js'
 import type { SonarrGateway } from './sonarr/sonarrGateway.js'
 import { createSonarrRoutes } from './sonarr/sonarrRoutes.js'
+import type { TdarrGateway } from './tdarr/tdarrGateway.js'
+import { createTdarrRoutes } from './tdarr/tdarrRoutes.js'
 import { createUploadRoutes } from './uploads/uploadRoutes.js'
 import type { UploadStore } from './uploads/uploadStore.js'
 
@@ -17,12 +19,14 @@ export interface AppDeps {
   sonarr: SonarrGateway | null
   /** null when SONARR_UPLOAD_DIR is absent. */
   uploads: UploadStore | null
+  /** null when TDARR_URL is absent. */
+  tdarr: TdarrGateway | null
   logger: JsonLogger
 }
 
 /**
  * The SPA and its `/api` on one origin; used by `server/index.ts` and by the tests alike.
- * @example createApp({ staticDir: 'dist', qbittorrent: null, sonarr: null, uploads: null, logger }).listen(3002)
+ * @example createApp({ staticDir: 'dist', qbittorrent: null, sonarr: null, uploads: null, tdarr: null, logger }).listen(3002)
  */
 export function createApp(deps: AppDeps): Express {
   const app = express()
@@ -31,6 +35,7 @@ export function createApp(deps: AppDeps): Express {
     qbittorrent: deps.qbittorrent !== null,
     sonarr: deps.sonarr !== null,
     sonarrUpload: deps.uploads !== null,
+    tdarr: deps.tdarr !== null,
   }))
   // Before express.json: an upload body is a raw stream written straight to disk.
   app.use('/api/sonarr/uploads', createUploadRoutes(deps.uploads))
@@ -38,6 +43,7 @@ export function createApp(deps: AppDeps): Express {
   app.use('/api', rejectMalformedJson)
   app.use('/api/qbittorrent', createQbittorrentRoutes(deps.qbittorrent, deps.logger))
   app.use('/api/sonarr', createSonarrRoutes(deps.sonarr, deps.logger, deps.uploads?.dir ?? null))
+  app.use('/api/tdarr', createTdarrRoutes(deps.tdarr, deps.logger))
   app.use('/api', (req, res) => {
     const path = req.originalUrl.split('?')[0]
     res.status(404).json({ error: `rota não encontrada: ${req.method} ${path}` })

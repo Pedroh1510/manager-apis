@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { FakeQbittorrentGateway } from './test/FakeQbittorrentGateway.js'
+import { FakeTdarrGateway } from './test/FakeTdarrGateway.js'
 import { FakeSonarrGateway } from './test/FakeSonarrGateway.js'
 import { startTestApp, TEST_ASSET_JS, TEST_INDEX_HTML, type TestApp } from './test/startTestApp.js'
 import type { RawTorrent } from './qbittorrent/summarizeTorrents.js'
@@ -58,31 +59,39 @@ describe('server app', () => {
 
   it('config reports qbittorrent disabled without url', async () => {
     app = await startTestApp()
-    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: false, sonarr: false, sonarrUpload: false }) })
+    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false }) })
   })
 
   it('config reports qbittorrent enabled with url', async () => {
     app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway() })
-    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: true, sonarr: false, sonarrUpload: false }) })
+    expect(await get('/api/config')).toEqual({ status: 200, body: JSON.stringify({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false }) })
+  })
+
+  it('config reports the tdarr flag', async () => {
+    app = await startTestApp()
+    expect(JSON.parse((await get('/api/config')).body).tdarr).toBe(false)
+    await app.close()
+    app = await startTestApp({ tdarr: new FakeTdarrGateway() })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: true })
   })
 
   it('config reports sonarr disabled without url', async () => {
     app = await startTestApp()
-    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: false, sonarrUpload: false })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false })
   })
 
   it('config reports sonarr enabled with url', async () => {
     app = await startTestApp({ sonarr: new FakeSonarrGateway() })
-    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
   })
 
   it('config reports the upload integration', async () => {
     app = await startTestApp({ sonarr: new FakeSonarrGateway() })
-    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
     await app.close()
 
     app = await startTestApp({ sonarr: new FakeSonarrGateway(), uploads: new FsUploadStore(mkdtempSync(join(tmpdir(), 'cfg-'))) })
-    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: true })
+    expect(JSON.parse((await get('/api/config')).body)).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: true, tdarr: false })
   })
 
   it('qbittorrent routes return 503 when not configured', async () => {

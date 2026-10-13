@@ -88,4 +88,15 @@ describe('parseServerConfig', () => {
     }
     chmodSync(readOnly, 0o755)
   })
+
+  it('tdarr is disabled without TDARR_URL', () => {
+    expect(parseServerConfig({}).tdarr).toBeNull()
+  })
+
+  it('tdarr env is validated at boot', () => {
+    expect(() => parseServerConfig({ TDARR_URL: 'ftp://x' })).toThrow('TDARR_URL inválida: "ftp://x", esperado http(s)://host:porta')
+    expect(() => parseServerConfig({ TDARR_API_KEY: 'k' })).toThrow('TDARR_API_KEY definida sem TDARR_URL')
+    expect(parseServerConfig({ TDARR_URL: 'http://10.0.0.2:8265' }).tdarr).toEqual({ url: 'http://10.0.0.2:8265', apiKey: null })
+    expect(parseServerConfig({ TDARR_URL: 'http://10.0.0.2:8265', TDARR_API_KEY: 'k' }).tdarr).toEqual({ url: 'http://10.0.0.2:8265', apiKey: 'k' })
+  })
 })

@@ -7,6 +7,7 @@ import { MangasStatusSection } from '../components/MangasStatusSection'
 import { MigrationsSection } from '../components/MigrationsSection'
 import { QbittorrentStatusSection } from '../components/QbittorrentStatusSection'
 import { SonarrStatusSection } from '../components/SonarrStatusSection'
+import { TdarrStatusSection } from '../components/TdarrStatusSection'
 import { useSonarrStatus } from '../../sonarr/hooks/useSonarrStatus'
 import { useServerConfig } from '../../server-config/hooks/useServerConfig'
 import { useQbittorrentStatus } from '../../torrents/hooks/useQbittorrentStatus'
@@ -44,6 +45,7 @@ export function GlobalStatusPage() {
         </MangasStatusSection>
         <QbittorrentStatusSection />
         <SonarrStatusSection />
+        <TdarrStatusSection />
       </div>
     </div>
   )
