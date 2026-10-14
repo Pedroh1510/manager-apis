@@ -2,8 +2,6 @@
 import { describe, expect, it } from 'vitest'
 import { toTdarrNodes, type RawTdarrNode, type RawTdarrWorker } from './tdarrNodes.js'
 
-const NOW = 1791830500000
-
 const worker = (id: string, workerType: string, extra: Partial<RawTdarrWorker> = {}): RawTdarrWorker => ({
   _id: id,
   workerType,
@@ -21,18 +19,17 @@ const node = (id: string, extra: Partial<RawTdarrNode> = {}): RawTdarrNode => ({
   _id: id,
   nodeName: id,
   nodePaused: false,
-  lastSeenTime: NOW,
   workerLimits: { transcodegpu: 0, transcodecpu: 0, healthcheckgpu: 0, healthcheckcpu: 0 },
   workers: {},
   ...extra,
 })
 
 describe('toTdarrNodes', () => {
-  it('node is online up to 60 seconds after last seen', () => {
-    const nodes = toTdarrNodes({ a: node('a', { lastSeenTime: NOW - 60000 }), b: node('b', { lastSeenTime: NOW - 60001 }) }, NOW)
+  it('every listed node is online, since get-nodes only lists connected nodes', () => {
+    const nodes = toTdarrNodes({ a: node('a'), b: node('b', { nodePaused: true }) })
     expect(nodes.map(({ id, online }) => ({ id, online }))).toEqual([
       { id: 'a', online: true },
-      { id: 'b', online: false },
+      { id: 'b', online: true },
     ])
   })
 
@@ -50,7 +47,7 @@ describe('toTdarrNodes', () => {
       },
     })
 
-    const [mapped] = toTdarrNodes({ pc: raw }, NOW)
+    const [mapped] = toTdarrNodes({ pc: raw })
 
     expect(mapped).toMatchObject({
       id: 'pc',

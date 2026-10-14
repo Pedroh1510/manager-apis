@@ -24,8 +24,6 @@ export interface RawTdarrNode {
   _id: string
   nodeName: string
   nodePaused: boolean
-  /** epoch ms of the node's last heartbeat */
-  lastSeenTime: number
   workerLimits: RawTdarrWorkerLimits
   workers: Record<string, RawTdarrWorker>
 }
@@ -68,9 +66,6 @@ export interface TdarrOverview {
   nodes: TdarrNode[]
 }
 
-/** A heartbeat older than this marks the node offline (decision Q10). */
-export const NODE_OFFLINE_AFTER_MS = 60000
-
 function workerTypeParts(workerType: string): { kind: TdarrWorkerKind; hardware: TdarrHardware } {
   const kind = workerType.startsWith('healthcheck') ? 'healthCheck' : 'transcode'
   return { kind, hardware: workerType.endsWith('gpu') ? 'gpu' : 'cpu' }
@@ -93,14 +88,15 @@ function toWorkerLimits(raw: RawTdarrWorkerLimits): TdarrWorkerLimits {
   return { transcodeGpu: raw.transcodegpu, transcodeCpu: raw.transcodecpu, healthCheckGpu: raw.healthcheckgpu, healthCheckCpu: raw.healthcheckcpu }
 }
 
-function toTdarrNode(raw: RawTdarrNode, nowMs: number): TdarrNode {
+function toTdarrNode(raw: RawTdarrNode): TdarrNode {
   const workers = Object.values(raw.workers ?? {}).filter((worker) => worker.idle !== true).map(toTdarrWorker)
   const workerLimits = toWorkerLimits(raw.workerLimits)
   return {
     id: raw._id,
     name: raw.nodeName,
     paused: raw.nodePaused,
-    online: nowMs - raw.lastSeenTime <= NODE_OFFLINE_AFTER_MS,
+    // get-nodes only lists nodes with a live socket and sends no heartbeat field, so listed means online.
+    online: true,
     busyWorkers: workers.length,
     workerCapacity: Object.values(workerLimits).reduce((sum, limit) => sum + limit, 0),
     workerLimits,
@@ -109,9 +105,9 @@ function toTdarrNode(raw: RawTdarrNode, nowMs: number): TdarrNode {
 }
 
 /**
- * Tdarr's node map as the app's list: idle workers dropped, online decided by the heartbeat age.
- * @example toTdarrNodes(await getNodes(), Date.now()).map((node) => node.online)
+ * Tdarr's node map as the app's list: idle workers dropped, every listed node online.
+ * @example toTdarrNodes(await getNodes()).map((node) => node.name)
  */
-export function toTdarrNodes(raw: Record<string, RawTdarrNode>, nowMs: number): TdarrNode[] {
-  return Object.values(raw).map((node) => toTdarrNode(node, nowMs))
+export function toTdarrNodes(raw: Record<string, RawTdarrNode>): TdarrNode[] {
+  return Object.values(raw).map(toTdarrNode)
 }
