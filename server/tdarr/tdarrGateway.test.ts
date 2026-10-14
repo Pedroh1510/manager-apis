@@ -4,16 +4,14 @@ import { FakeTdarrApi, type FakeTdarrOptions } from '../test/FakeTdarrApi.js'
 import { FetchTdarrGateway, TdarrGatewayError } from './tdarrGateway.js'
 import type { RawTdarrNode } from './tdarrNodes.js'
 
-const NOW = new Date(1791830500000)
-
 const NODES: Record<string, RawTdarrNode> = {
   pc: {
-    _id: 'pc', nodeName: 'pc-rtx2060', nodePaused: false, lastSeenTime: NOW.getTime() - 1000,
+    _id: 'pc', nodeName: 'pc-rtx2060', nodePaused: false,
     workerLimits: { transcodegpu: 2, transcodecpu: 0, healthcheckgpu: 0, healthcheckcpu: 0 },
     workers: { w1: { _id: 'w1', workerType: 'transcodegpu', file: '/m/a.mkv', percentage: 50, ETA: '0:01:00', fps: 90, idle: false, originalfileSizeInGbytes: 2, estSize: 1 } },
   },
   cpu: {
-    _id: 'cpu', nodeName: 'homelab-cpu', nodePaused: true, lastSeenTime: NOW.getTime() - 120000,
+    _id: 'cpu', nodeName: 'homelab-cpu', nodePaused: true,
     workerLimits: { transcodegpu: 0, transcodecpu: 0, healthcheckgpu: 0, healthcheckcpu: 1 },
     workers: {},
   },
@@ -28,7 +26,7 @@ afterEach(async () => {
 
 async function gatewayFor(options: FakeTdarrOptions, apiKey: string | null = null, timeoutMs = 2000): Promise<FetchTdarrGateway> {
   tdarr = await FakeTdarrApi.start(options)
-  return new FetchTdarrGateway({ url: tdarr.url, apiKey }, timeoutMs, () => NOW)
+  return new FetchTdarrGateway({ url: tdarr.url, apiKey }, timeoutMs)
 }
 
 describe('FetchTdarrGateway', () => {
@@ -60,7 +58,7 @@ describe('FetchTdarrGateway', () => {
         workers: [{ id: 'w1', kind: 'transcode', hardware: 'gpu', file: '/m/a.mkv', percentage: 50, eta: '0:01:00', fps: 90, originalSizeGb: 2, estimatedSizeGb: 1 }],
       },
       {
-        id: 'cpu', name: 'homelab-cpu', paused: true, online: false, busyWorkers: 0, workerCapacity: 1,
+        id: 'cpu', name: 'homelab-cpu', paused: true, online: true, busyWorkers: 0, workerCapacity: 1,
         workerLimits: { transcodeGpu: 0, transcodeCpu: 0, healthCheckGpu: 0, healthCheckCpu: 1 },
         workers: [],
       },
@@ -105,7 +103,7 @@ describe('FetchTdarrGateway', () => {
     const closed = await FakeTdarrApi.start()
     const closedUrl = closed.url
     await closed.close()
-    const refused = new FetchTdarrGateway({ url: closedUrl, apiKey: null }, 2000, () => NOW)
+    const refused = new FetchTdarrGateway({ url: closedUrl, apiKey: null }, 2000)
     await expect(refused.readStats()).rejects.toThrow(TdarrGatewayError)
     await expect(refused.readStats()).rejects.toThrow(`Tdarr indisponível em ${closedUrl}: fetch failed (ECONNREFUSED) em /api/v2/cruddb`)
   })

@@ -26,8 +26,6 @@ export const TDARR_ERROR_PAGE_SIZE = 50
 
 const HTTP_UNAUTHORIZED = 401
 
-type Clock = () => Date
-
 /** The two error tables: 3 = transcode error/cancelled, 6 = health check error. */
 const ERROR_TABLES: Record<keyof TdarrStats['errors'], { table: string; dateField: TdarrErrorDateField }> = {
   transcode: { table: 'table3', dateField: 'lastTranscodeDate' },
@@ -63,13 +61,12 @@ export class FetchTdarrGateway implements TdarrGateway {
   constructor(
     private readonly config: TdarrConfig,
     readonly timeoutMs = TDARR_TIMEOUT_MS,
-    private readonly now: Clock = () => new Date(),
   ) {}
 
   async readOverview(): Promise<TdarrOverview> {
     const status = await this.call<{ version: string }>('GET', '/status')
     const nodes = await this.call<Record<string, RawTdarrNode>>('GET', '/get-nodes')
-    return { version: status.version, nodes: toTdarrNodes(nodes, this.now().getTime()) }
+    return { version: status.version, nodes: toTdarrNodes(nodes) }
   }
 
   async readStats(): Promise<TdarrStats> {
