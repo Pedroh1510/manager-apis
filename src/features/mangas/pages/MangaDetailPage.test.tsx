@@ -103,6 +103,34 @@ describe('MangaDetailPage', () => {
     await waitFor(() => expect(api.fetchChapters).toHaveBeenCalled())
   })
 
+  it('links a new connector to the existing manga without creating another manga', async () => {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ id: 'naruto-mg', title: 'Naruto Clássico' }])
+    vi.mocked(api.linkConnector).mockResolvedValue(undefined)
+    renderDetail()
+    await screen.findByRole('heading', { name: 'Naruto' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar conector' }))
+    await screen.findByRole('option', { name: 'Mangeek' })
+    expect(screen.queryByRole('option', { name: 'TCB' })).not.toBeInTheDocument()
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'mangeek' } })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Naruto Clássico' }))
+    vi.mocked(api.fetchMangaList).mockClear()
+    fireEvent.click(screen.getByRole('button', { name: /^vincular$/i }))
+
+    await waitFor(() =>
+      expect(api.linkConnector).toHaveBeenCalledWith(1, {
+        idPlugin: 'mangeek',
+        idMangaPlugin: 'naruto-mg',
+        titlePlugin: 'Naruto Clássico',
+      })
+    )
+    expect(api.addManga).not.toHaveBeenCalled()
+    expect(await screen.findByRole('status')).toHaveTextContent('Conector adicionado')
+    await waitFor(() => expect(api.fetchMangaList).toHaveBeenCalled())
+    expect(screen.queryByRole('button', { name: /^vincular$/i })).not.toBeInTheDocument()
+  })
+
   it('links the zip download to the API', async () => {
     renderDetail()
     await screen.findByRole('heading', { name: 'Naruto' })
