@@ -8,6 +8,7 @@ import { Toggle } from '../../../components/ui/Toggle';
 import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
+import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
 import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
@@ -51,7 +52,8 @@ function NotFound() {
 }
 
 function MangaDetail({ manga }: { manga: MangaListItem }) {
-	const { setConnectorActive } = useMangas();
+	const { setConnectorActive, linkConnector } = useMangas();
+	const [isLinking, setIsLinking] = useState(false);
 	const { data: plugins, error: pluginsError } = usePlugins();
 	const { chapters, missing, enqueueChapter, removeChapter } = useMangaChapters(manga.idManga);
 	useErrorToast(chapters.error);
@@ -79,7 +81,27 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 			</header>
 
 			<section aria-labelledby='connectors-title'>
-				<SectionTitle id='connectors-title'>Conectores</SectionTitle>
+				<div className='flex items-center justify-between'>
+					<SectionTitle id='connectors-title'>Conectores</SectionTitle>
+					{!isLinking && (
+						<Button size='sm' onClick={() => setIsLinking(true)}>
+							Adicionar conector
+						</Button>
+					)}
+				</div>
+				{isLinking && (
+					<div className='mb-3 rounded-lg border border-border bg-surface p-4 shadow-raised'>
+						<LinkConnectorWizard
+							mangaTitle={manga.title}
+							linkedPluginIds={manga.connectors.map((c) => c.idPlugin)}
+							isLinking={linkConnector.isPending}
+							onLink={(payload) =>
+								linkConnector.mutate({ idManga: manga.idManga, payload }, { onSuccess: () => setIsLinking(false) })
+							}
+							onCancel={() => setIsLinking(false)}
+						/>
+					</div>
+				)}
 				{manga.connectors.length === 0 ? (
 					<p className='text-xs text-text-subtle'>Nenhum conector vinculado.</p>
 				) : (

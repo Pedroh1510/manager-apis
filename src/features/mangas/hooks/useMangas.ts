@@ -9,7 +9,7 @@ import {
 	setAllConnectorsActive as setAllConnectorsActiveApi,
 	setConnectorActive as setConnectorActiveApi
 } from '../services/api';
-import type { CreateMangaWithConnectorPayload } from '../services/types';
+import type { CreateMangaWithConnectorPayload, LinkConnectorPayload } from '../services/types';
 
 export const MANGA_LIST_KEY = ['mangas', 'list'] as const;
 
@@ -45,6 +45,13 @@ export function useMangas() {
 		...notify('Mangá adicionado')
 	});
 
+	// Links another plugin to a manga that already exists; never creates one.
+	const linkConnector = useMutation({
+		mutationFn: ({ idManga, payload }: { idManga: number; payload: LinkConnectorPayload }) =>
+			linkConnectorApi(idManga, payload),
+		...notify('Conector adicionado')
+	});
+
 	const setAllConnectorsActive = useMutation({
 		mutationFn: ({ idManga, isActive }: { idManga: number; isActive: boolean }) =>
 			setAllConnectorsActiveApi(idManga, isActive),
@@ -57,5 +64,5 @@ export function useMangas() {
 		...notify('Conector atualizado')
 	});
 
-	return { mangas, deleteManga, addManga, setAllConnectorsActive, setConnectorActive };
+	return { mangas, deleteManga, addManga, linkConnector, setAllConnectorsActive, setConnectorActive };
 }
