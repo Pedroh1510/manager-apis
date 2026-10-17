@@ -54,3 +54,23 @@ describe('LinkConnectorWizard', () => {
     })
   })
 })
+
+describe('LinkConnectorWizard with "Todos os plugins"', () => {
+  it('searches only the plugins not linked yet', async () => {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([{ id: 'o-ultimo-agricultor', title: 'O Último Agricultor' }])
+    const onLink = renderWizard()
+
+    await screen.findByRole('option', { name: 'Nexus Toons' })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+    fireEvent.click(await screen.findByRole('button', { name: 'O Último Agricultor (Nexus Toons)' }))
+
+    expect(api.fetchMangasByPlugin).toHaveBeenCalledTimes(1)
+    expect(api.fetchMangasByPlugin).toHaveBeenCalledWith('nexustoons')
+    fireEvent.click(screen.getByRole('button', { name: /^vincular$/i }))
+    expect(onLink).toHaveBeenCalledWith({
+      idPlugin: 'nexustoons',
+      idMangaPlugin: 'o-ultimo-agricultor',
+      titlePlugin: 'O Último Agricultor',
+    })
+  })
+})

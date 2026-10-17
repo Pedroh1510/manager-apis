@@ -169,3 +169,92 @@ describe('AddMangaWizard', () => {
     expect(screen.getByRole('button', { name: 'One Piece' })).toBeInTheDocument()
   })
 })
+
+describe('AddMangaWizard with "Todos os plugins"', () => {
+  const MANGEEK = { id: 'mangeek', name: 'Mangeek' }
+  const NEXUS = { id: 'nexustoons', name: 'Nexus Toons' }
+
+  function mockCatalogs(byPlugin: Record<string, { id: string; title: string }[] | null | Error>, plugins = [MANGEEK, NEXUS]) {
+    vi.mocked(api.fetchPlugins).mockResolvedValue(plugins)
+    vi.mocked(api.fetchMangasByPlugin).mockImplementation(async (idPlugin) => {
+      const result = byPlugin[idPlugin]
+      if (result instanceof Error) throw result
+      return result ?? null
+    })
+  }
+
+  async function clickNextWithDefaultChoice() {
+    await screen.findByRole('option', { name: 'Nexus Toons' })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+  }
+
+  it('is the default choice and stays visible while filtering plugins', async () => {
+    mockCatalogs({})
+    renderWizard()
+    await screen.findByRole('option', { name: 'Nexus Toons' })
+
+    expect(screen.getByRole('combobox')).toHaveDisplayValue('Todos os plugins')
+    fireEvent.change(screen.getByPlaceholderText(/filtrar plugin/i), { target: { value: 'nexus' } })
+    expect(screen.getByRole('option', { name: 'Todos os plugins' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Mangeek' })).not.toBeInTheDocument()
+  })
+
+  it('merges every catalog by title with a plugin badge and adds from the chosen plugin', async () => {
+    mockCatalogs({
+      mangeek: [{ id: 'op-m', title: 'One Piece' }],
+      nexustoons: [
+        { id: 'n', title: 'Naruto' },
+        { id: 'op-n', title: 'One Piece' },
+      ],
+    })
+    const onAdd = renderWizard()
+    await clickNextWithDefaultChoice()
+
+    expect(await screen.findByText(/selecione um mangá/i)).toHaveTextContent('(Todos os plugins)')
+    const rows = screen.getAllByRole('listitem').map((li) => li.textContent)
+    expect(rows).toEqual(['NarutoNexus Toons', 'One PieceMangeek', 'One PieceNexus Toons'])
+
+    fireEvent.click(screen.getByRole('button', { name: 'One Piece (Nexus Toons)' }))
+    expect(screen.getByRole('img', { name: 'Capa de One Piece' })).toHaveAttribute(
+      'src',
+      `${import.meta.env.VITE_MANGAS_API_URL}/mangas/nexustoons/cover/op-n`,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /^adicionar$/i }))
+    expect(onAdd).toHaveBeenCalledWith({ title: 'One Piece', idPlugin: 'nexustoons', idMangaPlugin: 'op-n', titlePlugin: 'One Piece' })
+  })
+
+  it('opens the partial list with warnings for downloading and failed plugins', async () => {
+    mockCatalogs({ mangeek: null, nexustoons: [{ id: 'n', title: 'Naruto' }], tcb: new Error('boom') }, [
+      MANGEEK,
+      NEXUS,
+      { id: 'tcb', name: 'TCB Scans' },
+    ])
+    renderWizard()
+    await clickNextWithDefaultChoice()
+
+    expect(await screen.findByRole('button', { name: /naruto/i })).toBeInTheDocument()
+    expect(screen.getByText('1 plugin sem catálogo ainda (download iniciado): Mangeek.')).toBeInTheDocument()
+    expect(screen.getByText('Falha ao carregar: TCB Scans.')).toBeInTheDocument()
+  })
+
+  it('stays on the plugin step when no catalog loaded yet', async () => {
+    mockCatalogs({ mangeek: null, nexustoons: null })
+    renderWizard()
+    await clickNextWithDefaultChoice()
+
+    expect(await screen.findByText('2 plugins sem catálogo ainda (download iniciado): Mangeek, Nexus Toons.')).toBeInTheDocument()
+    expect(screen.getByText('Selecione um plugin')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/filtrar manga/i)).not.toBeInTheDocument()
+  })
+
+  it('shows the failure of a single chosen plugin instead of advancing', async () => {
+    mockCatalogs({ mangeek: new Error('boom') })
+    renderWizard()
+    await screen.findByRole('option', { name: 'Mangeek' })
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'mangeek' } })
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }))
+
+    expect(await screen.findByText('Falha ao carregar: Mangeek.')).toBeInTheDocument()
+    expect(screen.getByText('Selecione um plugin')).toBeInTheDocument()
+  })
+})

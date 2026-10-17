@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import type { CreateMangaWithConnectorPayload, MangaFromPlugin, Plugin } from '../services/types';
-import { dedupeByTitle, pluginLabel } from '../lib/pluginCatalog';
+import type { CatalogEntry, LoadedCatalogs } from '../lib/catalogLoader';
+import { pluginLabel } from '../lib/pluginCatalog';
 import { catalogCoverUrl } from '../services/coverUrls';
-import { labelCls, MangaStep, PluginStep } from './catalogSteps';
+import { ALL_PLUGINS, type PluginChoice } from '../lib/pluginChoice';
+import { labelCls, PluginStep } from './catalogSteps';
 import { MangaCover } from './MangaCover';
+import { MangaStep } from './MangaStep';
 
 type Step = 'select-plugin' | 'select-manga' | 'confirm-add';
 
@@ -16,57 +19,48 @@ interface AddMangaWizardProps {
 }
 
 /**
- * Plugin → manga from the plugin catalog → local title. The page owns the
- * mutation and closes the drawer once it succeeds.
+ * Plugin (or all of them) → manga from the catalog → local title. The page
+ * owns the mutation and closes the drawer once it succeeds.
  * @example <AddMangaWizard isAdding={addManga.isPending} onAdd={addManga.mutate} onCancel={close} />
  */
 export function AddMangaWizard({ isAdding, onAdd, onCancel }: AddMangaWizardProps) {
 	const [step, setStep] = useState<Step>('select-plugin');
-	const [plugin, setPlugin] = useState<Plugin | null>(null);
-	const [mangaFromPlugin, setMangaFromPlugin] = useState<MangaFromPlugin | null>(null);
+	const [choice, setChoice] = useState<PluginChoice>(ALL_PLUGINS);
+	const [catalog, setCatalog] = useState<LoadedCatalogs | null>(null);
+	const [entry, setEntry] = useState<CatalogEntry | null>(null);
 	const [localTitle, setLocalTitle] = useState('');
-	const [available, setAvailable] = useState<MangaFromPlugin[]>([]);
 
-	function chooseManga(manga: MangaFromPlugin) {
-		setMangaFromPlugin(manga);
-		setLocalTitle(manga.title);
+	function chooseEntry(chosen: CatalogEntry) {
+		setEntry(chosen);
+		setLocalTitle(chosen.manga.title);
 		setStep('confirm-add');
 	}
 
-	if (step === 'select-plugin') {
+	if (step === 'select-plugin' || !catalog) {
 		return (
 			<PluginStep
-				plugin={plugin}
-				onPluginChange={setPlugin}
-				onCatalogReady={(list) => {
-					setAvailable(dedupeByTitle(list));
+				choice={choice}
+				onChoiceChange={setChoice}
+				onCatalogReady={(loaded) => {
+					setCatalog(loaded);
 					setStep('select-manga');
 				}}
 				onCancel={onCancel}
 			/>
 		);
 	}
-	if (step === 'select-manga' || !plugin || !mangaFromPlugin) {
-		return (
-			<MangaStep
-				pluginId={plugin?.id ?? ''}
-				pluginName={plugin ? pluginLabel(plugin) : ''}
-				mangas={available}
-				onChoose={chooseManga}
-				onBack={() => setStep('select-plugin')}
-			/>
-		);
+	if (step === 'select-manga' || !entry) {
+		return <MangaStep choice={choice} catalog={catalog} onChoose={chooseEntry} onBack={() => setStep('select-plugin')} />;
 	}
+	const { plugin, manga } = entry;
 	return (
 		<ConfirmStep
 			plugin={plugin}
-			mangaFromPlugin={mangaFromPlugin}
+			mangaFromPlugin={manga}
 			localTitle={localTitle}
 			onLocalTitleChange={setLocalTitle}
 			isAdding={isAdding}
-			onConfirm={() =>
-				onAdd({ title: localTitle, idPlugin: plugin.id, idMangaPlugin: mangaFromPlugin.id, titlePlugin: mangaFromPlugin.title })
-			}
+			onConfirm={() => onAdd({ title: localTitle, idPlugin: plugin.id, idMangaPlugin: manga.id, titlePlugin: manga.title })}
 			onCancel={onCancel}
 		/>
 	);
