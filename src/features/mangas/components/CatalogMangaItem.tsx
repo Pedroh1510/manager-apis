@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { catalogCoverUrl } from '../services/coverUrls';
-import type { MangaFromPlugin } from '../services/types';
+import type { CatalogEntry } from '../lib/catalogLoader';
+import { pluginLabel } from '../lib/pluginCatalog';
 import { MangaCover } from './MangaCover';
 
 const POPOVER_GAP_PX = 12;
@@ -22,31 +23,40 @@ function popoverPositionFor(element: HTMLElement): PopoverPosition {
 }
 
 interface CatalogMangaItemProps {
-	pluginId: string;
-	manga: MangaFromPlugin;
-	onChoose: (manga: MangaFromPlugin) => void;
+	entry: CatalogEntry;
+	showPluginBadge: boolean;
+	onChoose: (entry: CatalogEntry) => void;
 }
 
 /**
  * Catalog row: thumbnail + title; pointer hover or keyboard focus shows the
- * large cover in a popover.
- * @example <CatalogMangaItem pluginId='nexustoons' manga={manga} onChoose={pick} />
+ * large cover in a popover. The plugin badge tells apart the same title from
+ * different plugins when searching all of them.
+ * @example <CatalogMangaItem entry={{ plugin, manga }} showPluginBadge onChoose={pick} />
  */
-export function CatalogMangaItem({ pluginId, manga, onChoose }: CatalogMangaItemProps) {
+export function CatalogMangaItem({ entry, showPluginBadge, onChoose }: CatalogMangaItemProps) {
+	const { plugin, manga } = entry;
 	const [popover, setPopover] = useState<PopoverPosition | null>(null);
-	const coverUrl = catalogCoverUrl(pluginId, manga.id);
+	const coverUrl = catalogCoverUrl(plugin.id, manga.id);
 	const open = (event: { currentTarget: HTMLElement }) => setPopover(popoverPositionFor(event.currentTarget));
 	const close = () => setPopover(null);
 	return (
 		<li onMouseEnter={open} onMouseLeave={close}>
 			<button
-				onClick={() => onChoose(manga)}
+				onClick={() => onChoose(entry)}
+				// Without it the title and badge spans read as one glued word.
+				aria-label={showPluginBadge ? `${manga.title} (${pluginLabel(plugin)})` : undefined}
 				onFocus={open}
 				onBlur={close}
 				className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface-raised ${FOCUS_RING}`}
 			>
 				<MangaCover src={coverUrl} title={manga.title} width={48} height={68} isDecorative />
 				<span>{manga.title}</span>
+				{showPluginBadge && (
+					<span className='ml-auto shrink-0 rounded-sm bg-surface-raised px-1.5 py-0.5 font-mono text-xs text-text-muted'>
+						{pluginLabel(plugin)}
+					</span>
+				)}
 			</button>
 			{popover && (
 				<div

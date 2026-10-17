@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Button } from '../../../components/ui/Button';
 import type { LinkConnectorPayload, MangaFromPlugin, Plugin } from '../services/types';
-import { dedupeByTitle, pluginLabel } from '../lib/pluginCatalog';
-import { MangaStep, PluginStep } from './catalogSteps';
+import type { CatalogEntry, LoadedCatalogs } from '../lib/catalogLoader';
+import { pluginLabel } from '../lib/pluginCatalog';
+import { ALL_PLUGINS, type PluginChoice } from '../lib/pluginChoice';
+import { PluginStep } from './catalogSteps';
+import { MangaStep } from './MangaStep';
 
 type Step = 'select-plugin' | 'select-manga' | 'confirm-link';
 
@@ -15,53 +18,46 @@ interface LinkConnectorWizardProps {
 }
 
 /**
- * Plugin → manga from the plugin catalog → confirm, linking the entry to an
- * existing manga. Unlike AddMangaWizard it never creates a manga, so the
- * catalog title may differ from the local folder title.
+ * Plugin (or every plugin not linked yet) → manga from the catalog → confirm,
+ * linking the entry to an existing manga. Unlike AddMangaWizard it never
+ * creates a manga, so the catalog title may differ from the local folder title.
  * @example <LinkConnectorWizard mangaTitle='Naruto' linkedPluginIds={['tcb']} isLinking={false} onLink={link} onCancel={close} />
  */
 export function LinkConnectorWizard({ mangaTitle, linkedPluginIds, isLinking, onLink, onCancel }: LinkConnectorWizardProps) {
 	const [step, setStep] = useState<Step>('select-plugin');
-	const [plugin, setPlugin] = useState<Plugin | null>(null);
-	const [mangaFromPlugin, setMangaFromPlugin] = useState<MangaFromPlugin | null>(null);
-	const [available, setAvailable] = useState<MangaFromPlugin[]>([]);
+	const [choice, setChoice] = useState<PluginChoice>(ALL_PLUGINS);
+	const [catalog, setCatalog] = useState<LoadedCatalogs | null>(null);
+	const [entry, setEntry] = useState<CatalogEntry | null>(null);
 
-	if (step === 'select-plugin') {
+	if (step === 'select-plugin' || !catalog) {
 		return (
 			<PluginStep
-				plugin={plugin}
-				onPluginChange={setPlugin}
+				choice={choice}
+				onChoiceChange={setChoice}
 				excludedPluginIds={linkedPluginIds}
-				onCatalogReady={(list) => {
-					setAvailable(dedupeByTitle(list));
+				onCatalogReady={(loaded) => {
+					setCatalog(loaded);
 					setStep('select-manga');
 				}}
 				onCancel={onCancel}
 			/>
 		);
 	}
-	if (step === 'select-manga' || !plugin || !mangaFromPlugin) {
-		const choose = (manga: MangaFromPlugin) => {
-			setMangaFromPlugin(manga);
+	if (step === 'select-manga' || !entry) {
+		const choose = (chosen: CatalogEntry) => {
+			setEntry(chosen);
 			setStep('confirm-link');
 		};
-		return (
-			<MangaStep
-				pluginId={plugin?.id ?? ''}
-				pluginName={plugin ? pluginLabel(plugin) : ''}
-				mangas={available}
-				onChoose={choose}
-				onBack={() => setStep('select-plugin')}
-			/>
-		);
+		return <MangaStep choice={choice} catalog={catalog} onChoose={choose} onBack={() => setStep('select-plugin')} />;
 	}
+	const { plugin, manga } = entry;
 	return (
 		<ConfirmLinkStep
 			mangaTitle={mangaTitle}
 			plugin={plugin}
-			mangaFromPlugin={mangaFromPlugin}
+			mangaFromPlugin={manga}
 			isLinking={isLinking}
-			onConfirm={() => onLink({ idPlugin: plugin.id, idMangaPlugin: mangaFromPlugin.id, titlePlugin: mangaFromPlugin.title })}
+			onConfirm={() => onLink({ idPlugin: plugin.id, idMangaPlugin: manga.id, titlePlugin: manga.title })}
 			onCancel={onCancel}
 		/>
 	);

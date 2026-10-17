@@ -5,44 +5,49 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { usePlugins } from '../hooks/usePlugins';
 import { fetchMangasByPlugin } from '../services/api';
+import { catalogNotices, loadCatalogs, type LoadedCatalogs } from '../lib/catalogLoader';
 import { pluginLabel } from '../lib/pluginCatalog';
-import type { MangaFromPlugin, Plugin } from '../services/types';
-import { CatalogMangaItem } from './CatalogMangaItem';
+import type { Plugin } from '../services/types';
+import { ALL_PLUGINS, ALL_PLUGINS_LABEL, type PluginChoice } from '../lib/pluginChoice';
+import { CatalogNotices } from './CatalogNotices';
 
-const CATALOG_DOWNLOADING_MESSAGE =
-	'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.';
 export const labelCls = 'mb-1 block text-xs font-medium text-text-muted';
 const selectCls = `h-8 w-full rounded-md border border-border bg-surface px-2 text-sm text-text ${FOCUS_RING}`;
+
+const ALL_PLUGINS_OPTION = '__all__';
 
 const toPlugins = (list: Plugin[] | undefined) => (list ?? []).filter((p): p is Plugin => p != null);
 
 interface PluginStepProps {
-	plugin: Plugin | null;
-	onPluginChange: (plugin: Plugin | null) => void;
-	onCatalogReady: (list: MangaFromPlugin[]) => void;
+	choice: PluginChoice;
+	onChoiceChange: (choice: PluginChoice) => void;
+	onCatalogReady: (catalog: LoadedCatalogs) => void;
 	onCancel: () => void;
 	excludedPluginIds?: string[];
 }
 
 /**
- * Plugin picker that loads the plugin catalog on "Próximo".
- * @example <PluginStep plugin={p} onPluginChange={setP} onCatalogReady={next} onCancel={close} excludedPluginIds={['tcb']} />
+ * Plugin picker ("Todos os plugins" or one plugin) that loads the catalogs on
+ * "Próximo". It only stays here when nothing loaded and some plugin is still
+ * downloading or failed; otherwise the warnings travel with the catalog.
+ * @example <PluginStep choice={c} onChoiceChange={setC} onCatalogReady={next} onCancel={close} excludedPluginIds={['tcb']} />
  */
-export function PluginStep({ plugin, onPluginChange, onCatalogReady, onCancel, excludedPluginIds = [] }: PluginStepProps) {
+export function PluginStep({ choice, onChoiceChange, onCatalogReady, onCancel, excludedPluginIds = [] }: PluginStepProps) {
 	const { data } = usePlugins();
 	const [pluginFilter, setPluginFilter] = useState('');
 	const [loading, setLoading] = useState(false);
-	const [catalogDownloading, setCatalogDownloading] = useState(false);
+	const [notices, setNotices] = useState<string[]>([]);
 	const plugins = toPlugins(data).filter((p) => !excludedPluginIds.includes(p.id));
 	const visible = plugins.filter((p) => !pluginFilter || pluginLabel(p).toLowerCase().includes(pluginFilter.toLowerCase()));
+	const targets = choice === ALL_PLUGINS ? plugins : [choice];
 
 	async function loadCatalog() {
-		if (!plugin) return;
 		setLoading(true);
 		try {
-			const list = await fetchMangasByPlugin(plugin.id);
-			setCatalogDownloading(list === null);
-			if (list !== null) onCatalogReady(list);
+			const loaded = await loadCatalogs(targets, fetchMangasByPlugin);
+			const warnings = catalogNotices(loaded, choice === ALL_PLUGINS);
+			if (loaded.entries.length > 0 || warnings.length === 0) return onCatalogReady(loaded);
+			setNotices(warnings);
 		} finally {
 			setLoading(false);
 		}
@@ -51,33 +56,17 @@ export function PluginStep({ plugin, onPluginChange, onCatalogReady, onCancel, e
 	return (
 		<section className='space-y-4'>
 			<h3 className='text-sm font-semibold text-text'>Selecione um plugin</h3>
-			{catalogDownloading && (
-				<p role='status' className='rounded-md border border-warning/30 bg-warning-bg px-3 py-2 text-xs text-warning'>
-					{CATALOG_DOWNLOADING_MESSAGE}
-				</p>
-			)}
+			<CatalogNotices notices={notices} />
 			<div>
 				<label htmlFor='new-manga-plugin' className={labelCls}>
 					Plugin
 				</label>
 				<Input placeholder='Filtrar plugin...' value={pluginFilter} onChange={(e) => setPluginFilter(e.target.value)} className='mb-1.5' />
-				<select
-					id='new-manga-plugin'
-					value={plugin?.id ?? ''}
-					onChange={(e) => onPluginChange(plugins.find((p) => p.id === e.target.value) ?? null)}
-					className={selectCls}
-				>
-					<option value=''>Escolha um plugin</option>
-					{visible.map((p) => (
-						<option key={p.id} value={p.id}>
-							{pluginLabel(p)}
-						</option>
-					))}
-				</select>
+				<PluginSelect choice={choice} plugins={plugins} visible={visible} onChoiceChange={onChoiceChange} />
 			</div>
 			{loading && <LoadingSpinner />}
 			<div className='flex gap-2'>
-				<Button variant='primary' onClick={loadCatalog} disabled={!plugin || loading}>
+				<Button variant='primary' onClick={loadCatalog} disabled={targets.length === 0 || loading}>
 					Próximo
 				</Button>
 				<Button variant='ghost' onClick={onCancel}>
@@ -88,36 +77,29 @@ export function PluginStep({ plugin, onPluginChange, onCatalogReady, onCancel, e
 	);
 }
 
-interface MangaStepProps {
-	pluginId: string;
-	pluginName: string;
-	mangas: MangaFromPlugin[];
-	onChoose: (manga: MangaFromPlugin) => void;
-	onBack: () => void;
+interface PluginSelectProps {
+	choice: PluginChoice;
+	plugins: Plugin[];
+	visible: Plugin[];
+	onChoiceChange: (choice: PluginChoice) => void;
 }
 
-/**
- * Filterable list of a plugin's catalog.
- * @example <MangaStep pluginId='tcb' pluginName='TCB' mangas={list} onChoose={pick} onBack={back} />
- */
-export function MangaStep({ pluginId, pluginName, mangas, onChoose, onBack }: MangaStepProps) {
-	const [filter, setFilter] = useState('');
-	const visible = mangas.filter((m) => !filter || m.title.toLowerCase().includes(filter.toLowerCase()));
+// "Todos os plugins" ignores the plugin filter so it is always one click away.
+function PluginSelect({ choice, plugins, visible, onChoiceChange }: PluginSelectProps) {
+	const toChoice = (value: string): PluginChoice => plugins.find((p) => p.id === value) ?? ALL_PLUGINS;
 	return (
-		<section className='space-y-3'>
-			<h3 className='text-sm font-semibold text-text'>
-				Selecione um mangá <span className='font-normal text-text-muted'>({pluginName})</span>
-			</h3>
-			<Input placeholder='Filtrar manga por título...' value={filter} onChange={(e) => setFilter(e.target.value)} />
-			{visible.length === 0 && <p className='text-xs text-text-muted'>Nenhum mangá disponível.</p>}
-			<ul className='max-h-[60vh] divide-y divide-border overflow-y-auto rounded-md border border-border'>
-				{visible.map((manga) => (
-					<CatalogMangaItem key={manga.title} pluginId={pluginId} manga={manga} onChoose={onChoose} />
-				))}
-			</ul>
-			<Button variant='ghost' onClick={onBack}>
-				Voltar
-			</Button>
-		</section>
+		<select
+			id='new-manga-plugin'
+			value={choice === ALL_PLUGINS ? ALL_PLUGINS_OPTION : choice.id}
+			onChange={(e) => onChoiceChange(toChoice(e.target.value))}
+			className={selectCls}
+		>
+			<option value={ALL_PLUGINS_OPTION}>{ALL_PLUGINS_LABEL}</option>
+			{visible.map((p) => (
+				<option key={p.id} value={p.id}>
+					{pluginLabel(p)}
+				</option>
+			))}
+		</select>
 	);
 }
