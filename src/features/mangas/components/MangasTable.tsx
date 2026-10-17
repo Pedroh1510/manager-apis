@@ -6,7 +6,9 @@ import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { Table, Td, Th } from '../../../components/ui/Table';
 import { Toggle } from '../../../components/ui/Toggle';
 import { deriveMangaStatus } from '../lib/mangaStatus';
+import { mangaCoverUrl } from '../services/coverUrls';
 import type { MangaConnectorSummary, MangaListItem } from '../services/types';
+import { MangaCover } from './MangaCover';
 
 interface MangasTableProps {
 	mangas: MangaListItem[];
@@ -57,9 +59,12 @@ function MangaRow({ manga, pluginNames, pendingMangaId, onSetAllConnectorsActive
 				/>
 			</Td>
 			<Td data-testid='manga-title' className='font-medium'>
-				<Link to={`/mangas/${manga.idManga}`} className={`rounded-sm hover:text-accent hover:underline ${FOCUS_RING}`}>
-					{manga.title}
-				</Link>
+				<div className='flex items-center gap-3'>
+					<MangaCover src={mangaCoverUrl(manga.idManga)} title={manga.title} width={32} height={45} />
+					<Link to={`/mangas/${manga.idManga}`} className={`rounded-sm hover:text-accent hover:underline ${FOCUS_RING}`}>
+						{manga.title}
+					</Link>
+				</div>
 			</Td>
 			<Td>
 				{hasConnectors ? (

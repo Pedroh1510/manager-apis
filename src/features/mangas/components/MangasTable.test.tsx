@@ -24,6 +24,14 @@ function renderTable(mangas: MangaListItem[], pendingMangaId: number | null = nu
 const row = (title: string) => screen.getByText(title).closest('tr') as HTMLElement
 
 describe('MangasTable', () => {
+  it('shows the manga cover in each row', () => {
+    renderTable([manga(7, 'Black Clover', [connector('tcb', true)])])
+
+    const cover = within(row('Black Clover')).getByRole('img', { name: 'Capa de Black Clover' })
+    expect(cover).toHaveAttribute('src', `${import.meta.env.VITE_MANGAS_API_URL}/mangas/adm/7/cover`)
+    expect(cover).toHaveAttribute('loading', 'lazy')
+  })
+
   it('renders title, one chip per connector and the derived status', () => {
     renderTable([manga(1, 'Naruto', [connector('tcb', true, 'Naruto TCB'), connector('mangeek', false)])])
 

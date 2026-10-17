@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AddMangaWizard } from './AddMangaWizard'
 import * as api from '../services/api'
@@ -89,6 +90,51 @@ describe('AddMangaWizard', () => {
     await waitFor(() => expect(screen.getByText('Naruto')).toBeInTheDocument())
     expect(api.fetchMangasByPlugin).toHaveBeenCalledTimes(2)
     expect(screen.queryByText(DOWNLOADING_MESSAGE)).not.toBeInTheDocument()
+  })
+
+  const PICO = { id: 'pico marcial/x', title: 'Pico Marcial' }
+  const picoCoverUrl = `${import.meta.env.VITE_MANGAS_API_URL}/mangas/tcb/cover/pico%20marcial%2Fx`
+
+  async function openCatalogWithPico() {
+    vi.mocked(api.fetchMangasByPlugin).mockResolvedValue([PICO, { id: 'n1', title: 'Naruto' }])
+    renderWizard()
+    await choosePluginAndClickNext()
+    return screen.findByRole('button', { name: 'Pico Marcial' })
+  }
+
+  it('shows a lazy cover thumbnail for each catalog item', async () => {
+    const item = await openCatalogWithPico()
+
+    const thumbnail = item.closest('li')!.querySelector('img')!
+    expect(thumbnail).toHaveAttribute('src', picoCoverUrl)
+    expect(thumbnail).toHaveAttribute('width', '48')
+    expect(thumbnail).toHaveAttribute('height', '68')
+    expect(thumbnail).toHaveAttribute('loading', 'lazy')
+  })
+
+  it('opens the cover popover on hover and on keyboard focus', async () => {
+    const user = userEvent.setup()
+    const item = await openCatalogWithPico()
+
+    await user.hover(item)
+    const popover = screen.getByRole('tooltip')
+    expect(within(popover).getByRole('img', { name: 'Capa de Pico Marcial' })).toHaveAttribute('src', picoCoverUrl)
+    await user.unhover(item)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+
+    act(() => item.focus())
+    expect(within(screen.getByRole('tooltip')).getByRole('img', { name: 'Capa de Pico Marcial' })).toBeInTheDocument()
+    act(() => item.blur())
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('shows the chosen manga cover on the confirm step', async () => {
+    const item = await openCatalogWithPico()
+
+    fireEvent.click(item)
+
+    const cover = await screen.findByRole('img', { name: 'Capa de Pico Marcial' })
+    expect(cover).toHaveAttribute('src', picoCoverUrl)
   })
 
   it('filters mangas by title in select-manga step and shows no-results', async () => {

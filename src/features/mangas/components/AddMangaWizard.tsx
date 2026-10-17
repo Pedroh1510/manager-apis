@@ -3,7 +3,9 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import type { CreateMangaWithConnectorPayload, MangaFromPlugin, Plugin } from '../services/types';
 import { dedupeByTitle, pluginLabel } from '../lib/pluginCatalog';
+import { catalogCoverUrl } from '../services/coverUrls';
 import { labelCls, MangaStep, PluginStep } from './catalogSteps';
+import { MangaCover } from './MangaCover';
 
 type Step = 'select-plugin' | 'select-manga' | 'confirm-add';
 
@@ -45,7 +47,15 @@ export function AddMangaWizard({ isAdding, onAdd, onCancel }: AddMangaWizardProp
 		);
 	}
 	if (step === 'select-manga' || !plugin || !mangaFromPlugin) {
-		return <MangaStep pluginName={plugin ? pluginLabel(plugin) : ''} mangas={available} onChoose={chooseManga} onBack={() => setStep('select-plugin')} />;
+		return (
+			<MangaStep
+				pluginId={plugin?.id ?? ''}
+				pluginName={plugin ? pluginLabel(plugin) : ''}
+				mangas={available}
+				onChoose={chooseManga}
+				onBack={() => setStep('select-plugin')}
+			/>
+		);
 	}
 	return (
 		<ConfirmStep
@@ -76,6 +86,7 @@ function ConfirmStep({ plugin, mangaFromPlugin, localTitle, onLocalTitleChange, 
 	return (
 		<section className='space-y-4'>
 			<h3 className='text-sm font-semibold text-text'>Confirmar</h3>
+			<MangaCover src={catalogCoverUrl(plugin.id, mangaFromPlugin.id)} title={mangaFromPlugin.title} width={180} height={255} />
 			<div>
 				<label htmlFor='new-manga-title' className={labelCls}>
 					Título (pasta local)

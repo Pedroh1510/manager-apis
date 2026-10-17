@@ -29,6 +29,14 @@ beforeEach(() => {
 })
 
 describe('MangaDetailPage', () => {
+  it('shows the manga cover', async () => {
+    vi.mocked(api.fetchMangaList).mockResolvedValue([manga(7, 'Black Clover', [connector('tcb', true)])])
+    renderDetail('7')
+
+    const cover = await screen.findByRole('img', { name: 'Capa de Black Clover' })
+    expect(cover).toHaveAttribute('src', `${import.meta.env.VITE_MANGAS_API_URL}/mangas/adm/7/cover`)
+  })
+
   it('shows title, status and a toggle for every connector', async () => {
     vi.mocked(api.setConnectorActive).mockResolvedValue(undefined)
     renderDetail()
