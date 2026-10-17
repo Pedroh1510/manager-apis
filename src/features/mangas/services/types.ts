@@ -87,3 +87,27 @@ export interface MissingChapter {
 	idMangaConnector: number;
 	[key: string]: unknown;
 }
+
+export type CoverSuggestionBand = 'strong' | 'possible';
+
+export interface CoverSuggestion {
+	idSuggestion: number;
+	idManga: number;
+	title: string;
+	idPlugin: string;
+	idMangaPlugin: string;
+	titlePlugin: string;
+	score: number;
+	band: CoverSuggestionBand;
+	titleSimilarity: number;
+}
+
+export interface CoverSuggestionConflict extends CoverSuggestion {
+	conflictIdManga: number;
+	conflictTitle: string;
+}
+
+export interface CoverSuggestionsResponse {
+	suggestions: CoverSuggestion[];
+	conflicts: CoverSuggestionConflict[];
+}
