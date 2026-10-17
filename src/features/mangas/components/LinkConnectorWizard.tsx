@@ -45,7 +45,15 @@ export function LinkConnectorWizard({ mangaTitle, linkedPluginIds, isLinking, on
 			setMangaFromPlugin(manga);
 			setStep('confirm-link');
 		};
-		return <MangaStep pluginName={plugin ? pluginLabel(plugin) : ''} mangas={available} onChoose={choose} onBack={() => setStep('select-plugin')} />;
+		return (
+			<MangaStep
+				pluginId={plugin?.id ?? ''}
+				pluginName={plugin ? pluginLabel(plugin) : ''}
+				mangas={available}
+				onChoose={choose}
+				onBack={() => setStep('select-plugin')}
+			/>
+		);
 	}
 	return (
 		<ConfirmLinkStep

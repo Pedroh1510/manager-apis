@@ -9,10 +9,12 @@ import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
+import { MangaCover } from '../components/MangaCover';
 import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
 import { deriveMangaStatus } from '../lib/mangaStatus';
+import { mangaCoverUrl } from '../services/coverUrls';
 import type { Chapter, MangaListItem } from '../services/types';
 
 const linkCls = `rounded-sm text-xs text-text-muted hover:text-text ${FOCUS_RING}`;
@@ -68,9 +70,12 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				← Mangás
 			</Link>
 			<header className='flex items-end justify-between gap-4'>
-				<div className='flex items-center gap-3'>
-					<h1 className='text-xl font-semibold tracking-tight text-text'>{manga.title}</h1>
-					<StatusBadge status={deriveMangaStatus(manga.connectors)} />
+				<div className='flex items-end gap-4'>
+					<MangaCover src={mangaCoverUrl(manga.idManga)} title={manga.title} width={96} height={136} />
+					<div className='flex items-center gap-3'>
+						<h1 className='text-xl font-semibold tracking-tight text-text'>{manga.title}</h1>
+						<StatusBadge status={deriveMangaStatus(manga.connectors)} />
+					</div>
 				</div>
 				<a
 					href={`${import.meta.env.VITE_MANGAS_API_URL}/mangas/adm/${manga.idManga}/download`}

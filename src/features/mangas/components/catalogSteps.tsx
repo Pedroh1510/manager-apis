@@ -7,6 +7,7 @@ import { usePlugins } from '../hooks/usePlugins';
 import { fetchMangasByPlugin } from '../services/api';
 import { pluginLabel } from '../lib/pluginCatalog';
 import type { MangaFromPlugin, Plugin } from '../services/types';
+import { CatalogMangaItem } from './CatalogMangaItem';
 
 const CATALOG_DOWNLOADING_MESSAGE =
 	'Catálogo deste plugin ainda não foi baixado. O download começou — clique em Próximo novamente em alguns minutos.';
@@ -88,6 +89,7 @@ export function PluginStep({ plugin, onPluginChange, onCatalogReady, onCancel, e
 }
 
 interface MangaStepProps {
+	pluginId: string;
 	pluginName: string;
 	mangas: MangaFromPlugin[];
 	onChoose: (manga: MangaFromPlugin) => void;
@@ -96,9 +98,9 @@ interface MangaStepProps {
 
 /**
  * Filterable list of a plugin's catalog.
- * @example <MangaStep pluginName='TCB' mangas={list} onChoose={pick} onBack={back} />
+ * @example <MangaStep pluginId='tcb' pluginName='TCB' mangas={list} onChoose={pick} onBack={back} />
  */
-export function MangaStep({ pluginName, mangas, onChoose, onBack }: MangaStepProps) {
+export function MangaStep({ pluginId, pluginName, mangas, onChoose, onBack }: MangaStepProps) {
 	const [filter, setFilter] = useState('');
 	const visible = mangas.filter((m) => !filter || m.title.toLowerCase().includes(filter.toLowerCase()));
 	return (
@@ -110,14 +112,7 @@ export function MangaStep({ pluginName, mangas, onChoose, onBack }: MangaStepPro
 			{visible.length === 0 && <p className='text-xs text-text-muted'>Nenhum mangá disponível.</p>}
 			<ul className='max-h-[60vh] divide-y divide-border overflow-y-auto rounded-md border border-border'>
 				{visible.map((manga) => (
-					<li key={manga.title}>
-						<button
-							onClick={() => onChoose(manga)}
-							className={`w-full px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface-raised ${FOCUS_RING}`}
-						>
-							{manga.title}
-						</button>
-					</li>
+					<CatalogMangaItem key={manga.title} pluginId={pluginId} manga={manga} onChoose={onChoose} />
 				))}
 			</ul>
 			<Button variant='ghost' onClick={onBack}>
