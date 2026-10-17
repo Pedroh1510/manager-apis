@@ -63,6 +63,14 @@ describe('router', () => {
     expect(await screen.findByRole('heading', { name: 'Naruto' })).toBeInTheDocument()
   })
 
+  it('routes /mangas/sugestoes to the suggestions page', async () => {
+    vi.mocked(mangasApi.fetchCoverSuggestions).mockResolvedValue({ suggestions: [], conflicts: [] })
+    renderAt('/mangas/sugestoes')
+    expect(await screen.findByRole('heading', { name: 'Sugestões', level: 1 })).toBeInTheDocument()
+    expect(screen.queryByText('Mangá não encontrado')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Sugestões' })).toHaveAttribute('href', '/mangas/sugestoes')
+  })
+
   it('resolves fixed routes before the manga detail route (queues)', async () => {
     renderAt('/filas')
     expect(await screen.findByRole('heading', { name: 'Filas', level: 1 })).toBeInTheDocument()

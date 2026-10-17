@@ -19,6 +19,7 @@ const navItems = [
     links: [
       { to: '/mangas/admin', label: 'Configurações / ADM' },
       { to: '/mangas/list', label: 'Mangas' },
+      { to: '/mangas/sugestoes', label: 'Sugestões' },
     ],
   },
 ]

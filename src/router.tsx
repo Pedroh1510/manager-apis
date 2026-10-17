@@ -6,6 +6,7 @@ import { AnimeRssAdminPage } from './features/anime-rss/pages/AdminPage'
 import { MangasAdminPage } from './features/mangas/pages/AdminPage'
 import { MangasListPage } from './features/mangas/pages/MangasPage'
 import { MangaDetailPage } from './features/mangas/pages/MangaDetailPage'
+import { SuggestionsPage } from './features/mangas/pages/SuggestionsPage'
 import { QueuesPage } from './features/queues/pages/QueuesPage'
 import { TdarrPage } from './features/tdarr/pages/TdarrPage'
 import { TorrentsPage } from './features/torrents/pages/TorrentsPage'
@@ -37,6 +38,7 @@ export const routes: RouteObject[] = [
       { path: 'anime-rss/admin', element: <AnimeRssAdminPage /> },
       { path: 'mangas/admin', element: <MangasAdminPage /> },
       { path: 'mangas/list', element: <MangasListPage /> },
+      { path: 'mangas/sugestoes', element: <SuggestionsPage /> },
       // Fixed /mangas/* paths win over the param: React Router ranks static segments first.
       { path: 'mangas/:idManga', element: <MangaDetailPage /> },
     ],

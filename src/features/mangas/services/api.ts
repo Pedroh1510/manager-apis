@@ -9,7 +9,8 @@ import type {
 	UpdateCookiePayload,
 	UpdateCredentialsPayload,
 	Chapter,
-	MissingChapter
+	MissingChapter,
+	CoverSuggestionsResponse
 } from './types';
 
 export async function fetchMangasStatus(): Promise<MangasStatusResponse> {
@@ -112,4 +113,17 @@ export async function fetchChapterPages(idManga: number, idChapter: number): Pro
 
 export async function deleteChapter(idManga: number, idChapter: number): Promise<void> {
 	await mangasHttp.delete(`/mangas/adm/${idManga}/chapters/${idChapter}`);
+}
+
+export async function fetchCoverSuggestions(): Promise<CoverSuggestionsResponse> {
+	const { data } = await mangasHttp.get<CoverSuggestionsResponse>('/mangas/adm/suggestions');
+	return data;
+}
+
+export async function acceptCoverSuggestion(idSuggestion: number): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/suggestions/${idSuggestion}/accept`);
+}
+
+export async function dismissCoverSuggestion(idSuggestion: number): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/suggestions/${idSuggestion}/dismiss`);
 }
