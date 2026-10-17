@@ -16,7 +16,10 @@ import {
 	fetchChapters,
 	fetchMissingChapters,
 	fetchChapterPages,
-	deleteChapter
+	deleteChapter,
+	fetchCoverSuggestions,
+	acceptCoverSuggestion,
+	dismissCoverSuggestion
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
@@ -194,5 +197,29 @@ describe('chapter endpoints', () => {
 			'/mangas/adm/1/chapters/5/pages'
 		]);
 		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/1/chapters/5');
+	});
+});
+
+describe('cover suggestions', () => {
+	it('fetchCoverSuggestions calls GET /mangas/adm/suggestions', async () => {
+		const body = { suggestions: [], conflicts: [] };
+		mockGet.mockResolvedValue({ data: body });
+
+		await expect(fetchCoverSuggestions()).resolves.toEqual(body);
+		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/suggestions');
+	});
+
+	it('acceptCoverSuggestion calls POST /mangas/adm/suggestions/:id/accept', async () => {
+		mockPost.mockResolvedValue({ data: {} });
+
+		await acceptCoverSuggestion(3);
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/suggestions/3/accept');
+	});
+
+	it('dismissCoverSuggestion calls POST /mangas/adm/suggestions/:id/dismiss', async () => {
+		mockPost.mockResolvedValue({ data: {} });
+
+		await dismissCoverSuggestion(4);
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/suggestions/4/dismiss');
 	});
 });
