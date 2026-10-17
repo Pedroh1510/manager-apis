@@ -15,4 +15,4 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-server ./dist-server
 EXPOSE 3002
 USER node
-CMD ["node", "dist-server/index.js"]
+CMD ["node", "--import", "./dist-server/telemetry.js", "dist-server/index.js"]
