@@ -19,7 +19,7 @@ function render(ui: ReactElement) {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false })
 })
 
 describe('Layout', () => {
@@ -94,7 +94,7 @@ describe('Layout', () => {
   })
 
   it('shows the media section when qbittorrent is configured', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -108,7 +108,7 @@ describe('Layout', () => {
     const outcomes = [
       () => new Promise<never>(() => {}),
       () => Promise.reject(new Error('offline')),
-      () => Promise.resolve({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false }),
+      () => Promise.resolve({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false }),
     ]
     for (const outcome of outcomes) {
       vi.mocked(configApi.fetchServerConfig).mockImplementation(outcome)
@@ -125,7 +125,7 @@ describe('Layout', () => {
   })
 
   it('media links follow the configured integrations', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter initialEntries={['/sonarr/faltantes']}>
         <Layout />
@@ -139,7 +139,7 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: 'Séries' })).not.toHaveAttribute('aria-current')
     cleanup()
 
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -149,8 +149,8 @@ describe('Layout', () => {
     for (const name of ['Séries', 'Calendário', 'Adicionar série', 'Faltantes', 'Importar']) expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
   })
 
-  it('temporadas link follows the jikan flag', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: true })
+  it('temporadas link follows the anilist flag', async () => {
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: true })
     render(
       <MemoryRouter>
         <Layout />
@@ -163,7 +163,7 @@ describe('Layout', () => {
     expect(labels[labels.indexOf('Importar') + 1]).toBe('Temporadas')
     cleanup()
 
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -174,7 +174,7 @@ describe('Layout', () => {
   })
 
   it('calendar link sits below series and is the only active one', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: false })
     const router = createMemoryRouter(routes, { initialEntries: ['/sonarr/calendario'] })
     render(<RouterProvider router={router} />)
     const calendarLink = await screen.findByRole('link', { name: 'Calendário' })
@@ -187,7 +187,7 @@ describe('Layout', () => {
   })
 
   it('shows Séries before Torrents when sonarr is configured', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -204,7 +204,7 @@ describe('Layout', () => {
     const outcomes = [
       () => new Promise<never>(() => {}),
       () => Promise.reject(new Error('offline')),
-      () => Promise.resolve({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false }),
+      () => Promise.resolve({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false }),
     ]
     for (const outcome of outcomes) {
       vi.mocked(configApi.fetchServerConfig).mockImplementation(outcome)
@@ -217,7 +217,7 @@ describe('Layout', () => {
       expect(screen.queryByRole('link', { name: 'Séries' })).not.toBeInTheDocument()
       cleanup()
     }
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />
@@ -228,7 +228,7 @@ describe('Layout', () => {
   })
 
   it('highlights Séries on a series detail page', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter initialEntries={['/sonarr/12']}>
         <Layout />
@@ -267,7 +267,7 @@ describe('Layout', () => {
   })
 
   it('tdarr link follows the config flag', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: true, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: true, anilist: false })
     const router = createMemoryRouter(routes, { initialEntries: ['/tdarr'] })
     render(<RouterProvider router={router} />)
     const tdarrLink = await screen.findByRole('link', { name: 'Tdarr' })
@@ -277,7 +277,7 @@ describe('Layout', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Tdarr' })).toBeInTheDocument()
     cleanup()
 
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, anilist: false })
     render(
       <MemoryRouter>
         <Layout />

@@ -3,11 +3,11 @@ import { seasonItem } from '../test/fixtures';
 import { filterSeasonItems } from './filterSeasonItems';
 
 const ITEMS = [
-	seasonItem({ malId: 1 }),
-	seasonItem({ malId: 2, title: 'Kusuriya no Hitorigoto', titleEnglish: 'The Apothecary Diaries' }),
-	seasonItem({ malId: 3, title: 'Dandadan', titleEnglish: null })
+	seasonItem({ id: 1 }),
+	seasonItem({ id: 2, title: 'Kusuriya no Hitorigoto', titleEnglish: 'The Apothecary Diaries' }),
+	seasonItem({ id: 3, title: 'Dandadan', titleEnglish: null })
 ];
-const found = (search: string) => filterSeasonItems(ITEMS, search).map(({ malId }) => malId);
+const found = (search: string) => filterSeasonItems(ITEMS, search).map(({ id }) => id);
 
 describe('filterSeasonItems', () => {
 	it('matches title and english title ignoring case and accents', () => {

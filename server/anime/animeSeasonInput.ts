@@ -1,15 +1,15 @@
 import { ANIME_TYPES, SEASON_NAMES, type AnimeType, type SeasonQuery } from './seasonCache.js'
 
-/** A request the route rejects with 400 before calling Jikan. */
+/** A request the route rejects with 400 before calling the upstream. */
 export class SeasonInputError extends Error {}
 
-/** The oldest season MAL lists. */
+/** The oldest season the screen offers. */
 export const MIN_SEASON_YEAR = 1917
 
 const received = (raw: unknown) => `"${typeof raw === 'string' ? raw : String(raw)}"`
 
 /**
- * `?type=`: one of the five accepted Jikan filters, `tv` when absent.
+ * `?type=`: one of the five accepted list types, `tv` when absent.
  * @example parseAnimeType(undefined) // 'tv'
  */
 export function parseAnimeType(raw: unknown): AnimeType {

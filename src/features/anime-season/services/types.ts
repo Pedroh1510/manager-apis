@@ -1,4 +1,4 @@
-// Mirrors server/jikan/jikanSeasonItems.ts (door 4).
+// Mirrors server/anime/animeSeasonTypes.ts (door 3 of anime-season-anilist).
 
 export type SeasonName = 'winter' | 'spring' | 'summer' | 'fall';
 export type AnimeType = 'tv' | 'movie' | 'ova' | 'special' | 'ona';
@@ -6,7 +6,7 @@ export type Weekday = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday'
 export type AiringStatus = 'airing' | 'notYetAired' | 'finished';
 
 export interface AnimeSeasonItem {
-	malId: number;
+	id: number;
 	url: string;
 	imageUrl: string | null;
 	title: string;
@@ -19,7 +19,7 @@ export interface AnimeSeasonItem {
 	members: number | null;
 	status: AiringStatus | null;
 	airedFrom: string | null;
-	/** JST, as Jikan gives it. */
+	/** JST, Japan's broadcast zone. */
 	broadcast: { day: Weekday; time: string } | null;
 	studios: string[];
 	genres: string[];

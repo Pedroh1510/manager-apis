@@ -4,8 +4,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createApp } from './app.js'
 import { parseServerConfig, type ServerEnv } from './config.js'
-import { CachedJikanGateway } from './jikan/cachedJikanGateway.js'
-import { FetchJikanGateway } from './jikan/jikanGateway.js'
+import { GraphqlAniListGateway } from './anime/anilistGateway.js'
+import { CachedSeasonGateway } from './anime/cachedSeasonGateway.js'
 import { createJsonLogger, type LineWriter } from './logger.js'
 import { CtrlQbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
 import { FetchSonarrGateway } from './sonarr/sonarrGateway.js'
@@ -36,13 +36,13 @@ export async function startServer(env: ServerEnv, write?: LineWriter): Promise<R
   const uploads = config.sonarrUpload ? new FsUploadStore(config.sonarrUpload.dir) : null
   const tdarr = config.tdarr ? new FetchTdarrGateway(config.tdarr) : null
   // One gateway, so one rate limiter and one cache for the whole process (doors 2 and 3).
-  const jikan = new CachedJikanGateway(new FetchJikanGateway(config.jikan))
-  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, uploads, tdarr, jikan, logger })
+  const animeSeasons = new CachedSeasonGateway(new GraphqlAniListGateway(config.anilist))
+  const app = createApp({ staticDir: STATIC_DIR, qbittorrent, sonarr, uploads, tdarr, animeSeasons, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(config.port, () => resolve(listening))
   })
   server.requestTimeout = REQUEST_TIMEOUT_MS
-  const integrations = { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null, sonarrUpload: uploads !== null, tdarr: tdarr !== null, jikan: true }
+  const integrations = { qbittorrent: qbittorrent !== null, sonarr: sonarr !== null, sonarrUpload: uploads !== null, tdarr: tdarr !== null, anilist: true }
   logger.info('server started', { port: config.port, integrations })
   return { server, close: () => new Promise((resolve) => server.close(() => resolve())) }
 }

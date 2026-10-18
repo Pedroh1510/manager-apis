@@ -37,7 +37,7 @@ function SkeletonGrid() {
 function CardGrid({ items, isUpcoming, isSonarrOn }: { items: AnimeSeasonItem[]; isUpcoming: boolean; isSonarrOn: boolean }) {
 	return (
 		<div data-testid='season-grid' className={GRID_CLS}>
-			{items.map((item) => <AnimeSeasonCard key={item.malId} item={item} isUpcoming={isUpcoming} isSonarrOn={isSonarrOn} />)}
+			{items.map((item) => <AnimeSeasonCard key={item.id} item={item} isUpcoming={isUpcoming} isSonarrOn={isSonarrOn} />)}
 		</div>
 	);
 }

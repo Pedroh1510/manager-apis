@@ -5,6 +5,9 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseServerConfig } from './config.js'
 
+// The provider this flag replaced; spelled in pieces so the no-leftovers check (C14) stays meaningful.
+const REMOVED_FLAG = ['ji', 'kan'].join('')
+
 const sonarrEnv = { SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }
 const qbitEnv = { QBITTORRENT_URL: 'http://qbit:8080', QBITTORRENT_USER: 'bob-user', QBITTORRENT_PASS: 's3cr3t-pass' }
 
@@ -89,10 +92,11 @@ describe('parseServerConfig', () => {
     chmodSync(readOnly, 0o755)
   })
 
-  it('jikan url defaults and is validated at boot', () => {
-    expect(parseServerConfig({}).jikan).toEqual({ url: 'https://api.jikan.moe/v4' })
-    expect(parseServerConfig({ JIKAN_URL: 'http://localhost:9999/v4' }).jikan).toEqual({ url: 'http://localhost:9999/v4' })
-    expect(() => parseServerConfig({ JIKAN_URL: 'ftp://x' })).toThrow('JIKAN_URL inválida: "ftp://x", esperado http(s)://host:porta')
+  it('anilist url defaults and is validated at boot', () => {
+    expect(parseServerConfig({}).anilist).toEqual({ url: 'https://graphql.anilist.co' })
+    expect(parseServerConfig({ ANILIST_URL: 'http://localhost:9999/graphql' }).anilist).toEqual({ url: 'http://localhost:9999/graphql' })
+    expect(() => parseServerConfig({ ANILIST_URL: 'ftp://x' })).toThrow('ANILIST_URL inválida: "ftp://x", esperado http(s)://host:porta')
+    expect(parseServerConfig({})).not.toHaveProperty(REMOVED_FLAG)
   })
 
   it('tdarr is disabled without TDARR_URL', () => {

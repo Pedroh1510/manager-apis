@@ -6,8 +6,8 @@ import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadEnvFileIfPresent, startServer } from './index.js'
-import { FakeJikanApi } from './test/FakeJikanApi.js'
-import { jikanAnimeRange } from './test/jikanFixtures.js'
+import { FakeAniListApi } from './test/FakeAniListApi.js'
+import { anilistMediaRange } from './test/anilistFixtures.js'
 
 async function freePort(): Promise<number> {
   const probe = createServer()
@@ -33,7 +33,7 @@ describe('startServer', () => {
     expect(lines).toHaveLength(1)
     const boot = JSON.parse(lines[0])
     expect(boot.port).toBe(port)
-    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, jikan: true })
+    expect(boot.integrations).toEqual({ qbittorrent: true, sonarr: false, sonarrUpload: false, tdarr: false, anilist: true })
     expect(lines[0]).not.toContain('bob-user')
     expect(lines[0]).not.toContain('s3cr3t-pass')
   })
@@ -59,7 +59,7 @@ describe('startServer', () => {
     const running = await startServer({ PORT: String(port), SONARR_URL: 'http://sonarr:8989', SONARR_API_KEY: 'k3y-abc' }, (line) => lines.push(line))
     await running.close()
 
-    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: true })
+    expect(JSON.parse(lines[0]).integrations).toEqual({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: true })
     expect(lines[0]).not.toContain('k3y-abc')
   })
 
@@ -78,19 +78,19 @@ describe('startServer', () => {
     expect(lines.join('\n')).not.toContain('k-tdarr')
   })
 
-  it('server wires the jikan gateway', async () => {
-    const jikan = await FakeJikanApi.start({ pages: [jikanAnimeRange(1, 2)] })
+  it('server wires the anilist gateway', async () => {
+    const anilist = await FakeAniListApi.start({ pages: [anilistMediaRange(1, 2)] })
     const lines: string[] = []
-    const running = await startServer({ PORT: String(await freePort()), JIKAN_URL: jikan.url }, (line) => lines.push(line))
+    const running = await startServer({ PORT: String(await freePort()), ANILIST_URL: anilist.url }, (line) => lines.push(line))
     const answer = await fetch(`http://127.0.0.1:${(running.server.address() as AddressInfo).port}/api/anime/seasons/2026/fall`)
     const body = (await answer.json()) as { items: unknown[] }
     await running.close()
-    await jikan.close()
+    await anilist.close()
 
     expect(answer.status).toBe(200)
     expect(body.items).toHaveLength(2)
-    expect(jikan.requests.map(({ path }) => path)).toEqual(['/v4/seasons/2026/fall'])
-    expect(JSON.parse(lines[0]).integrations.jikan).toBe(true)
+    expect(anilist.requests.map(({ variables }) => variables)).toEqual([{ season: 'FALL', seasonYear: 2026, formats: ['TV', 'TV_SHORT'], page: 1 }])
+    expect(JSON.parse(lines[0]).integrations.anilist).toBe(true)
   })
 
   it('loads a local .env only when the file exists, without overriding the environment', () => {

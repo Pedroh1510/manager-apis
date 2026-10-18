@@ -1,5 +1,5 @@
 export type SeasonName = 'winter' | 'spring' | 'summer' | 'fall'
-/** Jikan's `filter` values this app accepts; `music` is left out (decision Q4). */
+/** The list types the screen offers; `music` is left out (decision Q4 of anime-season). */
 export type AnimeType = 'tv' | 'movie' | 'ova' | 'special' | 'ona'
 
 export const SEASON_NAMES: SeasonName[] = ['winter', 'spring', 'summer', 'fall']

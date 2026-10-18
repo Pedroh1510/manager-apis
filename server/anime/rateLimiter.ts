@@ -9,8 +9,8 @@ export interface RateWindow {
   ms: number
 }
 
-/** Jikan's published limits: 3 requests per second and 60 per minute. */
-export const JIKAN_RATE_WINDOWS: RateWindow[] = [{ limit: 3, ms: 1000 }, { limit: 60, ms: 60000 }]
+/** AniList answered `x-ratelimit-limit: 30` on 2026-10-18 (its degraded mode); 2/s keeps under its burst limit (door 2). */
+export const ANILIST_RATE_WINDOWS: RateWindow[] = [{ limit: 2, ms: 1000 }, { limit: 30, ms: 60000 }]
 
 export const realClock: LimiterClock = {
   now: () => Date.now(),
@@ -18,17 +18,17 @@ export const realClock: LimiterClock = {
 }
 
 /**
- * One per process, shared by every Jikan call (door 3): a call over a window waits, never fails.
+ * One per process, shared by every upstream call (door 2): a call over a window waits, never fails.
  * @example await limiter.acquire(); await fetch(url)
  */
-export class JikanRateLimiter {
+export class RateLimiter {
   private readonly calls: number[] = []
   // Callers queue up so two waiting calls never claim the same freed slot.
   private queue: Promise<void> = Promise.resolve()
 
   constructor(
     private readonly clock: LimiterClock = realClock,
-    private readonly windows: RateWindow[] = JIKAN_RATE_WINDOWS,
+    private readonly windows: RateWindow[] = ANILIST_RATE_WINDOWS,
   ) {}
 
   acquire(): Promise<void> {

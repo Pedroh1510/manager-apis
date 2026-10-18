@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
 // imageUrl null keeps the spec off the MAL CDN; the placeholder keeps the same 2:3 box.
-const item = (malId: number) => ({
-	malId, url: `https://myanimelist.net/anime/${malId}`, imageUrl: null, title: `Anime de exemplo ${malId}`, titleEnglish: `Sample anime ${malId}`,
-	synopsis: null, type: 'TV', episodes: 12, score: 7.5, scoredBy: 12000, members: 100000 - malId, status: 'airing', airedFrom: null,
+const item = (id: number) => ({
+	id, url: `https://myanimelist.net/anime/${id}`, imageUrl: null, title: `Anime de exemplo ${id}`, titleEnglish: `Sample anime ${id}`,
+	synopsis: null, type: 'TV', episodes: 12, score: 7.5, scoredBy: 12000, members: 100000 - id, status: 'airing', airedFrom: null,
 	broadcast: { day: 'saturday', time: '23:00' }, studios: ['MAPPA'], genres: ['Action', 'Fantasy'], isAdult: false
 });
 
@@ -11,7 +11,7 @@ const item = (malId: number) => ({
 async function mockSeason(page: Page) {
 	await page.route('**/api/**', (route) => {
 		const { pathname } = new URL(route.request().url());
-		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: true } });
+		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: true } });
 		if (pathname.startsWith('/api/anime/seasons/')) return route.fulfill({ json: { items: Array.from({ length: 12 }, (_, index) => item(index + 1)), truncated: false } });
 		return route.fulfill({ json: {} });
 	});

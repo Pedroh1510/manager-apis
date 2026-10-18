@@ -15,16 +15,16 @@ const cardTitles = () => screen.getAllByTestId('season-card').map((card) => with
 const location = () => screen.getByTestId('location').textContent;
 
 const ITEMS = [
-	seasonItem({ malId: 1, title: 'Sousou no Frieren', members: 900, score: 8.7, broadcast: { day: 'friday', time: '23:00' } }),
-	seasonItem({ malId: 2, title: 'Dandadan', titleEnglish: null, members: 500, score: 9.1, broadcast: { day: 'thursday', time: '00:30' } }),
-	seasonItem({ malId: 3, title: 'Kusuriya no Hitorigoto', titleEnglish: 'The Apothecary Diaries', members: 700, score: null, broadcast: null })
+	seasonItem({ id: 1, title: 'Sousou no Frieren', members: 900, score: 8.7, broadcast: { day: 'friday', time: '23:00' } }),
+	seasonItem({ id: 2, title: 'Dandadan', titleEnglish: null, members: 500, score: 9.1, broadcast: { day: 'thursday', time: '00:30' } }),
+	seasonItem({ id: 3, title: 'Kusuriya no Hitorigoto', titleEnglish: 'The Apothecary Diaries', members: 700, score: null, broadcast: null })
 ];
 
 beforeEach(() => {
 	vi.resetAllMocks();
 	vi.useFakeTimers({ toFake: ['Date'] });
 	vi.setSystemTime(new Date(2026, 9, 18, 12));
-	vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: true });
+	vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, anilist: true });
 	vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList(ITEMS));
 	vi.mocked(api.fetchUpcomingAnime).mockResolvedValue(seasonList(ITEMS));
 });
@@ -67,7 +67,7 @@ describe('AnimeSeasonPage', () => {
 		expect(await screen.findByRole('button', { name: 'Temporada anterior' })).toBeDisabled();
 	});
 
-	it('type chips request each jikan type', async () => {
+	it('type chips request each anime type', async () => {
 		renderPage();
 		await screen.findAllByTestId('season-card');
 		const chips = { TV: 'tv', ONA: 'ona', Filme: 'movie', OVA: 'ova', Especial: 'special' };
@@ -101,8 +101,8 @@ describe('AnimeSeasonPage', () => {
 
 	it('weekday blocks are labelled monday to sunday', async () => {
 		const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
-		const items = days.map((day, index) => seasonItem({ malId: index + 1, title: `Anime ${day}`, broadcast: { day, time: '20:00' } }));
-		vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList([...items, seasonItem({ malId: 99, broadcast: null })]));
+		const items = days.map((day, index) => seasonItem({ id: index + 1, title: `Anime ${day}`, broadcast: { day, time: '20:00' } }));
+		vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList([...items, seasonItem({ id: 99, broadcast: null })]));
 		renderPage('/anime/temporadas?ordem=dia');
 		await screen.findAllByTestId('season-card');
 		const blocks = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
@@ -115,7 +115,7 @@ describe('AnimeSeasonPage', () => {
 		expect(await screen.findAllByRole('link', { name: 'Adicionar no Sonarr' })).toHaveLength(3);
 		on.unmount();
 
-		vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: true });
+		vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, anilist: true });
 		renderPage();
 		await screen.findAllByTestId('season-card');
 		await waitFor(() => expect(configApi.fetchServerConfig).toHaveBeenCalledTimes(2));
@@ -133,7 +133,7 @@ describe('AnimeSeasonPage', () => {
 
 	it('adult toggle starts off and is not persisted', async () => {
 		const setItem = vi.spyOn(Storage.prototype, 'setItem');
-		vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList([...ITEMS.slice(0, 2), seasonItem({ malId: 9, title: 'Adulto', isAdult: true })]));
+		vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList([...ITEMS.slice(0, 2), seasonItem({ id: 9, title: 'Adulto', isAdult: true })]));
 		const first = renderPage();
 		await screen.findAllByTestId('season-card');
 		expect(cardTitles()).toHaveLength(2);
@@ -159,9 +159,9 @@ describe('AnimeSeasonPage', () => {
 	});
 
 	it('error shows the message and retries', async () => {
-		vi.mocked(api.fetchAnimeSeason).mockRejectedValueOnce(httpError(502, 'falha no Jikan: fall 2026 (HTTP 500)'));
+		vi.mocked(api.fetchAnimeSeason).mockRejectedValueOnce(httpError(502, 'AniList falhou em fall 2026, página 1: HTTP 500'));
 		renderPage();
-		expect(await screen.findByText(/falha no Jikan: fall 2026 \(HTTP 500\)/)).toBeInTheDocument();
+		expect(await screen.findByText(/AniList falhou em fall 2026, página 1: HTTP 500/)).toBeInTheDocument();
 		fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }));
 		expect(await screen.findAllByTestId('season-card')).toHaveLength(3);
 		expect(api.fetchAnimeSeason).toHaveBeenCalledTimes(2);
@@ -185,7 +185,7 @@ describe('AnimeSeasonPage', () => {
 	});
 
 	it('truncated upcoming shows a notice', async () => {
-		const many = Array.from({ length: 500 }, (_, index) => seasonItem({ malId: index + 1, title: `Anime ${index + 1}` }));
+		const many = Array.from({ length: 500 }, (_, index) => seasonItem({ id: index + 1, title: `Anime ${index + 1}` }));
 		vi.mocked(api.fetchUpcomingAnime).mockResolvedValueOnce(seasonList(many, true));
 		const truncated = renderPage('/anime/temporadas?aba=anunciados');
 		expect(await screen.findByText('Mostrando os primeiros 500 anunciados')).toBeInTheDocument();
