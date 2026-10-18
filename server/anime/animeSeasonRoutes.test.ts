@@ -1,35 +1,35 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { callApp } from '../test/callApp.js'
-import { FakeJikanApi } from '../test/FakeJikanApi.js'
-import { FakeJikanGateway } from '../test/FakeJikanGateway.js'
-import { jikanAnimeRange } from '../test/jikanFixtures.js'
+import { FakeAniListApi } from '../test/FakeAniListApi.js'
+import { FakeAnimeSeasonGateway } from '../test/FakeAnimeSeasonGateway.js'
+import { anilistMediaRange } from '../test/anilistFixtures.js'
 import { startTestApp, type TestApp } from '../test/startTestApp.js'
-import { CachedJikanGateway } from './cachedJikanGateway.js'
-import { FetchJikanGateway, type JikanGateway } from './jikanGateway.js'
-import type { AnimeSeasonList } from './jikanSeasonItems.js'
+import { GraphqlAniListGateway, type AnimeSeasonGateway } from './anilistGateway.js'
+import type { AnimeSeasonList } from './animeSeasonTypes.js'
+import { CachedSeasonGateway } from './cachedSeasonGateway.js'
 
 const LIST: AnimeSeasonList = {
   items: [{
-    malId: 52991, url: 'https://myanimelist.net/anime/52991', imageUrl: null, title: 'Sousou no Frieren', titleEnglish: null, synopsis: null,
+    id: 195516, url: 'https://myanimelist.net/anime/61987', imageUrl: null, title: 'Sousou no Frieren', titleEnglish: null, synopsis: null,
     type: 'TV', episodes: 28, score: 9.3, scoredBy: 1, members: 2, status: 'airing', airedFrom: null, broadcast: null, studios: [], genres: [], isAdult: false,
   }],
   truncated: false,
 }
 
 let app: TestApp | undefined
-let jikan: FakeJikanApi | undefined
+let anilist: FakeAniListApi | undefined
 
 afterEach(async () => {
   vi.useRealTimers()
   await app?.close()
-  await jikan?.close()
+  await anilist?.close()
   app = undefined
-  jikan = undefined
+  anilist = undefined
 })
 
-async function startWith(gateway: JikanGateway): Promise<TestApp> {
-  app = await startTestApp({ jikan: gateway })
+async function startWith(gateway: AnimeSeasonGateway): Promise<TestApp> {
+  app = await startTestApp({ animeSeasons: gateway })
   return app
 }
 
@@ -37,7 +37,7 @@ const noWait = { limiter: { acquire: async () => undefined }, sleep: async () =>
 
 describe('anime season routes', () => {
   it('season answers 200 with the gateway result', async () => {
-    const gateway = new FakeJikanGateway({ list: LIST })
+    const gateway = new FakeAnimeSeasonGateway({ list: LIST })
     const res = await callApp(await startWith(gateway), 'GET', '/api/anime/seasons/2026/fall?type=tv')
 
     expect(res.status).toBe(200)
@@ -46,7 +46,7 @@ describe('anime season routes', () => {
   })
 
   it('upcoming answers 200 with the gateway result', async () => {
-    const gateway = new FakeJikanGateway({ list: { ...LIST, truncated: true } })
+    const gateway = new FakeAnimeSeasonGateway({ list: { ...LIST, truncated: true } })
     const res = await callApp(await startWith(gateway), 'GET', '/api/anime/seasons/upcoming?type=tv')
 
     expect(res.status).toBe(200)
@@ -55,7 +55,7 @@ describe('anime season routes', () => {
   })
 
   it('type defaults to tv and passes the five accepted values', async () => {
-    const gateway = new FakeJikanGateway({ list: LIST })
+    const gateway = new FakeAnimeSeasonGateway({ list: LIST })
     const started = await startWith(gateway)
     await callApp(started, 'GET', '/api/anime/seasons/2026/fall')
     for (const type of ['movie', 'ova', 'special', 'ona']) await callApp(started, 'GET', `/api/anime/seasons/2026/fall?type=${type}`)
@@ -64,10 +64,10 @@ describe('anime season routes', () => {
     expect(gateway.calls.map(({ type }) => type)).toEqual(['tv', 'movie', 'ova', 'special', 'ona', 'tv'])
   })
 
-  it('invalid input answers 400 without calling jikan', async () => {
+  it('invalid input answers 400 without calling the upstream', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-18T12:00:00Z'))
-    const gateway = new FakeJikanGateway({ list: LIST })
+    const gateway = new FakeAnimeSeasonGateway({ list: LIST })
     const started = await startWith(gateway)
     const rejected: [string, string][] = [
       ['/api/anime/seasons/1916/fall', 'year inválido: "1916", esperado inteiro entre 1917 e 2027'],
@@ -88,13 +88,13 @@ describe('anime season routes', () => {
   })
 
   it('gateway error answers 502, is logged and is not cached', async () => {
-    const inner = new FakeJikanGateway({ failWith: 'Jikan falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' })
-    const started = await startWith(new CachedJikanGateway(inner))
+    const inner = new FakeAnimeSeasonGateway({ failWith: 'AniList falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' })
+    const started = await startWith(new CachedSeasonGateway(inner))
 
     const res = await callApp(started, 'GET', '/api/anime/seasons/2026/fall')
-    expect(res).toEqual({ status: 502, body: JSON.stringify({ error: 'Jikan falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' }) })
-    const logged = started.logLines.map((line) => JSON.parse(line)).find(({ msg }) => msg === 'jikan request failed')
-    expect(logged).toMatchObject({ path: '/api/anime/seasons/2026/fall', reason: 'Jikan falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' })
+    expect(res).toEqual({ status: 502, body: JSON.stringify({ error: 'AniList falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' }) })
+    const logged = started.logLines.map((line) => JSON.parse(line)).find(({ msg }) => msg === 'anime season request failed')
+    expect(logged).toMatchObject({ path: '/api/anime/seasons/2026/fall', reason: 'AniList falhou em fall 2026, página 1: HTTP 500 após 3 tentativas' })
 
     inner.data.failWith = undefined
     expect((await callApp(started, 'GET', '/api/anime/seasons/2026/fall')).status).toBe(200)
@@ -102,15 +102,15 @@ describe('anime season routes', () => {
   })
 
   it('second request is served from cache', async () => {
-    jikan = await FakeJikanApi.start({ pages: [jikanAnimeRange(1, 25), jikanAnimeRange(26, 3)] })
-    const started = await startWith(new CachedJikanGateway(new FetchJikanGateway({ url: jikan.url }, noWait)))
+    anilist = await FakeAniListApi.start({ pages: [anilistMediaRange(1, 50), anilistMediaRange(51, 3)] })
+    const started = await startWith(new CachedSeasonGateway(new GraphqlAniListGateway({ url: anilist.url }, noWait)))
 
     const first = await callApp(started, 'GET', '/api/anime/seasons/2026/fall')
     const second = await callApp(started, 'GET', '/api/anime/seasons/2026/fall')
 
     expect(first.status).toBe(200)
-    expect(JSON.parse(first.body).items).toHaveLength(28)
+    expect(JSON.parse(first.body).items).toHaveLength(53)
     expect(second).toEqual(first)
-    expect(jikan.requests).toHaveLength(2)
+    expect(anilist.requests).toHaveLength(2)
   })
 })

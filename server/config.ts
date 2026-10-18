@@ -28,15 +28,15 @@ export interface ServerConfig {
   sonarrUpload: SonarrUploadConfig | null
   /** null when TDARR_URL is absent. */
   tdarr: TdarrConfig | null
-  /** Never null: Jikan is public, so JIKAN_URL only overrides the default (door 1). */
-  jikan: JikanConfig
+  /** Never null: AniList is public, so ANILIST_URL only overrides the default (door 1). */
+  anilist: AniListConfig
 }
 
-export interface JikanConfig {
+export interface AniListConfig {
   url: string
 }
 
-export const DEFAULT_JIKAN_URL = 'https://api.jikan.moe/v4'
+export const DEFAULT_ANILIST_URL = 'https://graphql.anilist.co'
 
 /** The folder both this server and Sonarr see at the same path (decision Q3). */
 export interface SonarrUploadConfig {
@@ -55,7 +55,7 @@ const MAX_PORT = 65535
  */
 export function parseServerConfig(env: ServerEnv): ServerConfig {
   const sonarr = parseSonarr(env)
-  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr, sonarrUpload: parseSonarrUpload(env, sonarr), tdarr: parseTdarr(env), jikan: parseJikan(env) }
+  return { port: parsePort(env.PORT), qbittorrent: parseQbittorrent(env), sonarr, sonarrUpload: parseSonarrUpload(env, sonarr), tdarr: parseTdarr(env), anilist: parseAniList(env) }
 }
 
 function parsePort(raw: string | undefined): number {
@@ -91,9 +91,9 @@ function parseTdarr(env: ServerEnv): TdarrConfig | null {
   return { url, apiKey }
 }
 
-function parseJikan(env: ServerEnv): JikanConfig {
-  const url = env.JIKAN_URL || DEFAULT_JIKAN_URL
-  assertHttpUrl('JIKAN_URL', url)
+function parseAniList(env: ServerEnv): AniListConfig {
+  const url = env.ANILIST_URL || DEFAULT_ANILIST_URL
+  assertHttpUrl('ANILIST_URL', url)
   return { url }
 }
 

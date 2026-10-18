@@ -27,7 +27,7 @@ function TabSwitch({ tab, onTab }: { tab: SeasonTab; onTab: (tab: SeasonTab) => 
 }
 
 /**
- * Anime by season from Jikan: navigate seasons or the upcoming list, filter, sort, search, and jump to Sonarr.
+ * Anime by season from AniList: navigate seasons or the upcoming list, filter, sort, search, and jump to Sonarr.
  * @example <Route path='anime/temporadas' element={<AnimeSeasonPage />} />
  */
 export function AnimeSeasonPage() {

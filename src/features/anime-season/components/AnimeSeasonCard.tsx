@@ -46,6 +46,11 @@ function Synopsis({ synopsis }: { synopsis: string | null }) {
 	);
 }
 
+/** The server sends the MAL page when AniList knows the MAL id, the AniList page otherwise. */
+function externalLinkLabel(url: string): string {
+	return url.startsWith('https://myanimelist.net/') ? 'MAL' : 'AniList';
+}
+
 function sonarrSearchPath(item: AnimeSeasonItem): string {
 	return `/sonarr/adicionar?q=${encodeURIComponent(item.titleEnglish ?? item.title)}`;
 }
@@ -77,7 +82,7 @@ export function AnimeSeasonCard({ item, isUpcoming, isSonarrOn }: AnimeSeasonCar
 				</ul>
 				<Synopsis synopsis={item.synopsis} />
 				<div className='mt-auto flex items-center justify-between gap-2 border-t border-border pt-2'>
-					<a href={item.url} target='_blank' rel='noopener noreferrer' className={linkCls}>MAL</a>
+					<a href={item.url} target='_blank' rel='noopener noreferrer' className={linkCls}>{externalLinkLabel(item.url)}</a>
 					{isSonarrOn && <Link to={sonarrSearchPath(item)} className={linkCls}>Adicionar no Sonarr</Link>}
 				</div>
 			</div>

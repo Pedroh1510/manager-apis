@@ -12,7 +12,7 @@ export const STATUS_LABELS: Record<AiringStatus, string> = { airing: 'Em exibiç
 
 const scoreFormat = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const compactFormat = new Intl.NumberFormat('pt-BR', { notation: 'compact' });
-// Jikan dates are UTC midnights; reading them in the viewer's zone would show the day before.
+// Server dates are UTC midnights; reading them in the viewer's zone would show the day before.
 const premiereFormat = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
 
 /** "8,7" */
@@ -33,7 +33,7 @@ export function formatEpisodes(episodes: number | null): string {
 	return `${episodes ?? '?'} ep.`;
 }
 
-/** "Sáb 23:00 JST" - Jikan's own zone, not converted (decision Q8). */
+/** "Sáb 23:00 JST" - Japan's broadcast zone, not converted (decision Q8). */
 export function formatBroadcast(broadcast: NonNullable<AnimeSeasonItem['broadcast']>): string {
 	return `${WEEKDAY_SHORT[broadcast.day]} ${broadcast.time} JST`;
 }

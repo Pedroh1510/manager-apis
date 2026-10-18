@@ -2,11 +2,11 @@ import type { AnimeSeasonItem, AnimeSeasonList } from '../services/types';
 
 /**
  * A complete season item; override what the test is about.
- * @example seasonItem({ malId: 2, title: 'Dandadan', score: null })
+ * @example seasonItem({ id: 2, title: 'Dandadan', score: null })
  */
 export function seasonItem(overrides: Partial<AnimeSeasonItem> = {}): AnimeSeasonItem {
 	return {
-		malId: 52991,
+		id: 52991,
 		url: 'https://myanimelist.net/anime/52991/Sousou_no_Frieren',
 		imageUrl: 'https://cdn.myanimelist.net/images/anime/1015/138006l.webp',
 		title: 'Sousou no Frieren',

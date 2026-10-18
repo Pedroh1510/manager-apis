@@ -70,6 +70,31 @@ describe('AnimeSeasonCard', () => {
 		expect(link).toHaveAttribute('rel', 'noopener noreferrer');
 	});
 
+	it('external link says mal or anilist from the url', () => {
+		renderWithProviders(
+			<>
+				<AnimeSeasonCard item={seasonItem({ id: 1, url: 'https://myanimelist.net/anime/61987' })} isUpcoming={false} isSonarrOn={false} />
+				<AnimeSeasonCard item={seasonItem({ id: 2, url: 'https://anilist.co/anime/195516' })} isUpcoming={false} isSonarrOn={false} />
+			</>
+		);
+		expect(screen.getAllByTestId('season-card')).toHaveLength(2);
+		const links = screen.getAllByRole('link');
+		expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+			['MAL', 'https://myanimelist.net/anime/61987'],
+			['AniList', 'https://anilist.co/anime/195516']
+		]);
+		for (const link of links) {
+			expect(link).toHaveAttribute('target', '_blank');
+			expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+		}
+	});
+
+	it('score without votes shows only the score', () => {
+		const { container } = renderCard(seasonItem({ score: 8.5, scoredBy: null }));
+		expect(screen.getByText('8,5')).toBeInTheDocument();
+		expect(container.textContent).not.toContain('mil');
+	});
+
 	it('sonarr link uses the english title and needs sonarr', () => {
 		const english = renderCard();
 		expect(screen.getByRole('link', { name: 'Adicionar no Sonarr' })).toHaveAttribute('href', "/sonarr/adicionar?q=Frieren%3A%20Beyond%20Journey's%20End");

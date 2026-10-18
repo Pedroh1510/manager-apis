@@ -1,14 +1,14 @@
-import type { JikanGateway } from './jikanGateway.js'
-import type { AnimeSeasonList } from './jikanSeasonItems.js'
+import type { AnimeSeasonGateway } from './anilistGateway.js'
+import type { AnimeSeasonList } from './animeSeasonTypes.js'
 import { SeasonCache, type AnimeType, type SeasonName } from './seasonCache.js'
 
 /**
- * Puts the season cache (door 2) in front of any gateway; the routes only see `JikanGateway`.
- * @example createApp({ ..., jikan: new CachedJikanGateway(new FetchJikanGateway(config.jikan)) })
+ * Puts the season cache (door 2) in front of any gateway; the routes only see `AnimeSeasonGateway`.
+ * @example createApp({ ..., animeSeasons: new CachedSeasonGateway(new GraphqlAniListGateway(config.anilist)) })
  */
-export class CachedJikanGateway implements JikanGateway {
+export class CachedSeasonGateway implements AnimeSeasonGateway {
   constructor(
-    private readonly inner: JikanGateway,
+    private readonly inner: AnimeSeasonGateway,
     private readonly cache = new SeasonCache<AnimeSeasonList>(),
   ) {}
 

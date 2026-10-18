@@ -1,14 +1,14 @@
 import { Router, type Request, type Response } from 'express'
 import type { JsonLogger } from '../logger.js'
-import { SeasonInputError, parseAnimeType, parseSeasonQuery } from './jikanInput.js'
-import { JikanGatewayError, type JikanGateway } from './jikanGateway.js'
-import type { AnimeSeasonList } from './jikanSeasonItems.js'
+import { AnimeSeasonGatewayError, type AnimeSeasonGateway } from './anilistGateway.js'
+import { SeasonInputError, parseAnimeType, parseSeasonQuery } from './animeSeasonInput.js'
+import type { AnimeSeasonList } from './animeSeasonTypes.js'
 
 /**
- * `/api/anime/seasons/*`, read-only: 400 on bad input, 502 when Jikan fails (door 4).
+ * `/api/anime/seasons/*`, read-only: 400 on bad input, 502 when the upstream fails.
  * @example app.use('/api/anime', createAnimeSeasonRoutes(gateway, logger))
  */
-export function createAnimeSeasonRoutes(gateway: JikanGateway, logger: JsonLogger): Router {
+export function createAnimeSeasonRoutes(gateway: AnimeSeasonGateway, logger: JsonLogger): Router {
   const router = Router()
   router.get('/seasons/upcoming', (req, res) => respondSeason(req, res, logger, () => gateway.readUpcoming(parseAnimeType(req.query.type))))
   router.get('/seasons/:year/:season', (req, res) => respondSeason(req, res, logger, () => {
@@ -24,8 +24,8 @@ async function respondSeason(req: Request, res: Response, logger: JsonLogger, lo
     res.json(await load())
   } catch (error: unknown) {
     if (error instanceof SeasonInputError) return void res.status(400).json({ error: error.message })
-    if (!(error instanceof JikanGatewayError)) throw error
-    logger.error('jikan request failed', { path: req.originalUrl, reason: error.message })
+    if (!(error instanceof AnimeSeasonGatewayError)) throw error
+    logger.error('anime season request failed', { path: req.originalUrl, reason: error.message })
     res.status(502).json({ error: error.message })
   }
 }
