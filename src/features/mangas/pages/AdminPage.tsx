@@ -37,7 +37,7 @@ function SettingsCard({ title, description, children, onSubmit }: { title: strin
 
 export function MangasAdminPage() {
 	const { data: plugins, isLoading } = usePlugins();
-	const { updateCookie, updateCredentials, updateMangasByPlugin } = useAdminActions();
+	const { updateCookie, updateCredentials, searchChapters, refreshCatalog } = useAdminActions();
 	const [selectedPlugin, setSelectedPlugin] = useState('');
 	const [pluginFilter, setPluginFilter] = useState('');
 	const [cookie, setCookie] = useState('');
@@ -80,13 +80,18 @@ export function MangasAdminPage() {
 							))}
 						</select>
 					</Field>
-					<Button
-						variant='primary'
-						onClick={() => selectedPlugin && updateMangasByPlugin.mutate(selectedPlugin)}
-						disabled={!selectedPlugin || updateMangasByPlugin.isPending}
-					>
-						{updateMangasByPlugin.isPending ? 'Atualizando...' : 'Atualizar mangas'}
-					</Button>
+					<div className='flex gap-2'>
+						<Button
+							variant='primary'
+							onClick={() => selectedPlugin && refreshCatalog.mutate(selectedPlugin)}
+							disabled={!selectedPlugin || refreshCatalog.isPending}
+						>
+							Atualizar catálogo
+						</Button>
+						<Button onClick={() => searchChapters.mutate()} disabled={searchChapters.isPending}>
+							Buscar capítulos
+						</Button>
+					</div>
 				</div>
 			</Card>
 

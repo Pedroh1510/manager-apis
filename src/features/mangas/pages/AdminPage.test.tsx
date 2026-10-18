@@ -30,9 +30,27 @@ describe('MangasAdminPage', () => {
     expect(screen.getByRole('option', { name: 'TCB Scans' })).toBeInTheDocument()
   })
 
-  it('renders update mangas button', async () => {
+  it('enables chapter search without a plugin and catalog refresh only with one', async () => {
     await render(<MangasAdminPage />)
-    expect(screen.getByRole('button', { name: /atualizar mangas/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Buscar capítulos' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Atualizar catálogo' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Plugin'), { target: { value: 'tcb' } })
+    expect(screen.getByRole('button', { name: 'Atualizar catálogo' })).toBeEnabled()
+  })
+
+  it('searches chapters of every connector and refreshes the selected catalog', async () => {
+    vi.mocked(api.searchAllChapters).mockResolvedValue(undefined)
+    vi.mocked(api.refreshPluginCatalog).mockResolvedValue(undefined)
+    await render(<MangasAdminPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar capítulos' }))
+    fireEvent.change(screen.getByLabelText('Plugin'), { target: { value: 'tcb' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Atualizar catálogo' }))
+
+    await waitFor(() => expect(api.searchAllChapters).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(api.refreshPluginCatalog).toHaveBeenCalledWith('tcb'))
+    expect(await screen.findByText('Busca de capítulos enfileirada')).toBeInTheDocument()
+    expect(await screen.findByText('Atualização do catálogo de tcb enfileirada')).toBeInTheDocument()
   })
 
   it('renders cookie form', async () => {
@@ -66,10 +84,9 @@ describe('MangasAdminPage', () => {
     expect(() => fireEvent.change(filterInput, { target: { value: 'a' } })).not.toThrow()
   })
 
-  it('keeps cookie, credentials and update actions', async () => {
+  it('keeps cookie and credentials actions', async () => {
     vi.mocked(api.updateCookie).mockResolvedValue(undefined)
     vi.mocked(api.updateCredentials).mockResolvedValue(undefined)
-    vi.mocked(api.updateMangasByPlugin).mockResolvedValue(undefined)
     await render(<MangasAdminPage />)
 
     fireEvent.change(screen.getByLabelText('Plugin'), { target: { value: 'tcb' } })
@@ -78,15 +95,13 @@ describe('MangasAdminPage', () => {
     fireEvent.change(screen.getByLabelText('Login'), { target: { value: 'me' } })
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'pw' } })
     fireEvent.click(screen.getByRole('button', { name: 'Salvar credenciais' }))
-    fireEvent.click(screen.getByRole('button', { name: /atualizar mangas/i }))
 
     await waitFor(() => expect(api.updateCookie).toHaveBeenCalledWith({ idPlugin: 'tcb', cookie: 'session=1' }))
     await waitFor(() => expect(api.updateCredentials).toHaveBeenCalledWith({ idPlugin: 'tcb', login: 'me', password: 'pw' }))
-    await waitFor(() => expect(api.updateMangasByPlugin).toHaveBeenCalledWith('tcb'))
   })
 
   it('toasts the result of every mutation', async () => {
-    for (const fn of [api.updateCookie, api.updateCredentials, api.updateMangasByPlugin]) {
+    for (const fn of [api.updateCookie, api.updateCredentials, api.searchAllChapters, api.refreshPluginCatalog]) {
       vi.mocked(fn).mockResolvedValueOnce(undefined).mockRejectedValueOnce(failure)
     }
     await render(<MangasAdminPage />)
@@ -100,13 +115,15 @@ describe('MangasAdminPage', () => {
       await waitFor(() => expect(api.updateCookie).toHaveBeenCalledTimes(round + 1))
       fireEvent.click(screen.getByRole('button', { name: 'Salvar credenciais' }))
       await waitFor(() => expect(api.updateCredentials).toHaveBeenCalledTimes(round + 1))
-      fireEvent.click(screen.getByRole('button', { name: /atualizar mangas/i }))
-      await waitFor(() => expect(api.updateMangasByPlugin).toHaveBeenCalledTimes(round + 1))
+      fireEvent.click(screen.getByRole('button', { name: 'Buscar capítulos' }))
+      await waitFor(() => expect(api.searchAllChapters).toHaveBeenCalledTimes(round + 1))
+      fireEvent.click(screen.getByRole('button', { name: 'Atualizar catálogo' }))
+      await waitFor(() => expect(api.refreshPluginCatalog).toHaveBeenCalledTimes(round + 1))
     }
 
-    await waitFor(() => expect(screen.getAllByRole('status')).toHaveLength(3))
+    await waitFor(() => expect(screen.getAllByRole('status')).toHaveLength(4))
     await waitFor(() =>
-      expect(screen.getAllByRole('alert').filter((el) => el.textContent?.includes('Plugin with id tcb not found'))).toHaveLength(3)
+      expect(screen.getAllByRole('alert').filter((el) => el.textContent?.includes('Plugin with id tcb not found'))).toHaveLength(4)
     )
   })
 })
