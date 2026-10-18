@@ -35,8 +35,18 @@ export async function updateCredentials(
 	await mangasHttp.post('/mangas/adm/credentials', payload);
 }
 
-export async function updateMangasByPlugin(idPlugin: string): Promise<void> {
-	await mangasHttp.get('/mangas/adm/update-mangas', { params: { idPlugin } });
+/** Enqueues a chapter search for every registered manga on every connector. */
+export async function searchAllChapters(): Promise<void> {
+	await mangasHttp.get('/mangas/adm/update-mangas');
+}
+
+/**
+ * Re-scrapes one connector's catalog now, so titles new on the site show up in
+ * the add search before the 7-day cache expires.
+ * @example await refreshPluginCatalog('nexustoons');
+ */
+export async function refreshPluginCatalog(idPlugin: string): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/catalog/${encodeURIComponent(idPlugin)}/refresh`);
 }
 
 export async function fetchMangaList(): Promise<MangaListItem[]> {

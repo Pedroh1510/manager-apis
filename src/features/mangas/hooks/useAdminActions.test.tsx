@@ -25,8 +25,13 @@ describe('useAdminActions', () => {
     expect(result.current.updateCredentials).toBeDefined()
   })
 
-  it('exposes updateMangasByPlugin mutation', () => {
+  it('exposes searchChapters mutation', () => {
     const { result } = renderHook(() => useAdminActions(), { wrapper })
-    expect(result.current.updateMangasByPlugin).toBeDefined()
+    expect(result.current.searchChapters).toBeDefined()
+  })
+
+  it('exposes refreshCatalog mutation', () => {
+    const { result } = renderHook(() => useAdminActions(), { wrapper })
+    expect(result.current.refreshCatalog).toBeDefined()
   })
 })

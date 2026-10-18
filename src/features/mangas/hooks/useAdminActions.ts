@@ -4,7 +4,8 @@ import { getApiErrorMessage } from '../../../lib/apiError';
 import {
 	updateCookie as updateCookieApi,
 	updateCredentials as updateCredentialsApi,
-	updateMangasByPlugin as updateMangasByPluginApi
+	searchAllChapters,
+	refreshPluginCatalog
 } from '../services/api';
 import type {
 	UpdateCookiePayload,
@@ -13,8 +14,9 @@ import type {
 
 export function useAdminActions() {
 	const toast = useToast();
-	const notify = (successText: string) => ({
-		onSuccess: () => toast.success(successText),
+	const notify = <TVariables,>(successText: string | ((variables: TVariables) => string)) => ({
+		onSuccess: (_data: unknown, variables: TVariables) =>
+			toast.success(typeof successText === 'string' ? successText : successText(variables)),
 		onError: (error: unknown) => toast.error(getApiErrorMessage(error))
 	});
 
@@ -29,10 +31,15 @@ export function useAdminActions() {
 		...notify('Credenciais atualizadas')
 	});
 
-	const updateMangasByPlugin = useMutation({
-		mutationFn: (idPlugin: string) => updateMangasByPluginApi(idPlugin),
-		...notify('Atualização dos mangás enfileirada')
+	const searchChapters = useMutation({
+		mutationFn: () => searchAllChapters(),
+		...notify<void>('Busca de capítulos enfileirada')
 	});
 
-	return { updateCookie, updateCredentials, updateMangasByPlugin };
+	const refreshCatalog = useMutation({
+		mutationFn: (idPlugin: string) => refreshPluginCatalog(idPlugin),
+		...notify<string>((idPlugin) => `Atualização do catálogo de ${idPlugin} enfileirada`)
+	});
+
+	return { updateCookie, updateCredentials, searchChapters, refreshCatalog };
 }

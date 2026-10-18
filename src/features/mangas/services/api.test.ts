@@ -5,7 +5,8 @@ import {
 	fetchPlugins,
 	updateCookie,
 	updateCredentials,
-	updateMangasByPlugin,
+	searchAllChapters,
+	refreshPluginCatalog,
 	fetchMangaList,
 	deleteManga,
 	fetchMangasByPlugin,
@@ -83,13 +84,25 @@ describe('updateCredentials', () => {
 	});
 });
 
-describe('updateMangasByPlugin', () => {
-	it('calls GET /mangas/adm/update-mangas with idPlugin param', async () => {
+describe('searchAllChapters', () => {
+	it('calls GET /mangas/adm/update-mangas without idPlugin so every connector is searched', async () => {
 		mockGet.mockResolvedValue({ data: {} });
-		await updateMangasByPlugin('tcb');
-		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/update-mangas', {
-			params: { idPlugin: 'tcb' }
-		});
+		await searchAllChapters();
+		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/update-mangas');
+	});
+});
+
+describe('refreshPluginCatalog', () => {
+	it('calls POST /mangas/adm/catalog/:idPlugin/refresh', async () => {
+		mockPost.mockResolvedValue({ data: { idPlugin: 'nexustoons' } });
+		await refreshPluginCatalog('nexustoons');
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/catalog/nexustoons/refresh');
+	});
+
+	it('encodes the plugin id in the path', async () => {
+		mockPost.mockResolvedValue({ data: {} });
+		await refreshPluginCatalog('a/b');
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/catalog/a%2Fb/refresh');
 	});
 });
 
