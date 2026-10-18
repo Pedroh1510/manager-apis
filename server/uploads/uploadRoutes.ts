@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express'
+import { countOutcome } from '../telemetry/business.js'
 import { InvalidUploadNameError, parseUploadName } from './uploadName.js'
 import { UploadExistsError, UploadNotFoundError, UploadTooLargeError, type UploadStore } from './uploadStore.js'
 
@@ -39,7 +40,7 @@ export function createUploadRoutes(store: UploadStore | null): Router {
   }
   router.put('/:name', (req, res) => respondUpload(res, async () => {
     const name = parseUploadName(req.params.name)
-    res.status(201).json(await store.save(name, req, declaredSize(req)))
+    res.status(201).json(await countOutcome('apis.uploads.stored', 'local', () => store.save(name, req, declaredSize(req))))
   }))
   router.get('/', (_req, res) => respondUpload(res, async () => void res.json(await store.list())))
   router.delete('/:name', (req, res) => respondUpload(res, async () => {

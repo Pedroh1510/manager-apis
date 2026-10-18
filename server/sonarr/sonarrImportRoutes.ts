@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from 'express'
+import { countOutcome } from '../telemetry/business.js'
 import type { SonarrGateway } from './sonarrGateway.js'
 import { parseCommandId, parseImportBody, parseImportFilesQuery } from './sonarrImportInput.js'
 
@@ -15,7 +16,7 @@ export function registerSonarrImportRoutes(router: Router, gateway: SonarrGatewa
   }))
   router.post('/import', (req, res) => run(req, res, async () => {
     const { source, files } = parseImportBody(req.body, uploadDir)
-    res.status(202).json({ commandId: await gateway.startManualImport(source, files) })
+    res.status(202).json({ commandId: await countOutcome('apis.imports.started', 'sonarr', () => gateway.startManualImport(source, files)) })
   }))
   router.get('/commands/:id', (req, res) => run(req, res, async () => {
     res.json(await gateway.readCommand(parseCommandId(req.params.id)))

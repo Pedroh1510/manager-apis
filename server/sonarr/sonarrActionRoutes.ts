@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from 'express'
+import { countOutcome } from '../telemetry/business.js'
 import type { SonarrGateway } from './sonarrGateway.js'
 import {
   parseEpisodeId,
@@ -28,11 +29,13 @@ export function registerSonarrActionRoutes(router: Router, gateway: SonarrGatewa
     res.status(204).end()
   }))
   router.post('/episodes/:episodeId/search', (req, res) => run(req, res, async () => {
-    await gateway.searchEpisode(parseEpisodeId(req.params.episodeId))
+    const episodeId = parseEpisodeId(req.params.episodeId)
+    await countOutcome('apis.searches.requested', 'sonarr', () => gateway.searchEpisode(episodeId))
     res.status(202).end()
   }))
   router.post('/series/:id/seasons/:seasonNumber/search', (req, res) => run(req, res, async () => {
-    await gateway.searchSeason(parseSeriesId(req.params.id), parseSeasonNumber(req.params.seasonNumber))
+    const [seriesId, seasonNumber] = [parseSeriesId(req.params.id), parseSeasonNumber(req.params.seasonNumber)]
+    await countOutcome('apis.searches.requested', 'sonarr', () => gateway.searchSeason(seriesId, seasonNumber))
     res.status(202).end()
   }))
   router.get('/releases', (req, res) => run(req, res, async () => {
@@ -40,7 +43,7 @@ export function registerSonarrActionRoutes(router: Router, gateway: SonarrGatewa
   }))
   router.post('/releases', (req, res) => run(req, res, async () => {
     const { guid, indexerId } = parseGrabBody(req.body)
-    await gateway.grabRelease(guid, indexerId)
+    await countOutcome('apis.releases.grabbed', 'sonarr', () => gateway.grabRelease(guid, indexerId))
     res.status(204).end()
   }))
 }
