@@ -1,4 +1,5 @@
 import type { Request, Response, Router } from 'express'
+import { countOutcome } from '../telemetry/business.js'
 import type { SonarrGateway } from './sonarrGateway.js'
 import { parseAddSeriesBody, parseEpisodeIdsBody, parseLookupTerm, parseMissingPage } from './sonarrLibraryInput.js'
 
@@ -14,18 +15,20 @@ export function registerSonarrLibraryRoutes(router: Router, gateway: SonarrGatew
   }))
   router.get('/add-options', (req, res) => run(req, res, async () => void res.json(await gateway.readAddOptions())))
   router.post('/series', (req, res) => run(req, res, async () => {
-    const id = await gateway.addSeries(parseAddSeriesBody(req.body))
+    const input = parseAddSeriesBody(req.body)
+    const id = await countOutcome('apis.series.added', 'sonarr', () => gateway.addSeries(input))
     res.status(201).json({ id })
   }))
   router.get('/missing', (req, res) => run(req, res, async () => {
     res.json(await gateway.listMissing(parseMissingPage(req.query.page)))
   }))
   router.post('/episodes/search', (req, res) => run(req, res, async () => {
-    await gateway.searchEpisodes(parseEpisodeIdsBody(req.body))
+    const episodeIds = parseEpisodeIdsBody(req.body)
+    await countOutcome('apis.searches.requested', 'sonarr', () => gateway.searchEpisodes(episodeIds))
     res.status(202).end()
   }))
   router.post('/missing/search', (req, res) => run(req, res, async () => {
-    await gateway.searchAllMissing()
+    await countOutcome('apis.searches.requested', 'sonarr', () => gateway.searchAllMissing())
     res.status(202).end()
   }))
 }

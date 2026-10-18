@@ -71,7 +71,8 @@ describe('collector unreachable', () => {
 
 // The app runs for real (built dist-server, node --import) against a fake
 // Sonarr and an unreachable Tdarr, exporting to a capture server here: no
-// collector, no sampling (app-observability C25, C28).
+// collector, no sampling (app-observability C25, C28), and a business counter
+// from a real write (door 2d).
 interface Span {
   traceId: string
   name: string
@@ -81,9 +82,26 @@ interface Span {
 
 const SPAN_KIND = { server: 2, client: 3 }
 
+interface MetricPoint {
+  name: string
+  attributes: Record<string, unknown>
+  value: number
+}
+
+/** The sum data points of an OTLP JSON metrics export, attributes flattened. */
+function readSums(body: { resourceMetrics?: { scopeMetrics?: { metrics?: { name: string; sum?: { dataPoints?: { attributes?: { key: string; value: Record<string, unknown> }[]; asInt?: string; asDouble?: number }[] } }[] }[] }[] }): MetricPoint[] {
+  return (body.resourceMetrics ?? []).flatMap((resource) => resource.scopeMetrics ?? []).flatMap((scope) => scope.metrics ?? [])
+    .flatMap((metric) => (metric.sum?.dataPoints ?? []).map((point) => ({
+      name: metric.name,
+      attributes: Object.fromEntries((point.attributes ?? []).map(({ key, value }) => [key, Object.values(value)[0]])),
+      value: Number(point.asInt ?? point.asDouble),
+    })))
+}
+
 describe('trace join on a real request', () => {
   const spans: Span[] = []
   const stdoutLines: string[] = []
+  const metricPoints: MetricPoint[] = []
   let capture: Server
   let sonarr: FakeSonarrApi
   let app: ChildProcess
@@ -94,8 +112,8 @@ describe('trace join on a real request', () => {
   const serverSpan = (route: string) =>
     spans.find((span) => span.kind === SPAN_KIND.server && attributes(span)['http.route'] === route)
 
-  async function waitFor(check: () => boolean) {
-    const deadline = Date.now() + 30_000
+  async function waitFor(check: () => boolean, timeoutMs = 30_000) {
+    const deadline = Date.now() + timeoutMs
     while (!check() && Date.now() < deadline) await sleep(500)
   }
 
@@ -111,6 +129,7 @@ describe('trace join on a real request', () => {
             for (const scopeSpans of resourceSpans.scopeSpans ?? []) spans.push(...scopeSpans.spans)
           }
         }
+        if (req.url === '/v1/metrics') metricPoints.push(...readSums(JSON.parse(body)))
         res.writeHead(200, { 'content-type': 'application/json' })
         res.end('{}')
       })
@@ -135,6 +154,7 @@ describe('trace join on a real request', () => {
     await waitFor(() => stdoutLines.some((line) => line.includes('server started')))
     await fetch(`${base}/api/sonarr/series`)
     await fetch(`${base}/api/tdarr/stats`)
+    await fetch(`${base}/api/sonarr/missing/search`, { method: 'POST' })
     await waitFor(() => !!serverSpan('/api/sonarr/series') && !!serverSpan('/api/tdarr/stats'))
   }, 120_000)
 
@@ -157,4 +177,13 @@ describe('trace join on a real request', () => {
     const lines = stdoutLines.map((line) => JSON.parse(line)).filter((line) => line.msg === 'tdarr request failed')
     expect(lines.map((line) => line.trace_id)).toContain(request?.traceId)
   })
+
+  it('a search request exports its business counter', async () => {
+    const searched = () => metricPoints.some((point) => point.name === 'apis.searches.requested')
+    // metrics export every 30 s
+    await waitFor(searched, 45_000)
+    const point = metricPoints.findLast((p) => p.name === 'apis.searches.requested')
+    expect(point?.attributes).toEqual({ source: 'sonarr', result: 'ok' })
+    expect(point?.value).toBe(1)
+  }, 60_000)
 })
