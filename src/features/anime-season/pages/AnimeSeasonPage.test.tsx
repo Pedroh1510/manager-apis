@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as configApi from '../../server-config/services/api';
 import { renderWithProviders } from '../../../test/renderWithProviders';
@@ -97,6 +97,29 @@ describe('AnimeSeasonPage', () => {
 		const blocks = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
 		expect(blocks).toEqual(['Quinta', 'Sexta', 'Sem dia definido']);
 		expect(cardTitles()).toEqual(['Dandadan', 'Sousou no Frieren', 'Kusuriya no Hitorigoto']);
+	});
+
+	it('weekday blocks are labelled monday to sunday', async () => {
+		const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+		const items = days.map((day, index) => seasonItem({ malId: index + 1, title: `Anime ${day}`, broadcast: { day, time: '20:00' } }));
+		vi.mocked(api.fetchAnimeSeason).mockResolvedValue(seasonList([...items, seasonItem({ malId: 99, broadcast: null })]));
+		renderPage('/anime/temporadas?ordem=dia');
+		await screen.findAllByTestId('season-card');
+		const blocks = screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+		expect(blocks).toEqual(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo', 'Sem dia definido']);
+	});
+
+	it('sonarr link follows the sonarr flag of the server config', async () => {
+		const on = renderPage();
+		await screen.findAllByTestId('season-card');
+		expect(await screen.findAllByRole('link', { name: 'Adicionar no Sonarr' })).toHaveLength(3);
+		on.unmount();
+
+		vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: true });
+		renderPage();
+		await screen.findAllByTestId('season-card');
+		await waitFor(() => expect(configApi.fetchServerConfig).toHaveBeenCalledTimes(2));
+		expect(screen.queryByRole('link', { name: 'Adicionar no Sonarr' })).not.toBeInTheDocument();
 	});
 
 	it('search filters without refetching', async () => {
