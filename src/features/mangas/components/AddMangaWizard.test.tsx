@@ -223,6 +223,22 @@ describe('AddMangaWizard with "Todos os plugins"', () => {
     expect(onAdd).toHaveBeenCalledWith({ title: 'One Piece', idPlugin: 'nexustoons', idMangaPlugin: 'op-n', titlePlugin: 'One Piece' })
   })
 
+  // Rendering every row of every catalog froze typing in the filter.
+  it('caps the list at 100 rows with a hint and narrows it while filtering', async () => {
+    const catalog = Array.from({ length: 150 }, (_, i) => ({ id: `m${i}`, title: `Manga ${String(i).padStart(3, '0')}` }))
+    mockCatalogs({ mangeek: catalog, nexustoons: [{ id: 'n', title: 'Naruto' }] })
+    renderWizard()
+    await clickNextWithDefaultChoice()
+
+    await screen.findByText(/selecione um mangá/i)
+    expect(screen.getAllByRole('listitem')).toHaveLength(100)
+    expect(screen.getByText('Mostrando 100 de 151 mangás — refine o filtro.')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByPlaceholderText(/filtrar manga/i), { target: { value: 'naru' } })
+    await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(1))
+    expect(screen.queryByText(/refine o filtro/)).not.toBeInTheDocument()
+  })
+
   it('opens the partial list with warnings for downloading and failed plugins', async () => {
     mockCatalogs({ mangeek: null, nexustoons: [{ id: 'n', title: 'Naruto' }], tcb: new Error('boom') }, [
       MANGEEK,
