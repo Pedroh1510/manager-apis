@@ -10,12 +10,14 @@ import * as queuesApi from './features/queues/services/api'
 import * as configApi from './features/server-config/services/api'
 import * as torrentsApi from './features/torrents/services/api'
 import * as sonarrApi from './features/sonarr/services/api'
+import * as animeSeasonApi from './features/anime-season/services/api'
 
 vi.mock('./features/mangas/services/api')
 vi.mock('./features/queues/services/api')
 vi.mock('./features/server-config/services/api')
 vi.mock('./features/torrents/services/api')
 vi.mock('./features/sonarr/services/api')
+vi.mock('./features/anime-season/services/api')
 
 function renderAt(path: string) {
   render(
@@ -36,7 +38,7 @@ beforeEach(() => {
   vi.mocked(mangasApi.fetchChapters).mockResolvedValue([])
   vi.mocked(queuesApi.fetchMangasQueuesSummary).mockResolvedValue([])
   vi.mocked(queuesApi.fetchRssQueuesSummary).mockResolvedValue([])
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: true, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
   vi.mocked(sonarrApi.fetchSeriesList).mockResolvedValue([])
   vi.mocked(sonarrApi.fetchSeriesDetail).mockResolvedValue({
     id: 1, title: 'The Wire', alternateTitles: [], year: 2002, status: 'ended', network: 'HBO', overview: '', sizeOnDisk: 0, episodeFileCount: 0, episodeCount: 0, seasons: [],
@@ -91,6 +93,13 @@ describe('router', () => {
     renderAt('/sonarr/1')
     expect(await screen.findByRole('heading', { name: 'The Wire', level: 1 })).toBeInTheDocument()
     expect(screen.getByRole('navigation')).toBeInTheDocument()
+  })
+
+  it('anime seasons route renders the season page', async () => {
+    vi.mocked(animeSeasonApi.fetchAnimeSeason).mockResolvedValue({ items: [], truncated: false })
+    renderAt('/anime/temporadas?ano=2025&estacao=verao')
+    expect(await screen.findByRole('heading', { name: 'Verão 2025', level: 1 })).toBeInTheDocument()
+    expect(await screen.findByText('Nenhum anime nesta temporada')).toBeInTheDocument()
   })
 
   it('renders the add series, missing and import routes instead of a series detail', async () => {

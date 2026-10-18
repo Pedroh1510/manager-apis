@@ -11,7 +11,7 @@ const errors = { total: 0, items: [] };
 async function mockTdarr(page: Page) {
 	await page.route('**/api/**', (route) => {
 		const { pathname } = new URL(route.request().url());
-		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: true } });
+		if (pathname === '/api/config') return route.fulfill({ json: { qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: true, jikan: false } });
 		if (pathname === '/api/tdarr/overview') return route.fulfill({ json: { version: '2.94.02', nodes: [node('pc', 'pc-rtx2060'), node('cpu', 'homelab-cpu')] } });
 		if (pathname === '/api/tdarr/stats') {
 			return route.fulfill({

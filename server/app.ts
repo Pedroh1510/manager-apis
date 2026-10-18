@@ -1,5 +1,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from 'express'
 import { join } from 'node:path'
+import type { JikanGateway } from './jikan/jikanGateway.js'
+import { createAnimeSeasonRoutes } from './jikan/jikanRoutes.js'
 import type { JsonLogger } from './logger.js'
 import type { QbittorrentGateway } from './qbittorrent/qbittorrentGateway.js'
 import { createQbittorrentRoutes } from './qbittorrent/qbittorrentRoutes.js'
@@ -21,12 +23,14 @@ export interface AppDeps {
   uploads: UploadStore | null
   /** null when TDARR_URL is absent. */
   tdarr: TdarrGateway | null
+  /** Never null: Jikan needs no credentials (door 1). */
+  jikan: JikanGateway
   logger: JsonLogger
 }
 
 /**
  * The SPA and its `/api` on one origin; used by `server/index.ts` and by the tests alike.
- * @example createApp({ staticDir: 'dist', qbittorrent: null, sonarr: null, uploads: null, tdarr: null, logger }).listen(3002)
+ * @example createApp({ staticDir: 'dist', qbittorrent: null, sonarr: null, uploads: null, tdarr: null, jikan, logger }).listen(3002)
  */
 export function createApp(deps: AppDeps): Express {
   const app = express()
@@ -36,6 +40,7 @@ export function createApp(deps: AppDeps): Express {
     sonarr: deps.sonarr !== null,
     sonarrUpload: deps.uploads !== null,
     tdarr: deps.tdarr !== null,
+    jikan: true,
   }))
   // Before express.json: an upload body is a raw stream written straight to disk.
   app.use('/api/sonarr/uploads', createUploadRoutes(deps.uploads))
@@ -44,6 +49,7 @@ export function createApp(deps: AppDeps): Express {
   app.use('/api/qbittorrent', createQbittorrentRoutes(deps.qbittorrent, deps.logger))
   app.use('/api/sonarr', createSonarrRoutes(deps.sonarr, deps.logger, deps.uploads?.dir ?? null))
   app.use('/api/tdarr', createTdarrRoutes(deps.tdarr, deps.logger))
+  app.use('/api/anime', createAnimeSeasonRoutes(deps.jikan, deps.logger))
   app.use('/api', (req, res) => {
     const path = req.originalUrl.split('?')[0]
     res.status(404).json({ error: `rota não encontrada: ${req.method} ${path}` })

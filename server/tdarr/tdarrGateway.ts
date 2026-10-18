@@ -1,4 +1,5 @@
 import type { TdarrConfig } from '../config.js'
+import { describeFetchFailure } from '../describeFetchFailure.js'
 import { toTdarrNodes, type RawTdarrNode, type TdarrOverview } from './tdarrNodes.js'
 import {
   toTdarrErrorFile,
@@ -41,14 +42,6 @@ const ERROR_TABLES: Record<keyof TdarrStats['errors'], { table: string; dateFiel
 export function statusTablesBody(list: keyof TdarrStats['errors']) {
   const { table, dateField } = ERROR_TABLES[list]
   return { data: { start: 0, pageSize: TDARR_ERROR_PAGE_SIZE, filters: [], sorts: [{ id: dateField, desc: true }], opts: { table } } }
-}
-
-/** fetch hides ECONNREFUSED and friends in `cause`; surface it so the admin sees why. */
-function describeFetchFailure(error: unknown): string {
-  if (!(error instanceof Error)) return String(error)
-  const cause = error.cause as { code?: unknown; message?: unknown } | undefined
-  const detail = typeof cause?.code === 'string' ? cause.code : cause?.message
-  return typeof detail === 'string' ? `${error.message} (${detail})` : error.message
 }
 
 const getAllBody = (collection: string) => ({ data: { collection, mode: 'getAll' } })

@@ -8,6 +8,8 @@ export interface ServerConfig {
 	sonarrUpload: boolean;
 	/** TDARR_URL is set: the Tdarr page and its /status section show. */
 	tdarr: boolean;
+	/** Always true on the server (JIKAN_URL has a default): the season page shows. */
+	jikan: boolean;
 }
 
 export async function fetchServerConfig(): Promise<ServerConfig> {

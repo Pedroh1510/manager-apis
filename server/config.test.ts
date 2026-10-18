@@ -89,6 +89,12 @@ describe('parseServerConfig', () => {
     chmodSync(readOnly, 0o755)
   })
 
+  it('jikan url defaults and is validated at boot', () => {
+    expect(parseServerConfig({}).jikan).toEqual({ url: 'https://api.jikan.moe/v4' })
+    expect(parseServerConfig({ JIKAN_URL: 'http://localhost:9999/v4' }).jikan).toEqual({ url: 'http://localhost:9999/v4' })
+    expect(() => parseServerConfig({ JIKAN_URL: 'ftp://x' })).toThrow('JIKAN_URL inválida: "ftp://x", esperado http(s)://host:porta')
+  })
+
   it('tdarr is disabled without TDARR_URL', () => {
     expect(parseServerConfig({}).tdarr).toBeNull()
   })
