@@ -145,7 +145,7 @@ describe('GraphqlAniListGateway', () => {
     expect(limiter.acquired).toBe(5)
   })
 
-  it('no jikan references remain in the code', () => {
+  it('no references to the previous provider remain in the code', () => {
     // git grep exits 1 when nothing matches; .specs lives outside this repo.
     const hits = (() => {
       try {
@@ -154,6 +154,6 @@ describe('GraphqlAniListGateway', () => {
         return ''
       }
     })()
-    expect(hits.split('\n').filter((file) => file && !file.endsWith('anilistGateway.test.ts'))).toEqual([])
+    expect(hits.split('\n').filter(Boolean)).toEqual([])
   })
 })
