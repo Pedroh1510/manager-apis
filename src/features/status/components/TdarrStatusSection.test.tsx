@@ -11,7 +11,7 @@ vi.mock('../../tdarr/services/api')
 
 const section = () => screen.getByRole('heading', { name: 'Tdarr', level: 2 }).closest('section') as HTMLElement
 const valueOf = (label: string) => within(section()).getByText(label).nextElementSibling?.textContent
-const config = (tdarr: boolean) => ({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr })
+const config = (tdarr: boolean) => ({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr, jikan: false })
 
 beforeEach(() => vi.resetAllMocks())
 

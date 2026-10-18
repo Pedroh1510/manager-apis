@@ -24,7 +24,7 @@ function status(overrides: Partial<SonarrStatus> = {}): SonarrStatus {
 
 beforeEach(() => {
   vi.resetAllMocks()
-  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false })
+  vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: true, sonarrUpload: false, tdarr: false, jikan: false })
 })
 
 describe('SonarrStatusSection', () => {
@@ -69,7 +69,7 @@ describe('SonarrStatusSection', () => {
   })
 
   it('shows not configured without a badge', async () => {
-    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false })
+    vi.mocked(configApi.fetchServerConfig).mockResolvedValue({ qbittorrent: false, sonarr: false, sonarrUpload: false, tdarr: false, jikan: false })
     renderWithProviders(<SonarrStatusSection />)
 
     expect(await within(section()).findByText('Não configurado')).toBeInTheDocument()

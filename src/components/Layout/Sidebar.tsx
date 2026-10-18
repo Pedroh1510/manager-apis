@@ -32,6 +32,7 @@ const mediaLinks: { to: string; label: string; integration: keyof ServerConfig; 
   { to: '/sonarr/adicionar', label: 'Adicionar série', integration: 'sonarr' },
   { to: '/sonarr/faltantes', label: 'Faltantes', integration: 'sonarr' },
   { to: '/sonarr/importar', label: 'Importar', integration: 'sonarr' },
+  { to: '/anime/temporadas', label: 'Temporadas', integration: 'jikan' },
   { to: '/torrents', label: 'Torrents', integration: 'qbittorrent' },
   { to: '/tdarr', label: 'Tdarr', integration: 'tdarr' },
 ]

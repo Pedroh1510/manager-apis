@@ -16,6 +16,7 @@ import { AddSeriesPage } from './features/sonarr/pages/AddSeriesPage'
 import { MissingEpisodesPage } from './features/sonarr/pages/MissingEpisodesPage'
 import { ManualImportPage } from './features/sonarr/pages/ManualImportPage'
 import { CalendarPage } from './features/sonarr/pages/CalendarPage'
+import { AnimeSeasonPage } from './features/anime-season/pages/AnimeSeasonPage'
 
 export const routes: RouteObject[] = [
   {
@@ -34,6 +35,7 @@ export const routes: RouteObject[] = [
       { path: 'sonarr/faltantes', element: <MissingEpisodesPage /> },
       { path: 'sonarr/importar', element: <ManualImportPage /> },
       { path: 'sonarr/:seriesId', element: <SeriesDetailPage /> },
+      { path: 'anime/temporadas', element: <AnimeSeasonPage /> },
       { path: 'anime-rss/rss', element: <RSSQueryPage /> },
       { path: 'anime-rss/admin', element: <AnimeRssAdminPage /> },
       { path: 'mangas/admin', element: <MangasAdminPage /> },
