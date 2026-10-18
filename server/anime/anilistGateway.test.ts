@@ -150,8 +150,10 @@ describe('GraphqlAniListGateway', () => {
     const hits = (() => {
       try {
         return execFileSync('git', ['grep', '-i', '-l', ['ji', 'kan'].join(''), '--', 'server', 'src'], { encoding: 'utf8' })
-      } catch {
-        return ''
+      } catch (error: unknown) {
+        // Exit 1 is "no match"; anything else (git missing, not a repo) must fail the test.
+        if ((error as { status?: number }).status === 1) return ''
+        throw error
       }
     })()
     expect(hits.split('\n').filter(Boolean)).toEqual([])
