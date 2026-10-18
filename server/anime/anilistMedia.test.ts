@@ -66,5 +66,7 @@ describe('toAnimeSeasonItem', () => {
     const description = 'A &amp; B said &quot;hi&quot; &#039;ok&#039; &lt;3 &gt;\n<br><br>\n<i>Second</i> line<br>'
     expect(toAnimeSeasonItem(anilistMedia({ description })).synopsis).toBe('A & B said "hi" \'ok\' <3 >\n\nSecond line')
     expect(toAnimeSeasonItem(anilistMedia({ description: null })).synopsis).toBeNull()
+    const nested = toAnimeSeasonItem(anilistMedia({ description: '<scr<script>ipt>alert(1)</script> <<b>i>x' })).synopsis
+    expect(nested).not.toMatch(/<[a-z/]/i)
   })
 })

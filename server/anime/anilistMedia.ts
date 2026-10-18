@@ -71,13 +71,21 @@ function toIsoDate(date: RawAniListMedia['startDate']): string | null {
 
 /** AniList descriptions carry `<br>`, `<i>` and HTML entities even with `asHtml: false`. */
 function toPlainText(description: string): string {
-  return description
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
+  return stripTags(description.replace(/<br\s*\/?>/gi, '\n'))
     .replace(/&(amp|quot|#039|lt|gt);/g, (entity) => ENTITIES[entity])
     .replace(/[ \t]*\n[ \t]*/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+/** Repeats until nothing changes, so a nested tag like `<scr<b>ipt>` cannot survive one pass (CodeQL js/incomplete-multi-character-sanitization). */
+function stripTags(html: string): string {
+  let text = html
+  for (let previous = ''; previous !== text; ) {
+    previous = text
+    text = text.replace(/<[^>]*>/g, '')
+  }
+  return text
 }
 
 /**
