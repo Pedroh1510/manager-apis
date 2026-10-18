@@ -83,7 +83,7 @@ describe('startServer', () => {
     const lines: string[] = []
     const running = await startServer({ PORT: String(await freePort()), JIKAN_URL: jikan.url }, (line) => lines.push(line))
     const answer = await fetch(`http://127.0.0.1:${(running.server.address() as AddressInfo).port}/api/anime/seasons/2026/fall`)
-    const body = await answer.json()
+    const body = (await answer.json()) as { items: unknown[] }
     await running.close()
     await jikan.close()
 
