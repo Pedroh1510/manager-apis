@@ -4,11 +4,13 @@ import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createApp } from '../app.js'
+import type { JikanGateway } from '../jikan/jikanGateway.js'
 import { createJsonLogger } from '../logger.js'
 import type { QbittorrentGateway } from '../qbittorrent/qbittorrentGateway.js'
 import type { SonarrGateway } from '../sonarr/sonarrGateway.js'
 import type { TdarrGateway } from '../tdarr/tdarrGateway.js'
 import type { UploadStore } from '../uploads/uploadStore.js'
+import { FakeJikanGateway } from './FakeJikanGateway.js'
 
 export const TEST_INDEX_HTML = '<!doctype html><div id="root"></div>'
 export const TEST_ASSET_JS = 'console.log("app")'
@@ -33,12 +35,12 @@ function createTestDist(): string {
  * @example const app = await startTestApp({ qbittorrent: new FakeQbittorrentGateway() }); await fetch(`${app.url}/api/health`)
  */
 export async function startTestApp(
-  gateways: { qbittorrent?: QbittorrentGateway | null; sonarr?: SonarrGateway | null; uploads?: UploadStore | null; tdarr?: TdarrGateway | null } = {},
+  gateways: { qbittorrent?: QbittorrentGateway | null; sonarr?: SonarrGateway | null; uploads?: UploadStore | null; tdarr?: TdarrGateway | null; jikan?: JikanGateway } = {},
 ): Promise<TestApp> {
   const logLines: string[] = []
   const logger = createJsonLogger((line) => logLines.push(line))
-  const { qbittorrent = null, sonarr = null, uploads = null, tdarr = null } = gateways
-  const app = createApp({ staticDir: createTestDist(), qbittorrent, sonarr, uploads, tdarr, logger })
+  const { qbittorrent = null, sonarr = null, uploads = null, tdarr = null, jikan = new FakeJikanGateway() } = gateways
+  const app = createApp({ staticDir: createTestDist(), qbittorrent, sonarr, uploads, tdarr, jikan, logger })
   const server: Server = await new Promise((resolve) => {
     const listening = app.listen(0, '127.0.0.1', () => resolve(listening))
   })
