@@ -7,6 +7,8 @@ import {
 	updateCredentials,
 	searchAllChapters,
 	refreshPluginCatalog,
+	syncCoverIndex,
+	cleanupKavita,
 	fetchMangaList,
 	deleteManga,
 	fetchMangasByPlugin,
@@ -103,6 +105,28 @@ describe('refreshPluginCatalog', () => {
 		mockPost.mockResolvedValue({ data: {} });
 		await refreshPluginCatalog('a/b');
 		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/catalog/a%2Fb/refresh');
+	});
+});
+
+describe('syncCoverIndex', () => {
+	it('posts without a body so express.json() does not reject a literal null', async () => {
+		mockPost.mockResolvedValue({ data: { idPlugin: null } });
+		await syncCoverIndex();
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/covers/sync', undefined, { params: {} });
+	});
+
+	it('sends the selected plugin as idPlugin query param', async () => {
+		mockPost.mockResolvedValue({ data: { idPlugin: 'nexustoons' } });
+		await syncCoverIndex('nexustoons');
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/covers/sync', undefined, { params: { idPlugin: 'nexustoons' } });
+	});
+});
+
+describe('cleanupKavita', () => {
+	it('posts without a body and returns the cleanup result', async () => {
+		mockPost.mockResolvedValue({ data: { totalDeleted: 3, mangasProcessed: 1 } });
+		await expect(cleanupKavita()).resolves.toEqual({ totalDeleted: 3, mangasProcessed: 1 });
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/kavita/cleanup');
 	});
 });
 
