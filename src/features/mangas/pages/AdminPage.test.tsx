@@ -53,6 +53,39 @@ describe('MangasAdminPage', () => {
     expect(await screen.findByText('Atualização do catálogo de tcb enfileirada')).toBeInTheDocument()
   })
 
+  it('syncs the cover index of every connector without a plugin and of the selected one with it', async () => {
+    vi.mocked(api.syncCoverIndex).mockResolvedValue(undefined)
+    await render(<MangasAdminPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sincronizar capas (todos)' }))
+    await waitFor(() => expect(api.syncCoverIndex).toHaveBeenCalledWith(undefined))
+    expect(await screen.findByText('Sync de capas de todos os plugins enfileirado')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Plugin'), { target: { value: 'tcb' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Sincronizar capas (TCB Scans)' }))
+    await waitFor(() => expect(api.syncCoverIndex).toHaveBeenCalledWith('tcb'))
+    expect(await screen.findByText('Sync de capas de tcb enfileirado')).toBeInTheDocument()
+  })
+
+  it('cleans Kavita without confirmation and toasts what was deleted', async () => {
+    vi.mocked(api.cleanupKavita).mockResolvedValue({ totalDeleted: 12, mangasProcessed: 4 })
+    await render(<MangasAdminPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar Kavita' }))
+
+    await waitFor(() => expect(api.cleanupKavita).toHaveBeenCalledTimes(1))
+    expect(await screen.findByText('Kavita: 12 capítulos removidos de 4 mangás')).toBeInTheDocument()
+  })
+
+  it('toasts the Kavita cleanup failure', async () => {
+    vi.mocked(api.cleanupKavita).mockRejectedValue(failure)
+    await render(<MangasAdminPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar Kavita' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Plugin with id tcb not found')
+  })
+
   it('renders cookie form', async () => {
     await render(<MangasAdminPage />)
     expect(screen.getByLabelText(/cookie/i)).toBeInTheDocument()

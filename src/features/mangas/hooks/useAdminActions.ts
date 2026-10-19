@@ -5,11 +5,14 @@ import {
 	updateCookie as updateCookieApi,
 	updateCredentials as updateCredentialsApi,
 	searchAllChapters,
-	refreshPluginCatalog
+	refreshPluginCatalog,
+	syncCoverIndex,
+	cleanupKavita
 } from '../services/api';
 import type {
 	UpdateCookiePayload,
-	UpdateCredentialsPayload
+	UpdateCredentialsPayload,
+	KavitaCleanupResult
 } from '../services/types';
 
 export function useAdminActions() {
@@ -41,5 +44,17 @@ export function useAdminActions() {
 		...notify<string>((idPlugin) => `Atualização do catálogo de ${idPlugin} enfileirada`)
 	});
 
-	return { updateCookie, updateCredentials, searchChapters, refreshCatalog };
+	const syncCovers = useMutation({
+		mutationFn: (idPlugin: string | undefined) => syncCoverIndex(idPlugin),
+		...notify<string | undefined>((idPlugin) => `Sync de capas de ${idPlugin ?? 'todos os plugins'} enfileirado`)
+	});
+
+	const cleanKavita = useMutation({
+		mutationFn: () => cleanupKavita(),
+		onSuccess: ({ totalDeleted, mangasProcessed }: KavitaCleanupResult) =>
+			toast.success(`Kavita: ${totalDeleted} capítulos removidos de ${mangasProcessed} mangás`),
+		onError: (error: unknown) => toast.error(getApiErrorMessage(error))
+	});
+
+	return { updateCookie, updateCredentials, searchChapters, refreshCatalog, syncCovers, cleanKavita };
 }

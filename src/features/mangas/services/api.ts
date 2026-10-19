@@ -10,7 +10,8 @@ import type {
 	UpdateCredentialsPayload,
 	Chapter,
 	MissingChapter,
-	CoverSuggestionsResponse
+	CoverSuggestionsResponse,
+	KavitaCleanupResult
 } from './types';
 
 export async function fetchMangasStatus(): Promise<MangasStatusResponse> {
@@ -47,6 +48,25 @@ export async function searchAllChapters(): Promise<void> {
  */
 export async function refreshPluginCatalog(idPlugin: string): Promise<void> {
 	await mangasHttp.post(`/mangas/adm/catalog/${encodeURIComponent(idPlugin)}/refresh`);
+}
+
+/**
+ * Enqueues the cover hash index sync of one connector, or of every connector
+ * when idPlugin is omitted, so cover suggestions see new catalog covers.
+ * @example await syncCoverIndex('nexustoons');
+ */
+export async function syncCoverIndex(idPlugin?: string): Promise<void> {
+	await mangasHttp.post('/mangas/adm/covers/sync', null, { params: idPlugin ? { idPlugin } : {} });
+}
+
+/**
+ * Deletes on disk the chapters fully read in Kavita (keeps each manga's last
+ * one) and waits for the result.
+ * @example const { totalDeleted } = await cleanupKavita();
+ */
+export async function cleanupKavita(): Promise<KavitaCleanupResult> {
+	const { data } = await mangasHttp.post<KavitaCleanupResult>('/mangas/adm/kavita/cleanup');
+	return data;
 }
 
 export async function fetchMangaList(): Promise<MangaListItem[]> {

@@ -34,4 +34,14 @@ describe('useAdminActions', () => {
     const { result } = renderHook(() => useAdminActions(), { wrapper })
     expect(result.current.refreshCatalog).toBeDefined()
   })
+
+  it('exposes syncCovers mutation', () => {
+    const { result } = renderHook(() => useAdminActions(), { wrapper })
+    expect(result.current.syncCovers).toBeDefined()
+  })
+
+  it('exposes cleanKavita mutation', () => {
+    const { result } = renderHook(() => useAdminActions(), { wrapper })
+    expect(result.current.cleanKavita).toBeDefined()
+  })
 })
