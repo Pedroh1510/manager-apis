@@ -56,7 +56,9 @@ export async function refreshPluginCatalog(idPlugin: string): Promise<void> {
  * @example await syncCoverIndex('nexustoons');
  */
 export async function syncCoverIndex(idPlugin?: string): Promise<void> {
-	await mangasHttp.post('/mangas/adm/covers/sync', null, { params: idPlugin ? { idPlugin } : {} });
+	// No body, not null: with the JSON Content-Type axios would send the
+	// literal `null`, which express.json() strict mode rejects with a 400.
+	await mangasHttp.post('/mangas/adm/covers/sync', undefined, { params: idPlugin ? { idPlugin } : {} });
 }
 
 /**
