@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-server
+coverage
+test-results
+playwright-report
+e2e
+.git
+.github
+.worktrees
+.claude
+.env
+.env.*
+!.env.example
+*.log
