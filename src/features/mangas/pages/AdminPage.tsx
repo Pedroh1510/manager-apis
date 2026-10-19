@@ -37,7 +37,7 @@ function SettingsCard({ title, description, children, onSubmit }: { title: strin
 
 export function MangasAdminPage() {
 	const { data: plugins, isLoading } = usePlugins();
-	const { updateCookie, updateCredentials, searchChapters, refreshCatalog } = useAdminActions();
+	const { updateCookie, updateCredentials, searchChapters, refreshCatalog, syncCovers, cleanKavita } = useAdminActions();
 	const [selectedPlugin, setSelectedPlugin] = useState('');
 	const [pluginFilter, setPluginFilter] = useState('');
 	const [cookie, setCookie] = useState('');
@@ -48,6 +48,7 @@ export function MangasAdminPage() {
 	const filteredPlugins = (plugins ?? [])
 		.filter((p): p is NonNullable<typeof p> => p != null)
 		.filter((p) => !pluginFilter || (p.name ?? p.id ?? '').toLowerCase().includes(pluginFilter.toLowerCase()));
+	const selectedPluginName = plugins?.find((p) => p?.id === selectedPlugin)?.name ?? selectedPlugin;
 
 	function handleCookieSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -91,6 +92,9 @@ export function MangasAdminPage() {
 						<Button onClick={() => searchChapters.mutate()} disabled={searchChapters.isPending}>
 							Buscar capítulos
 						</Button>
+						<Button onClick={() => syncCovers.mutate(selectedPlugin || undefined)} disabled={syncCovers.isPending}>
+							Sincronizar capas ({selectedPlugin ? selectedPluginName : 'todos'})
+						</Button>
 					</div>
 				</div>
 			</Card>
@@ -120,6 +124,18 @@ export function MangasAdminPage() {
 					</Button>
 				</SettingsCard>
 			</div>
+
+			<Card className='mt-4'>
+				<div className='flex flex-wrap items-center justify-between gap-3'>
+					<div>
+						<h2 className='text-sm font-semibold text-text'>Manutenção</h2>
+						<p className='text-xs text-text-muted'>Apaga do disco os capítulos 100% lidos no Kavita, mantendo o último de cada mangá. Também roda a cada 6h.</p>
+					</div>
+					<Button onClick={() => cleanKavita.mutate()} disabled={cleanKavita.isPending}>
+						{cleanKavita.isPending ? 'Limpando...' : 'Limpar Kavita'}
+					</Button>
+				</div>
+			</Card>
 		</div>
 	);
 }

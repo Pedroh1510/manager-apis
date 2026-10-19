@@ -111,3 +111,9 @@ export interface CoverSuggestionsResponse {
 	suggestions: CoverSuggestion[];
 	conflicts: CoverSuggestionConflict[];
 }
+
+/** Response of POST /mangas/adm/kavita/cleanup. */
+export interface KavitaCleanupResult {
+	totalDeleted: number;
+	mangasProcessed: number;
+}
