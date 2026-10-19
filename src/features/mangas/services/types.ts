@@ -24,6 +24,7 @@ export interface MangaListItem {
 	createdAt: string;
 	updatedAt: string;
 	connectors: MangaConnectorSummary[];
+	altTitles?: string[];
 	[key: string]: unknown;
 }
 

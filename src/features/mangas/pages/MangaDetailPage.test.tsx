@@ -47,6 +47,20 @@ describe('MangaDetailPage', () => {
     await waitFor(() => expect(api.setConnectorActive).toHaveBeenCalledWith(1, 'tcb', false))
   })
 
+  it('shows the alternative titles under the title', async () => {
+    vi.mocked(api.fetchMangaList).mockResolvedValue([{ ...NARUTO, altTitles: ['ナルト', 'Naruto Shippuden'] }])
+    renderDetail()
+
+    expect(await screen.findByText('ナルト · Naruto Shippuden')).toBeInTheDocument()
+  })
+
+  it('shows no alternative titles line when the manga has none', async () => {
+    renderDetail()
+
+    await screen.findByRole('heading', { name: 'Naruto' })
+    expect(screen.queryByTestId('alt-titles')).not.toBeInTheDocument()
+  })
+
   it('lists chapters with volume, name and download date', async () => {
     renderDetail()
 
