@@ -7,6 +7,7 @@ import { TablePlaceholder } from '../../../components/ui/TablePlaceholder';
 import { Toggle } from '../../../components/ui/Toggle';
 import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
+import { AltTitles } from '../components/AltTitles';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
 import { MangaCover } from '../components/MangaCover';
@@ -70,16 +71,19 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				← Mangás
 			</Link>
 			<header className='flex items-end justify-between gap-4'>
-				<div className='flex items-end gap-4'>
+				<div className='flex min-w-0 items-end gap-4'>
 					<MangaCover src={mangaCoverUrl(manga.idManga)} title={manga.title} width={96} height={136} />
-					<div className='flex items-center gap-3'>
-						<h1 className='text-xl font-semibold tracking-tight text-text'>{manga.title}</h1>
-						<StatusBadge status={deriveMangaStatus(manga.connectors)} />
+					<div className='space-y-1'>
+						<div className='flex items-center gap-3'>
+							<h1 className='text-xl font-semibold tracking-tight text-text'>{manga.title}</h1>
+							<StatusBadge status={deriveMangaStatus(manga.connectors)} />
+						</div>
+						<AltTitles titles={manga.altTitles ?? []} />
 					</div>
 				</div>
 				<a
 					href={`${import.meta.env.VITE_MANGAS_API_URL}/mangas/adm/${manga.idManga}/download`}
-					className={`inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text shadow-raised hover:bg-surface-raised ${FOCUS_RING}`}
+					className={`inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-md border border-border bg-surface px-3 text-sm font-medium text-text shadow-raised hover:bg-surface-raised ${FOCUS_RING}`}
 				>
 					Baixar zip
 				</a>
