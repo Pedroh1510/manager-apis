@@ -104,6 +104,31 @@ describe('MangasTable', () => {
     expect(handlers.onSetAllConnectorsActive).not.toHaveBeenCalled()
   })
 
+  const disabledLink = (idPlugin: string) => ({
+    ...connector(idPlugin, true, `${idPlugin} title`),
+    connectorEnabled: false,
+    connectorDisabledAt: '2026-11-14T15:00:00.000Z',
+    connectorDisabledReason: 'paywall',
+  })
+
+  it('marks the chip of a disabled connector and locks its toggle', () => {
+    renderTable([manga(1, 'Necromante', [connector('tcb', true), disabledLink('mangeek')])])
+
+    const chip = within(row('Necromante')).getByTestId('connector-chip-mangeek')
+    expect(chip).toHaveAttribute('data-active', 'false')
+    expect(chip).toHaveAttribute('title', 'mangeek title — desligado em 14/11/2026 — paywall')
+    expect(within(chip).getByRole('switch')).toBeDisabled()
+    expect(within(chip).getByRole('switch')).toHaveAttribute('aria-checked', 'true')
+    expect(within(row('Necromante')).getByRole('switch', { name: 'Conector TCB de Necromante' })).toBeEnabled()
+  })
+
+  it('disables the general toggle when every link is on a disabled connector', () => {
+    renderTable([manga(1, 'Necromante', [disabledLink('mangeek')])])
+
+    expect(within(row('Necromante')).getByRole('switch', { name: 'Ativar ou desativar Necromante' })).toBeDisabled()
+    expect(within(row('Necromante')).getByText('Inativo')).toBeInTheDocument()
+  })
+
   it('links the title to the detail page', () => {
     renderTable([manga(1, 'Naruto', [connector('tcb', true)])])
 
