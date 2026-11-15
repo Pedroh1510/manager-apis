@@ -4,6 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { Input } from '../../../components/ui/Input';
 import { PageHeader } from '../../../components/ui/PageHeader';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
+import { ConnectorSwitchesCard } from '../components/ConnectorSwitchesCard';
 import { useAdminActions } from '../hooks/useAdminActions';
 import { usePlugins } from '../hooks/usePlugins';
 
@@ -48,7 +49,10 @@ export function MangasAdminPage() {
 	const filteredPlugins = (plugins ?? [])
 		.filter((p): p is NonNullable<typeof p> => p != null)
 		.filter((p) => !pluginFilter || (p.name ?? p.id ?? '').toLowerCase().includes(pluginFilter.toLowerCase()));
-	const selectedPluginName = plugins?.find((p) => p?.id === selectedPlugin)?.name ?? selectedPlugin;
+	const selectedPluginInfo = plugins?.find((p) => p?.id === selectedPlugin);
+	const selectedPluginName = selectedPluginInfo?.name ?? selectedPlugin;
+	// Disabled connectors answer 409 to anything that reaches their site.
+	const isSelectedDisabled = selectedPluginInfo?.enabled === false;
 
 	function handleCookieSubmit(e: FormEvent) {
 		e.preventDefault();
@@ -68,6 +72,8 @@ export function MangasAdminPage() {
 		<div className='mx-auto max-w-4xl'>
 			<PageHeader title='Configurações' subtitle='Mangas Manager — acesso aos plugins e atualização do catálogo' />
 
+			<ConnectorSwitchesCard />
+
 			<Card className='mb-4'>
 				<div className='grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end'>
 					<Field id='plugin-select' label='Plugin'>
@@ -77,6 +83,7 @@ export function MangasAdminPage() {
 							{filteredPlugins.map((p) => (
 								<option key={p.id} value={p.id}>
 									{p.name ?? p.id}
+									{p.enabled === false ? ' (desligado)' : ''}
 								</option>
 							))}
 						</select>
@@ -85,14 +92,14 @@ export function MangasAdminPage() {
 						<Button
 							variant='primary'
 							onClick={() => selectedPlugin && refreshCatalog.mutate(selectedPlugin)}
-							disabled={!selectedPlugin || refreshCatalog.isPending}
+							disabled={!selectedPlugin || isSelectedDisabled || refreshCatalog.isPending}
 						>
 							Atualizar catálogo
 						</Button>
 						<Button onClick={() => searchChapters.mutate()} disabled={searchChapters.isPending}>
 							Buscar capítulos
 						</Button>
-						<Button onClick={() => syncCovers.mutate(selectedPlugin || undefined)} disabled={syncCovers.isPending}>
+						<Button onClick={() => syncCovers.mutate(selectedPlugin || undefined)} disabled={isSelectedDisabled || syncCovers.isPending}>
 							Sincronizar capas ({selectedPlugin ? selectedPluginName : 'todos'})
 						</Button>
 					</div>

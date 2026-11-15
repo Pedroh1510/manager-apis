@@ -18,6 +18,24 @@ describe('MangasAdminPage', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(api.fetchPlugins).mockResolvedValue([{ id: 'tcb', name: 'TCB Scans' }])
+    vi.mocked(api.fetchConnectorSwitches).mockResolvedValue([])
+  })
+
+  it('marks a disabled plugin in the select and blocks its catalog refresh', async () => {
+    vi.mocked(api.fetchPlugins).mockResolvedValue([
+      { id: 'tcb', name: 'TCB Scans' },
+      { id: 'wicomix', name: 'WiComix', enabled: false }
+    ])
+    await render(<MangasAdminPage />)
+    expect(screen.getByRole('option', { name: 'WiComix (desligado)' })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Plugin'), { target: { value: 'wicomix' } })
+    expect(screen.getByRole('button', { name: 'Atualizar catálogo' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Sincronizar capas/ })).toBeDisabled()
+  })
+
+  it('renders the connectors list', async () => {
+    await render(<MangasAdminPage />)
+    expect(screen.getByRole('heading', { name: 'Conectores' })).toBeInTheDocument()
   })
 
   it('renders plugin selector', async () => {
