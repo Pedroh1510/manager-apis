@@ -5,6 +5,7 @@ import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { Table, Td, Th } from '../../../components/ui/Table';
 import { Toggle } from '../../../components/ui/Toggle';
+import { describeDisabled } from '../lib/connectorSwitch';
 import { deriveMangaStatus } from '../lib/mangaStatus';
 import { mangaCoverUrl } from '../services/coverUrls';
 import type { MangaConnectorSummary, MangaListItem } from '../services/types';
@@ -41,19 +42,24 @@ export function MangasTable({ mangas, ...rowProps }: MangasTableProps) {
 	);
 }
 
+// Absent means enabled: the field only exists once the backend serves it.
+const isConnectorOn = (connector: MangaConnectorSummary): boolean => connector.connectorEnabled !== false;
+
 type MangaRowProps = Omit<MangasTableProps, 'mangas'> & { manga: MangaListItem };
 
 function MangaRow({ manga, pluginNames, pendingMangaId, onSetAllConnectorsActive, onSetConnectorActive, onDelete }: MangaRowProps) {
 	const status = deriveMangaStatus(manga.connectors);
 	const isPending = pendingMangaId === manga.idManga;
 	const hasConnectors = manga.connectors.length > 0;
+	// With every link on a disabled connector, turning the manga on fetches nothing.
+	const hasEnabledConnector = manga.connectors.some(isConnectorOn);
 
 	return (
 		<tr className='group transition-colors hover:bg-surface-raised/60'>
 			<Td>
 				<Toggle
 					checked={status !== 'inactive'}
-					disabled={isPending || !hasConnectors}
+					disabled={isPending || !hasEnabledConnector}
 					label={`Ativar ou desativar ${manga.title}`}
 					onChange={(isActive) => onSetAllConnectorsActive(manga.idManga, isActive)}
 				/>
@@ -112,7 +118,7 @@ function ConnectorChips({ manga, pluginNames, disabled, onToggle }: ConnectorChi
 						showToggles ? (
 							<Toggle
 								checked={connector.isActive}
-								disabled={disabled}
+								disabled={disabled || !isConnectorOn(connector)}
 								label={`Conector ${pluginNames[connector.idPlugin] || connector.idPlugin} de ${manga.title}`}
 								onChange={(isActive) => onToggle(manga.idManga, connector.idPlugin, isActive)}
 							/>
@@ -124,17 +130,33 @@ function ConnectorChips({ manga, pluginNames, disabled, onToggle }: ConnectorChi
 	);
 }
 
+function chipTitle(connector: MangaConnectorSummary): string {
+	if (isConnectorOn(connector)) return connector.titlePlugin;
+	const disabled = describeDisabled({
+		disabledAt: connector.connectorDisabledAt ?? null,
+		disabledReason: connector.connectorDisabledReason ?? null,
+	});
+	return `${connector.titlePlugin} — ${disabled}`;
+}
+
+// Dot: green fetching, red link off, amber connector off for every manga.
+function chipDotClass(connector: MangaConnectorSummary): string {
+	if (!isConnectorOn(connector)) return 'bg-warning';
+	return connector.isActive ? 'bg-success' : 'bg-danger';
+}
+
 function ConnectorChip({ connector, name, toggle }: { connector: MangaConnectorSummary; name: string; toggle: ReactNode }) {
+	const isFetching = connector.isActive && isConnectorOn(connector);
 	return (
 		<li
 			data-testid={`connector-chip-${connector.idPlugin}`}
-			data-active={String(connector.isActive)}
-			title={connector.titlePlugin}
+			data-active={String(isFetching)}
+			title={chipTitle(connector)}
 			className={`inline-flex h-6 items-center gap-1.5 rounded-sm border px-1.5 text-xs ${
-				connector.isActive ? 'border-border bg-surface text-text' : 'border-dashed border-border bg-transparent text-text-subtle'
-			}`}
+				isFetching ? 'border-border bg-surface text-text' : 'border-dashed border-border bg-transparent text-text-subtle'
+			} ${isConnectorOn(connector) ? '' : 'opacity-60'}`}
 		>
-			<span aria-hidden='true' className={`h-1.5 w-1.5 rounded-full ${connector.isActive ? 'bg-success' : 'bg-danger'}`} />
+			<span aria-hidden='true' className={`h-1.5 w-1.5 rounded-full ${chipDotClass(connector)}`} />
 			<span className='font-mono'>{name}</span>
 			{toggle}
 		</li>
