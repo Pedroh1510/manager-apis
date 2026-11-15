@@ -14,6 +14,7 @@ import { MangaCover } from '../components/MangaCover';
 import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
+import { describeDisabled } from '../lib/connectorSwitch';
 import { deriveMangaStatus } from '../lib/mangaStatus';
 import { mangaCoverUrl } from '../services/coverUrls';
 import type { Chapter, MangaListItem } from '../services/types';
@@ -116,10 +117,13 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				) : (
 					<ul className='divide-y divide-border rounded-lg border border-border bg-surface shadow-raised'>
 						{manga.connectors.map((connector) => (
-							<li key={connector.idMangaConnector} className='flex h-11 items-center gap-3 px-3'>
+							<li
+								key={connector.idMangaConnector}
+								className={`flex h-11 items-center gap-3 px-3 ${connector.connectorEnabled === false ? 'opacity-60' : ''}`}
+							>
 								<Toggle
 									checked={connector.isActive}
-									disabled={setConnectorActive.isPending}
+									disabled={setConnectorActive.isPending || connector.connectorEnabled === false}
 									label={`Conector ${pluginName(connector.idPlugin)} de ${manga.title}`}
 									onChange={(isActive) =>
 										setConnectorActive.mutate({ idManga: manga.idManga, idPlugin: connector.idPlugin, isActive })
@@ -127,6 +131,17 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 								/>
 								<span className='font-mono text-xs text-text'>{pluginName(connector.idPlugin)}</span>
 								<span className='truncate text-xs text-text-muted'>{connector.titlePlugin}</span>
+								{connector.connectorEnabled === false && (
+									<span
+										className='ml-auto shrink-0 rounded-full bg-warning-bg px-2 py-0.5 text-[11px] font-medium text-warning'
+										title={describeDisabled({
+											disabledAt: connector.connectorDisabledAt ?? null,
+											disabledReason: connector.connectorDisabledReason ?? null,
+										})}
+									>
+										conector desligado
+									</span>
+								)}
 							</li>
 						))}
 					</ul>

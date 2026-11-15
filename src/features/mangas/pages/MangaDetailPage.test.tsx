@@ -29,6 +29,24 @@ beforeEach(() => {
 })
 
 describe('MangaDetailPage', () => {
+  it('greys out a link of a disabled connector, shows why and locks its toggle', async () => {
+    const disabled = {
+      ...connector('mangeek', true, 'Naruto MG'),
+      connectorEnabled: false,
+      connectorDisabledAt: '2026-11-14T15:00:00.000Z',
+      connectorDisabledReason: 'paywall',
+    }
+    vi.mocked(api.fetchMangaList).mockResolvedValue([manga(1, 'Naruto', [connector('tcb', true, 'Naruto'), disabled])])
+    renderDetail()
+
+    const badge = await screen.findByText('conector desligado')
+    expect(badge).toHaveAttribute('title', 'desligado em 14/11/2026 — paywall')
+    const toggle = await screen.findByRole('switch', { name: 'Conector Mangeek de Naruto' })
+    expect(toggle).toBeDisabled()
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('switch', { name: 'Conector TCB de Naruto' })).toBeEnabled()
+  })
+
   it('shows the manga cover', async () => {
     vi.mocked(api.fetchMangaList).mockResolvedValue([manga(7, 'Black Clover', [connector('tcb', true)])])
     renderDetail('7')
