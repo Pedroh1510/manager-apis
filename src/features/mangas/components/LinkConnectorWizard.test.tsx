@@ -28,6 +28,17 @@ beforeEach(() => {
 })
 
 describe('LinkConnectorWizard', () => {
+  it('hides disabled connectors', async () => {
+    vi.mocked(api.fetchPlugins).mockResolvedValue([
+      { id: 'nexustoons', name: 'Nexus Toons' },
+      { id: 'wicomix', name: 'WiComix', enabled: false },
+    ])
+    renderWizard()
+
+    expect(await screen.findByRole('option', { name: 'Nexus Toons' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'WiComix' })).not.toBeInTheDocument()
+  })
+
   it('hides plugins already linked to the manga', async () => {
     renderWizard()
 

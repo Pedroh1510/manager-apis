@@ -11,7 +11,9 @@ import type {
 	Chapter,
 	MissingChapter,
 	CoverSuggestionsResponse,
-	KavitaCleanupResult
+	KavitaCleanupResult,
+	ConnectorSwitch,
+	ConnectorSwitchPayload
 } from './types';
 
 export async function fetchMangasStatus(): Promise<MangasStatusResponse> {
@@ -158,4 +160,15 @@ export async function acceptCoverSuggestion(idSuggestion: number): Promise<void>
 
 export async function dismissCoverSuggestion(idSuggestion: number): Promise<void> {
 	await mangasHttp.post(`/mangas/adm/suggestions/${idSuggestion}/dismiss`);
+}
+
+/** Every connector with its global on/off state. @example await fetchConnectorSwitches() */
+export async function fetchConnectorSwitches(): Promise<ConnectorSwitch[]> {
+	const { data } = await mangasHttp.get<ConnectorSwitch[]>('/mangas/adm/connector-switches');
+	return data;
+}
+
+/** Turns a connector off (optional reason) or on. @example await setConnectorSwitch('wicomix', { enabled: false, reason: 'paywall' }) */
+export async function setConnectorSwitch(idPlugin: string, payload: ConnectorSwitchPayload): Promise<void> {
+	await mangasHttp.put(`/mangas/adm/connector-switches/${encodeURIComponent(idPlugin)}`, payload);
 }

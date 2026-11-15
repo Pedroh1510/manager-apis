@@ -37,7 +37,8 @@ export function PluginStep({ choice, onChoiceChange, onCatalogReady, onCancel, e
 	const [pluginFilter, setPluginFilter] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [notices, setNotices] = useState<string[]>([]);
-	const plugins = toPlugins(data).filter((p) => !excludedPluginIds.includes(p.id));
+	// A disabled connector answers 409 to catalog and link requests.
+	const plugins = toPlugins(data).filter((p) => p.enabled !== false && !excludedPluginIds.includes(p.id));
 	const visible = plugins.filter((p) => !pluginFilter || pluginLabel(p).toLowerCase().includes(pluginFilter.toLowerCase()));
 	const targets = choice === ALL_PLUGINS ? plugins : [choice];
 
