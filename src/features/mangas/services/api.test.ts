@@ -22,7 +22,9 @@ import {
 	deleteChapter,
 	fetchCoverSuggestions,
 	acceptCoverSuggestion,
-	dismissCoverSuggestion
+	dismissCoverSuggestion,
+	fetchConnectorSwitches,
+	setConnectorSwitch
 } from './api';
 
 vi.mock('../../../lib/http', () => ({
@@ -30,6 +32,7 @@ vi.mock('../../../lib/http', () => ({
 		get: vi.fn(),
 		post: vi.fn(),
 		patch: vi.fn(),
+		put: vi.fn(),
 		delete: vi.fn()
 	}
 }));
@@ -38,6 +41,7 @@ const mockGet = vi.mocked(mangasHttp.get);
 const mockPost = vi.mocked(mangasHttp.post);
 const mockDelete = vi.mocked(mangasHttp.delete);
 const mockPatch = vi.mocked(mangasHttp.patch);
+const mockPut = vi.mocked(mangasHttp.put);
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -258,5 +262,26 @@ describe('cover suggestions', () => {
 
 		await dismissCoverSuggestion(4);
 		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/suggestions/4/dismiss');
+	});
+});
+
+describe('fetchConnectorSwitches', () => {
+	it('calls GET /mangas/adm/connector-switches', async () => {
+		const switches = [{ id: 'wicomix', url: 'u', enabled: false, disabledAt: null, disabledReason: null, activeLinks: 3 }];
+		mockGet.mockResolvedValue({ data: switches });
+		const result = await fetchConnectorSwitches();
+		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/connector-switches');
+		expect(result).toEqual(switches);
+	});
+});
+
+describe('setConnectorSwitch', () => {
+	it('PUTs enabled and reason for the connector', async () => {
+		mockPut.mockResolvedValue({});
+		await setConnectorSwitch('wicomix', { enabled: false, reason: 'paywall' });
+		expect(mockPut).toHaveBeenCalledWith('/mangas/adm/connector-switches/wicomix', {
+			enabled: false,
+			reason: 'paywall'
+		});
 	});
 });

@@ -7,6 +7,8 @@ export interface MangasStatusResponse {
 export interface Plugin {
 	id: string;
 	name: string;
+	/** False while the connector is turned off for every manga (Conector desligado). */
+	enabled?: boolean;
 	[key: string]: unknown;
 }
 
@@ -16,6 +18,25 @@ export interface MangaConnectorSummary {
 	idPlugin: string;
 	titlePlugin: string;
 	isActive: boolean;
+	/** Optional until every backend serves it; absent means enabled. */
+	connectorEnabled?: boolean;
+	connectorDisabledAt?: string | null;
+	connectorDisabledReason?: string | null;
+}
+
+/** Global on/off state of one connector, as `GET /mangas/adm/connector-switches` returns it. */
+export interface ConnectorSwitch {
+	id: string;
+	url: string;
+	enabled: boolean;
+	disabledAt: string | null;
+	disabledReason: string | null;
+	activeLinks: number;
+}
+
+export interface ConnectorSwitchPayload {
+	enabled: boolean;
+	reason?: string;
 }
 
 export interface MangaListItem {
