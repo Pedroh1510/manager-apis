@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { TablePlaceholder } from '../../../components/ui/TablePlaceholder';
@@ -8,6 +9,8 @@ import { Toggle } from '../../../components/ui/Toggle';
 import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { AltTitles } from '../components/AltTitles';
+import { BlockedChaptersCard } from '../components/BlockedChaptersCard';
+import { ChapterSourcesDrawer, type ChosenSource } from '../components/ChapterSourcesDrawer';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
 import { MangaCover } from '../components/MangaCover';
@@ -61,12 +64,33 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 	const [isLinking, setIsLinking] = useState(false);
 	const { data: plugins, error: pluginsError } = usePlugins();
 	const { chapters, missing, enqueueChapter } = useMangaChapters(manga.idManga);
-	// Temporary until the chapter fix UI replaces this dialog: block with no reason.
-	const { block } = useChapterFixes(manga.idManga);
+	const { blocked, sources, replace, block, unblock } = useChapterFixes(manga.idManga);
 	useErrorToast(chapters.error);
 	// Without plugin names the connectors still render with their idPlugin.
 	useErrorToast(pluginsError);
-	const [pendingDelete, setPendingDelete] = useState<Chapter | null>(null);
+	const [pendingBlock, setPendingBlock] = useState<Chapter | null>(null);
+	const [blockReason, setBlockReason] = useState('');
+	const [replacing, setReplacing] = useState<Chapter | null>(null);
+	const openReplace = (chapter: Chapter) => {
+		setReplacing(chapter);
+		sources.mutate(chapter.idChapter);
+	};
+	const closeReplace = () => {
+		setReplacing(null);
+		sources.reset();
+	};
+	const chooseSource = (source: ChosenSource) => {
+		if (replacing) replace.mutate({ idChapter: replacing.idChapter, ...source });
+		closeReplace();
+	};
+	const openBlock = (chapter: Chapter) => {
+		setBlockReason('');
+		setPendingBlock(chapter);
+	};
+	const confirmBlock = () => {
+		if (pendingBlock) block.mutate({ idChapter: pendingBlock.idChapter, reason: blockReason.trim() });
+		setPendingBlock(null);
+	};
 	const pluginName = (idPlugin: string) => plugins?.find((p) => p?.id === idPlugin)?.name || idPlugin;
 
 	return (
@@ -163,20 +187,35 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 					query={chapters}
 					pendingChapterId={enqueueChapter.isPending ? enqueueChapter.variables : null}
 					onEnqueue={(chapter) => enqueueChapter.mutate(chapter.idChapter)}
-					onDelete={setPendingDelete}
+					onReplace={openReplace}
+					onBlock={openBlock}
 				/>
 			</section>
 
-			<ConfirmDialog
-				open={pendingDelete !== null}
-				title='Remover capítulo'
-				message={`Remover "${pendingDelete?.name}" e o arquivo baixado?`}
-				onConfirm={() => {
-					if (pendingDelete) block.mutate({ idChapter: pendingDelete.idChapter, reason: '' });
-					setPendingDelete(null);
-				}}
-				onCancel={() => setPendingDelete(null)}
+			<BlockedChaptersCard items={blocked.data ?? []} onUnblock={(id) => unblock.mutate(id)} />
+
+			<ChapterSourcesDrawer
+				open={replacing !== null}
+				title={`Trocar fonte: ${replacing?.name ?? ''}`}
+				sources={sources.data}
+				isLoading={sources.isPending}
+				isError={sources.isError}
+				onChoose={chooseSource}
+				onClose={closeReplace}
 			/>
+
+			<ConfirmDialog
+				open={pendingBlock !== null}
+				title='Apagar e bloquear'
+				message='O capítulo será apagado e esta fonte não o trará de novo.'
+				onConfirm={confirmBlock}
+				onCancel={() => setPendingBlock(null)}
+			>
+				<label htmlFor='block-reason' className='mb-1 block text-xs font-medium text-text-muted'>
+					Motivo (opcional)
+				</label>
+				<Input id='block-reason' value={blockReason} maxLength={200} onChange={(e) => setBlockReason(e.target.value)} />
+			</ConfirmDialog>
 		</div>
 	);
 }

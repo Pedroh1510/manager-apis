@@ -3,19 +3,19 @@ import { Button } from '../../../components/ui/Button';
 import { Table, Td, Th } from '../../../components/ui/Table';
 import { getApiErrorMessage } from '../../../lib/apiError';
 import { formatDateTime } from '../../../lib/formatDate';
+import { formatVolume } from '../lib/formatVolume';
 import type { Chapter, MissingChapter } from '../services/types';
 
-// NUMERIC volumes arrive as "376.0000"; show them as 376 or 12.5.
-const formatVolume = (volume: string | number) => String(Number(volume));
 
 interface ChaptersTableProps {
 	query: UseQueryResult<Chapter[]>;
 	pendingChapterId: number | null | undefined;
 	onEnqueue: (chapter: Chapter) => void;
-	onDelete: (chapter: Chapter) => void;
+	onReplace: (chapter: Chapter) => void;
+	onBlock: (chapter: Chapter) => void;
 }
 
-export function ChaptersTable({ query, pendingChapterId, onEnqueue, onDelete }: ChaptersTableProps) {
+export function ChaptersTable({ query, pendingChapterId, onEnqueue, onReplace, onBlock }: ChaptersTableProps) {
 	if (query.isLoading) return <p className='text-xs text-text-muted'>Carregando capítulos…</p>;
 	if (query.isError) {
 		return (
@@ -33,7 +33,7 @@ export function ChaptersTable({ query, pendingChapterId, onEnqueue, onDelete }: 
 					<Th className='w-20'>Volume</Th>
 					<Th>Nome</Th>
 					<Th className='w-44'>Baixado em</Th>
-					<Th className='w-40 text-right'>Ações</Th>
+					<Th className='w-64 text-right'>Ações</Th>
 				</tr>
 			</thead>
 			<tbody>
@@ -56,14 +56,17 @@ export function ChaptersTable({ query, pendingChapterId, onEnqueue, onDelete }: 
 									Baixar
 								</Button>
 							)}
+							<Button size='sm' variant='ghost' aria-label={`Trocar fonte ${chapter.name}`} onClick={() => onReplace(chapter)}>
+								Trocar fonte
+							</Button>
 							<Button
 								size='sm'
 								variant='ghost'
-								aria-label={`Remover ${chapter.name}`}
-								className='text-danger opacity-70 hover:text-danger group-hover:opacity-100'
-								onClick={() => onDelete(chapter)}
+								aria-label={`Apagar e bloquear ${chapter.name}`}
+								className='text-danger opacity-70 hover:text-danger group-hover:opacity-100 focus-visible:opacity-100'
+								onClick={() => onBlock(chapter)}
 							>
-								Remover
+								Apagar e bloquear
 							</Button>
 						</Td>
 					</tr>
