@@ -126,19 +126,19 @@ describe('MangaDetailPage', () => {
   })
 
   it('deletes a chapter only after confirmation', async () => {
-    vi.mocked(api.deleteChapter).mockResolvedValue(undefined)
+    vi.mocked(api.blockChapter).mockResolvedValue(undefined)
     renderDetail()
     await screen.findByText('Cap 1')
 
     fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
-    expect(api.deleteChapter).not.toHaveBeenCalled()
+    expect(api.blockChapter).not.toHaveBeenCalled()
 
     fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
     vi.mocked(api.fetchChapters).mockClear()
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
 
-    await waitFor(() => expect(api.deleteChapter).toHaveBeenCalledWith(1, 5))
+    await waitFor(() => expect(api.blockChapter).toHaveBeenCalledWith(1, 5, ''))
     expect(await screen.findByRole('status')).toBeInTheDocument()
     await waitFor(() => expect(api.fetchChapters).toHaveBeenCalled())
   })
@@ -196,7 +196,7 @@ describe('MangaDetailPage', () => {
   it('shows the API message for every failing call', async () => {
     vi.mocked(api.fetchMissingChapters).mockRejectedValue(failure)
     vi.mocked(api.fetchChapterPages).mockRejectedValue(failure)
-    vi.mocked(api.deleteChapter).mockRejectedValue(failure)
+    vi.mocked(api.blockChapter).mockRejectedValue(failure)
     vi.mocked(api.setConnectorActive).mockRejectedValue(failure)
     renderDetail()
     await screen.findByText('Cap 1')

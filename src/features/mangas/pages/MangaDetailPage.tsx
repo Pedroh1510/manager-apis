@@ -11,6 +11,7 @@ import { AltTitles } from '../components/AltTitles';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
 import { MangaCover } from '../components/MangaCover';
+import { useChapterFixes } from '../hooks/useChapterFixes';
 import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
@@ -59,7 +60,9 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 	const { setConnectorActive, linkConnector } = useMangas();
 	const [isLinking, setIsLinking] = useState(false);
 	const { data: plugins, error: pluginsError } = usePlugins();
-	const { chapters, missing, enqueueChapter, removeChapter } = useMangaChapters(manga.idManga);
+	const { chapters, missing, enqueueChapter } = useMangaChapters(manga.idManga);
+	// Temporary until the chapter fix UI replaces this dialog: block with no reason.
+	const { block } = useChapterFixes(manga.idManga);
 	useErrorToast(chapters.error);
 	// Without plugin names the connectors still render with their idPlugin.
 	useErrorToast(pluginsError);
@@ -169,7 +172,7 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				title='Remover capítulo'
 				message={`Remover "${pendingDelete?.name}" e o arquivo baixado?`}
 				onConfirm={() => {
-					if (pendingDelete) removeChapter.mutate(pendingDelete.idChapter);
+					if (pendingDelete) block.mutate({ idChapter: pendingDelete.idChapter, reason: '' });
 					setPendingDelete(null);
 				}}
 				onCancel={() => setPendingDelete(null)}
