@@ -35,6 +35,17 @@ describe('ChapterSourcesDrawer', () => {
     expect(screen.getByText('fonte falhou: timeout')).toBeInTheDocument()
   })
 
+  it('shows disabled and failed labels without a dangling colon when there is no reason', () => {
+    setup({
+      sources: [
+        { ...base, idMangaConnector: 7, status: 'disabled' },
+        { ...base, idMangaConnector: 8, status: 'failed' },
+      ],
+    })
+    expect(screen.getByText('conector desligado')).toBeInTheDocument()
+    expect(screen.getByText('fonte falhou')).toBeInTheDocument()
+  })
+
   it('marks the current source', () => {
     setup()
     const row = screen.getByText('Naruto TCB').closest('li') as HTMLElement

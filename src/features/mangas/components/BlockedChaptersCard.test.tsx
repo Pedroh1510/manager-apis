@@ -28,6 +28,11 @@ describe('BlockedChaptersCard', () => {
     expect(onUnblock).toHaveBeenCalledWith(9)
   })
 
+  it('disables unblock while an unblock is pending', () => {
+    render(<BlockedChaptersCard items={ITEMS} onUnblock={vi.fn()} isUnblocking />)
+    for (const button of screen.getAllByRole('button', { name: /^Desbloquear/ })) expect(button).toBeDisabled()
+  })
+
   it('shows the empty state', () => {
     render(<BlockedChaptersCard items={[]} onUnblock={vi.fn()} />)
     expect(screen.getByText('Nenhum capítulo bloqueado')).toBeInTheDocument()

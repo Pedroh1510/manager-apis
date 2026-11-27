@@ -7,9 +7,16 @@ import type { BlockedChapter } from '../services/types';
 interface BlockedChaptersCardProps {
 	items: BlockedChapter[];
 	onUnblock: (idBlockedChapter: number) => void;
+	isUnblocking?: boolean;
 }
 
-function BlockedRow({ item, onUnblock }: { item: BlockedChapter; onUnblock: (id: number) => void }) {
+interface BlockedRowProps {
+	item: BlockedChapter;
+	onUnblock: (id: number) => void;
+	isUnblocking: boolean;
+}
+
+function BlockedRow({ item, onUnblock, isUnblocking }: BlockedRowProps) {
 	return (
 		<li className='group flex min-h-11 flex-wrap items-center gap-3 transition-colors hover:bg-surface-raised/60'>
 			<span className='font-mono text-xs text-text'>{item.idPlugin}</span>
@@ -20,6 +27,7 @@ function BlockedRow({ item, onUnblock }: { item: BlockedChapter; onUnblock: (id:
 				size='sm'
 				variant='ghost'
 				aria-label={`Desbloquear ${item.idPlugin} volume ${formatVolume(item.volume)}`}
+				disabled={isUnblocking}
 				onClick={() => onUnblock(item.idBlockedChapter)}
 			>
 				Desbloquear
@@ -31,9 +39,9 @@ function BlockedRow({ item, onUnblock }: { item: BlockedChapter; onUnblock: (id:
 /**
  * Chapters blocked for one manga: why, when, and a way to let the source
  * bring them back.
- * @example <BlockedChaptersCard items={blocked.data ?? []} onUnblock={(id) => unblock.mutate(id)} />
+ * @example <BlockedChaptersCard items={blocked.data ?? []} onUnblock={(id) => unblock.mutate(id)} isUnblocking={unblock.isPending} />
  */
-export function BlockedChaptersCard({ items, onUnblock }: BlockedChaptersCardProps) {
+export function BlockedChaptersCard({ items, onUnblock, isUnblocking = false }: BlockedChaptersCardProps) {
 	return (
 		<Card>
 			<h2 className='mb-2 text-[11px] font-medium uppercase tracking-wider text-text-subtle'>Capítulos bloqueados</h2>
@@ -42,7 +50,7 @@ export function BlockedChaptersCard({ items, onUnblock }: BlockedChaptersCardPro
 			) : (
 				<ul className='divide-y divide-border'>
 					{items.map((item) => (
-						<BlockedRow key={item.idBlockedChapter} item={item} onUnblock={onUnblock} />
+						<BlockedRow key={item.idBlockedChapter} item={item} onUnblock={onUnblock} isUnblocking={isUnblocking} />
 					))}
 				</ul>
 			)}

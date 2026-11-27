@@ -17,11 +17,17 @@ interface ChapterSourcesDrawerProps {
 	onClose: () => void;
 }
 
+/**
+ * Status label with its reason appended only when there is one.
+ * @example withReason('fonte falhou', 'timeout') // 'fonte falhou: timeout'
+ */
+const withReason = (label: string, reason?: string): string => (reason ? `${label}: ${reason}` : label);
+
 const STATUS_TEXT: Record<Exclude<ChapterSourceStatus, 'available'>, (reason?: string) => string> = {
 	missing: () => 'não tem este capítulo',
 	blocked: () => 'bloqueado',
-	disabled: (reason) => `conector desligado: ${reason ?? ''}`,
-	failed: (reason) => `fonte falhou: ${reason ?? ''}`
+	disabled: (reason) => withReason('conector desligado', reason),
+	failed: (reason) => withReason('fonte falhou', reason)
 };
 
 function SourceRow({ source, onChoose }: { source: ChapterSource; onChoose: (source: ChosenSource) => void }) {
