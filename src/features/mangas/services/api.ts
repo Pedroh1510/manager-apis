@@ -9,6 +9,9 @@ import type {
 	UpdateCookiePayload,
 	UpdateCredentialsPayload,
 	Chapter,
+	ChapterSource,
+	BlockedChapter,
+	ReplaceChapterPayload,
 	MissingChapter,
 	CoverSuggestionsResponse,
 	KavitaCleanupResult,
@@ -145,8 +148,44 @@ export async function fetchChapterPages(idManga: number, idChapter: number): Pro
 	await mangasHttp.get(`/mangas/adm/${idManga}/chapters/${idChapter}/pages`);
 }
 
-export async function deleteChapter(idManga: number, idChapter: number): Promise<void> {
-	await mangasHttp.delete(`/mangas/adm/${idManga}/chapters/${idChapter}`);
+/**
+ * Candidate sources (one per linked connector) to replace a chapter with.
+ * @example const sources = await fetchChapterSources(1, 5);
+ */
+export async function fetchChapterSources(idManga: number, idChapter: number): Promise<ChapterSource[]> {
+	const { data } = await mangasHttp.get<ChapterSource[]>(`/mangas/adm/${idManga}/chapters/${idChapter}/sources`);
+	return data;
+}
+
+/**
+ * Swaps a chapter for the same one from another connector.
+ * @example await replaceChapterSource(1, 5, { idMangaConnector: 3, idChapterPlugin: 'c-9' });
+ */
+export async function replaceChapterSource(
+	idManga: number,
+	idChapter: number,
+	payload: ReplaceChapterPayload
+): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/${idManga}/chapters/${idChapter}/replace`, payload);
+}
+
+/**
+ * Deletes a chapter and blocks it from being downloaded again; reason may be ''.
+ * @example await blockChapter(1, 5, 'raw coreano');
+ */
+export async function blockChapter(idManga: number, idChapter: number, reason: string): Promise<void> {
+	await mangasHttp.post(`/mangas/adm/${idManga}/chapters/${idChapter}/block`, { reason });
+}
+
+/** Chapters blocked for one manga. @example await fetchBlockedChapters(1) */
+export async function fetchBlockedChapters(idManga: number): Promise<BlockedChapter[]> {
+	const { data } = await mangasHttp.get<BlockedChapter[]>(`/mangas/adm/${idManga}/blocked-chapters`);
+	return data;
+}
+
+/** Lets a blocked chapter be downloaded again. @example await unblockChapter(1, 2) */
+export async function unblockChapter(idManga: number, idBlockedChapter: number): Promise<void> {
+	await mangasHttp.delete(`/mangas/adm/${idManga}/blocked-chapters/${idBlockedChapter}`);
 }
 
 export async function fetchCoverSuggestions(): Promise<CoverSuggestionsResponse> {

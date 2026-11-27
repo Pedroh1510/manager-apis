@@ -101,6 +101,39 @@ export interface Chapter {
 	downloadedAt: string | null;
 }
 
+export type ChapterSourceStatus = 'available' | 'missing' | 'blocked' | 'disabled' | 'failed';
+
+/** One linked connector as a candidate source for a chapter. */
+export interface ChapterSource {
+	idMangaConnector: number;
+	idPlugin: string;
+	titlePlugin: string;
+	isCurrent: boolean;
+	status: ChapterSourceStatus;
+	/** Present when available or blocked. */
+	idChapterPlugin?: string;
+	title?: string;
+	/** disabled: the disabled reason; failed: the error message. */
+	reason?: string;
+}
+
+export interface ReplaceChapterPayload {
+	idMangaConnector: number;
+	idChapterPlugin: string;
+}
+
+/** A chapter blocked from download. */
+export interface BlockedChapter {
+	idBlockedChapter: number;
+	idMangaConnector: number;
+	idPlugin: string;
+	idChapterPlugin: string;
+	/** NUMERIC column: the API sends it as a string such as "177.0000". */
+	volume: string | number;
+	reason: string | null;
+	createdAt: string;
+}
+
 /** A chapter a connector knows about that is not registered yet (`.../chapters/missing`). */
 export interface MissingChapter {
 	id: string;

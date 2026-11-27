@@ -26,6 +26,7 @@ beforeEach(() => {
   vi.mocked(api.fetchPlugins).mockResolvedValue(PLUGINS)
   vi.mocked(api.fetchMangaList).mockResolvedValue([NARUTO])
   vi.mocked(api.fetchChapters).mockResolvedValue(CHAPTERS)
+  vi.mocked(api.fetchBlockedChapters).mockResolvedValue([])
 })
 
 describe('MangaDetailPage', () => {
@@ -125,22 +126,93 @@ describe('MangaDetailPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Capítulo enfileirado')
   })
 
-  it('deletes a chapter only after confirmation', async () => {
-    vi.mocked(api.deleteChapter).mockResolvedValue(undefined)
+  it('has no plain remove button', async () => {
+    renderDetail()
+    await screen.findByText('Cap 1')
+    expect(screen.queryByRole('button', { name: /^Remover/ })).toBeNull()
+  })
+
+  it('blocks a chapter only after confirmation, sending the typed reason', async () => {
+    vi.mocked(api.blockChapter).mockResolvedValue(undefined)
     renderDetail()
     await screen.findByText('Cap 1')
 
-    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' }))
+    expect(screen.getByText('O capítulo 1 — Cap 1 será apagado e esta fonte não o trará de novo.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
-    expect(api.deleteChapter).not.toHaveBeenCalled()
+    expect(api.blockChapter).not.toHaveBeenCalled()
 
-    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' }))
+    fireEvent.change(screen.getByLabelText('Motivo (opcional)'), { target: { value: 'cópia do 171' } })
     vi.mocked(api.fetchChapters).mockClear()
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
 
-    await waitFor(() => expect(api.deleteChapter).toHaveBeenCalledWith(1, 5))
-    expect(await screen.findByRole('status')).toBeInTheDocument()
+    await waitFor(() => expect(api.blockChapter).toHaveBeenCalledWith(1, 5, 'cópia do 171'))
     await waitFor(() => expect(api.fetchChapters).toHaveBeenCalled())
+  })
+
+  it('sends an empty reason as ""', async () => {
+    vi.mocked(api.blockChapter).mockResolvedValue(undefined)
+    renderDetail()
+    await screen.findByText('Cap 1')
+
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
+
+    await waitFor(() => expect(api.blockChapter).toHaveBeenCalledWith(1, 5, ''))
+  })
+
+  it('replaces the source of a chapter from the drawer', async () => {
+    vi.mocked(api.fetchChapterSources).mockResolvedValue([
+      { idMangaConnector: 1, idPlugin: 'tcb', titlePlugin: 'Naruto TCB', isCurrent: true, status: 'available', idChapterPlugin: 'c1' },
+      { idMangaConnector: 2, idPlugin: 'mangeek', titlePlugin: 'Naruto MG', isCurrent: false, status: 'available', idChapterPlugin: 'm9' },
+    ])
+    vi.mocked(api.replaceChapterSource).mockResolvedValue(undefined)
+    renderDetail()
+    await screen.findByText('Cap 1')
+
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Usar esta: Naruto MG' }))
+
+    await waitFor(() =>
+      expect(api.replaceChapterSource).toHaveBeenCalledWith(1, 5, { idMangaConnector: 2, idChapterPlugin: 'm9' })
+    )
+    expect(api.fetchChapterSources).toHaveBeenCalledWith(1, 5)
+  })
+
+  it('locks the row and shows progress while its source is being replaced', async () => {
+    vi.mocked(api.fetchChapterSources).mockResolvedValue([
+      { idMangaConnector: 2, idPlugin: 'mangeek', titlePlugin: 'Naruto MG', isCurrent: false, status: 'available', idChapterPlugin: 'm9' },
+    ])
+    let finish: (value: undefined) => void = () => {}
+    vi.mocked(api.replaceChapterSource).mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    renderDetail()
+    await screen.findByText('Cap 1')
+
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Usar esta: Naruto MG' }))
+
+    const trocar = await within(chapterRow('Cap 1')).findByRole('button', { name: 'Trocar fonte Cap 1' })
+    expect(trocar).toBeDisabled()
+    expect(trocar).toHaveTextContent('Trocando…')
+    expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' })).toBeDisabled()
+    expect(within(chapterRow('Cap 2')).getByRole('button', { name: 'Trocar fonte Cap 2' })).toBeEnabled()
+
+    finish(undefined)
+    await waitFor(() => expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' })).toBeEnabled())
+    expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' })).toHaveTextContent('Trocar fonte')
+  })
+
+  it('lists blocked chapters below the table and unblocks one', async () => {
+    vi.mocked(api.fetchBlockedChapters).mockResolvedValue([
+      { idBlockedChapter: 9, idMangaConnector: 1, idPlugin: 'tcb', idChapterPlugin: 'c', volume: '177.0000', reason: 'cópia', createdAt: DOWNLOADED_AT },
+    ])
+    vi.mocked(api.unblockChapter).mockResolvedValue(undefined)
+    renderDetail()
+
+    expect(await screen.findByText('cópia')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Desbloquear/ }))
+    await waitFor(() => expect(api.unblockChapter).toHaveBeenCalledWith(1, 9))
   })
 
   it('links a new connector to the existing manga without creating another manga', async () => {
@@ -196,14 +268,14 @@ describe('MangaDetailPage', () => {
   it('shows the API message for every failing call', async () => {
     vi.mocked(api.fetchMissingChapters).mockRejectedValue(failure)
     vi.mocked(api.fetchChapterPages).mockRejectedValue(failure)
-    vi.mocked(api.deleteChapter).mockRejectedValue(failure)
+    vi.mocked(api.blockChapter).mockRejectedValue(failure)
     vi.mocked(api.setConnectorActive).mockRejectedValue(failure)
     renderDetail()
     await screen.findByText('Cap 1')
 
     fireEvent.click(screen.getByRole('button', { name: 'Verificar faltantes' }))
     fireEvent.click(within(chapterRow('Cap 2')).getByRole('button', { name: 'Baixar Cap 2' }))
-    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Remover Cap 1' }))
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }))
     fireEvent.click(await screen.findByRole('switch', { name: 'Conector TCB de Naruto' }))
 

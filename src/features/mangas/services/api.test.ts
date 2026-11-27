@@ -19,7 +19,11 @@ import {
 	fetchChapters,
 	fetchMissingChapters,
 	fetchChapterPages,
-	deleteChapter,
+	fetchChapterSources,
+	replaceChapterSource,
+	blockChapter,
+	fetchBlockedChapters,
+	unblockChapter,
 	fetchCoverSuggestions,
 	acceptCoverSuggestion,
 	dismissCoverSuggestion,
@@ -225,19 +229,15 @@ describe('fetchMangaList keeps the connectors array', () => {
 describe('chapter endpoints', () => {
 	it('call the chapter routes of a manga', async () => {
 		mockGet.mockResolvedValue({ data: [] });
-		mockDelete.mockResolvedValue({ data: undefined });
-
 		await fetchChapters(1);
 		await fetchMissingChapters(1);
 		await fetchChapterPages(1, 5);
-		await deleteChapter(1, 5);
 
 		expect(mockGet.mock.calls.map(([url]) => url)).toEqual([
 			'/mangas/adm/1/chapters',
 			'/mangas/adm/1/chapters/missing',
 			'/mangas/adm/1/chapters/5/pages'
 		]);
-		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/1/chapters/5');
 	});
 });
 
@@ -283,5 +283,51 @@ describe('setConnectorSwitch', () => {
 			enabled: false,
 			reason: 'paywall'
 		});
+	});
+});
+
+describe('chapter fix endpoints', () => {
+	it('fetchChapterSources calls GET .../chapters/:id/sources', async () => {
+		mockGet.mockResolvedValue({ data: [{ idMangaConnector: 3 }] });
+
+		const result = await fetchChapterSources(1, 5);
+
+		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/1/chapters/5/sources');
+		expect(result).toEqual([{ idMangaConnector: 3 }]);
+	});
+
+	it('replaceChapterSource posts the new source', async () => {
+		mockPost.mockResolvedValue({ data: { idChapter: 9 } });
+
+		await replaceChapterSource(1, 5, { idMangaConnector: 3, idChapterPlugin: 'c-1' });
+
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/1/chapters/5/replace', {
+			idMangaConnector: 3,
+			idChapterPlugin: 'c-1'
+		});
+	});
+
+	it('blockChapter posts the reason, empty allowed', async () => {
+		mockPost.mockResolvedValue({ data: { idBlockedChapter: 2 } });
+
+		await blockChapter(1, 5, '');
+
+		expect(mockPost).toHaveBeenCalledWith('/mangas/adm/1/chapters/5/block', { reason: '' });
+	});
+
+	it('fetchBlockedChapters calls GET .../blocked-chapters', async () => {
+		mockGet.mockResolvedValue({ data: [] });
+
+		await fetchBlockedChapters(1);
+
+		expect(mockGet).toHaveBeenCalledWith('/mangas/adm/1/blocked-chapters');
+	});
+
+	it('unblockChapter calls DELETE .../blocked-chapters/:id', async () => {
+		mockDelete.mockResolvedValue({ data: undefined });
+
+		await unblockChapter(1, 2);
+
+		expect(mockDelete).toHaveBeenCalledWith('/mangas/adm/1/blocked-chapters/2');
 	});
 });

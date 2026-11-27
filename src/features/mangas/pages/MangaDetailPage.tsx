@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '../../../components/ui/Button';
+import { Input } from '../../../components/ui/Input';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
 import { TablePlaceholder } from '../../../components/ui/TablePlaceholder';
@@ -8,13 +9,17 @@ import { Toggle } from '../../../components/ui/Toggle';
 import { useErrorToast } from '../../../components/ui/useErrorToast';
 import { FOCUS_RING } from '../../../components/ui/focusRing';
 import { AltTitles } from '../components/AltTitles';
+import { BlockedChaptersCard } from '../components/BlockedChaptersCard';
+import { ChapterSourcesDrawer, type ChosenSource } from '../components/ChapterSourcesDrawer';
 import { ChaptersTable, MissingChapters } from '../components/ChaptersTable';
 import { LinkConnectorWizard } from '../components/LinkConnectorWizard';
 import { MangaCover } from '../components/MangaCover';
+import { useChapterFixes } from '../hooks/useChapterFixes';
 import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
 import { describeDisabled } from '../lib/connectorSwitch';
+import { formatVolume } from '../lib/formatVolume';
 import { deriveMangaStatus } from '../lib/mangaStatus';
 import { mangaCoverUrl } from '../services/coverUrls';
 import type { Chapter, MangaListItem } from '../services/types';
@@ -59,11 +64,34 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 	const { setConnectorActive, linkConnector } = useMangas();
 	const [isLinking, setIsLinking] = useState(false);
 	const { data: plugins, error: pluginsError } = usePlugins();
-	const { chapters, missing, enqueueChapter, removeChapter } = useMangaChapters(manga.idManga);
+	const { chapters, missing, enqueueChapter } = useMangaChapters(manga.idManga);
+	const { blocked, sources, replace, block, unblock } = useChapterFixes(manga.idManga);
 	useErrorToast(chapters.error);
 	// Without plugin names the connectors still render with their idPlugin.
 	useErrorToast(pluginsError);
-	const [pendingDelete, setPendingDelete] = useState<Chapter | null>(null);
+	const [pendingBlock, setPendingBlock] = useState<Chapter | null>(null);
+	const [blockReason, setBlockReason] = useState('');
+	const [replacing, setReplacing] = useState<Chapter | null>(null);
+	const openReplace = (chapter: Chapter) => {
+		setReplacing(chapter);
+		sources.mutate(chapter.idChapter);
+	};
+	const closeReplace = () => {
+		setReplacing(null);
+		sources.reset();
+	};
+	const chooseSource = (source: ChosenSource) => {
+		if (replacing) replace.mutate({ idChapter: replacing.idChapter, ...source });
+		closeReplace();
+	};
+	const openBlock = (chapter: Chapter) => {
+		setBlockReason('');
+		setPendingBlock(chapter);
+	};
+	const confirmBlock = () => {
+		if (pendingBlock) block.mutate({ idChapter: pendingBlock.idChapter, reason: blockReason.trim() });
+		setPendingBlock(null);
+	};
 	const pluginName = (idPlugin: string) => plugins?.find((p) => p?.id === idPlugin)?.name || idPlugin;
 
 	return (
@@ -159,23 +187,52 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				<ChaptersTable
 					query={chapters}
 					pendingChapterId={enqueueChapter.isPending ? enqueueChapter.variables : null}
+					replacingChapterId={replace.isPending ? replace.variables?.idChapter : null}
 					onEnqueue={(chapter) => enqueueChapter.mutate(chapter.idChapter)}
-					onDelete={setPendingDelete}
+					onReplace={openReplace}
+					onBlock={openBlock}
 				/>
 			</section>
 
-			<ConfirmDialog
-				open={pendingDelete !== null}
-				title='Remover capítulo'
-				message={`Remover "${pendingDelete?.name}" e o arquivo baixado?`}
-				onConfirm={() => {
-					if (pendingDelete) removeChapter.mutate(pendingDelete.idChapter);
-					setPendingDelete(null);
-				}}
-				onCancel={() => setPendingDelete(null)}
+			<BlockedChaptersCard
+				items={blocked.data ?? []}
+				onUnblock={(id) => unblock.mutate(id)}
+				isUnblocking={unblock.isPending}
 			/>
+
+			<ChapterSourcesDrawer
+				open={replacing !== null}
+				title={`Trocar fonte: ${replacing?.name ?? ''}`}
+				sources={sources.data}
+				isLoading={sources.isPending}
+				isError={sources.isError}
+				onChoose={chooseSource}
+				onClose={closeReplace}
+			/>
+
+			<ConfirmDialog
+				open={pendingBlock !== null}
+				title='Apagar e bloquear'
+				message={describeBlock(pendingBlock)}
+				onConfirm={confirmBlock}
+				onCancel={() => setPendingBlock(null)}
+			>
+				<label htmlFor='block-reason' className='mb-1 block text-xs font-medium text-text-muted'>
+					Motivo (opcional)
+				</label>
+				<Input id='block-reason' value={blockReason} maxLength={200} onChange={(e) => setBlockReason(e.target.value)} />
+			</ConfirmDialog>
 		</div>
 	);
+}
+
+/**
+ * Confirmation text naming the chapter about to be deleted and blocked.
+ * @example describeBlock({ volume: '177.0000', name: 'Cap 177', ... }) // 'O capítulo 177 — Cap 177 será apagado e ...'
+ */
+function describeBlock(chapter: Chapter | null): string {
+	if (!chapter) return '';
+	return `O capítulo ${formatVolume(chapter.volume)} — ${chapter.name} será apagado e esta fonte não o trará de novo.`;
 }
 
 function SectionTitle({ id, children }: { id: string; children: string }) {
