@@ -10,12 +10,21 @@ import type { Chapter, MissingChapter } from '../services/types';
 interface ChaptersTableProps {
 	query: UseQueryResult<Chapter[]>;
 	pendingChapterId: number | null | undefined;
+	/** Chapter whose source replace is in flight; its fix actions are locked. */
+	replacingChapterId: number | null | undefined;
 	onEnqueue: (chapter: Chapter) => void;
 	onReplace: (chapter: Chapter) => void;
 	onBlock: (chapter: Chapter) => void;
 }
 
-export function ChaptersTable({ query, pendingChapterId, onEnqueue, onReplace, onBlock }: ChaptersTableProps) {
+export function ChaptersTable({
+	query,
+	pendingChapterId,
+	replacingChapterId,
+	onEnqueue,
+	onReplace,
+	onBlock
+}: ChaptersTableProps) {
 	if (query.isLoading) return <p className='text-xs text-text-muted'>Carregando capítulos…</p>;
 	if (query.isError) {
 		return (
@@ -37,40 +46,50 @@ export function ChaptersTable({ query, pendingChapterId, onEnqueue, onReplace, o
 				</tr>
 			</thead>
 			<tbody>
-				{query.data.map((chapter) => (
-					<tr key={chapter.idChapter} className='group transition-colors hover:bg-surface-raised/60'>
-						<Td className='font-mono text-xs'>{formatVolume(chapter.volume)}</Td>
-						<Td>{chapter.name}</Td>
-						<Td className='text-xs text-text-muted'>
-							{chapter.downloadedAt ? formatDateTime(chapter.downloadedAt) : <span className='text-warning'>não baixado</span>}
-						</Td>
-						<Td className='space-x-1 text-right'>
-							{!chapter.downloadedAt && (
+				{query.data.map((chapter) => {
+					const isReplacing = replacingChapterId === chapter.idChapter;
+					return (
+						<tr key={chapter.idChapter} className='group transition-colors hover:bg-surface-raised/60'>
+							<Td className='font-mono text-xs'>{formatVolume(chapter.volume)}</Td>
+							<Td>{chapter.name}</Td>
+							<Td className='text-xs text-text-muted'>
+								{chapter.downloadedAt ? formatDateTime(chapter.downloadedAt) : <span className='text-warning'>não baixado</span>}
+							</Td>
+							<Td className='space-x-1 text-right'>
+								{!chapter.downloadedAt && (
+									<Button
+										size='sm'
+										variant='ghost'
+										aria-label={`Baixar ${chapter.name}`}
+										disabled={pendingChapterId === chapter.idChapter}
+										onClick={() => onEnqueue(chapter)}
+									>
+										Baixar
+									</Button>
+								)}
 								<Button
 									size='sm'
 									variant='ghost'
-									aria-label={`Baixar ${chapter.name}`}
-									disabled={pendingChapterId === chapter.idChapter}
-									onClick={() => onEnqueue(chapter)}
+									aria-label={`Trocar fonte ${chapter.name}`}
+									disabled={isReplacing}
+									onClick={() => onReplace(chapter)}
 								>
-									Baixar
+									{isReplacing ? 'Trocando…' : 'Trocar fonte'}
 								</Button>
-							)}
-							<Button size='sm' variant='ghost' aria-label={`Trocar fonte ${chapter.name}`} onClick={() => onReplace(chapter)}>
-								Trocar fonte
-							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								aria-label={`Apagar e bloquear ${chapter.name}`}
-								className='text-danger opacity-70 hover:text-danger group-hover:opacity-100 focus-visible:opacity-100'
-								onClick={() => onBlock(chapter)}
-							>
-								Apagar e bloquear
-							</Button>
-						</Td>
-					</tr>
-				))}
+								<Button
+									size='sm'
+									variant='ghost'
+									aria-label={`Apagar e bloquear ${chapter.name}`}
+									className='text-danger opacity-70 hover:text-danger group-hover:opacity-100 focus-visible:opacity-100'
+									disabled={isReplacing}
+									onClick={() => onBlock(chapter)}
+								>
+									Apagar e bloquear
+								</Button>
+							</Td>
+						</tr>
+					);
+				})}
 			</tbody>
 		</Table>
 	);

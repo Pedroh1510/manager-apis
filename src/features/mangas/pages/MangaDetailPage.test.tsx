@@ -138,7 +138,7 @@ describe('MangaDetailPage', () => {
     await screen.findByText('Cap 1')
 
     fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' }))
-    expect(screen.getByText('O capítulo será apagado e esta fonte não o trará de novo.')).toBeInTheDocument()
+    expect(screen.getByText('O capítulo 1 — Cap 1 será apagado e esta fonte não o trará de novo.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(api.blockChapter).not.toHaveBeenCalled()
 
@@ -178,6 +178,29 @@ describe('MangaDetailPage', () => {
       expect(api.replaceChapterSource).toHaveBeenCalledWith(1, 5, { idMangaConnector: 2, idChapterPlugin: 'm9' })
     )
     expect(api.fetchChapterSources).toHaveBeenCalledWith(1, 5)
+  })
+
+  it('locks the row and shows progress while its source is being replaced', async () => {
+    vi.mocked(api.fetchChapterSources).mockResolvedValue([
+      { idMangaConnector: 2, idPlugin: 'mangeek', titlePlugin: 'Naruto MG', isCurrent: false, status: 'available', idChapterPlugin: 'm9' },
+    ])
+    let finish: (value: undefined) => void = () => {}
+    vi.mocked(api.replaceChapterSource).mockReturnValue(new Promise((resolve) => { finish = resolve }))
+    renderDetail()
+    await screen.findByText('Cap 1')
+
+    fireEvent.click(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Usar esta: Naruto MG' }))
+
+    const trocar = await within(chapterRow('Cap 1')).findByRole('button', { name: 'Trocar fonte Cap 1' })
+    expect(trocar).toBeDisabled()
+    expect(trocar).toHaveTextContent('Trocando…')
+    expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Apagar e bloquear Cap 1' })).toBeDisabled()
+    expect(within(chapterRow('Cap 2')).getByRole('button', { name: 'Trocar fonte Cap 2' })).toBeEnabled()
+
+    finish(undefined)
+    await waitFor(() => expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' })).toBeEnabled())
+    expect(within(chapterRow('Cap 1')).getByRole('button', { name: 'Trocar fonte Cap 1' })).toHaveTextContent('Trocar fonte')
   })
 
   it('lists blocked chapters below the table and unblocks one', async () => {

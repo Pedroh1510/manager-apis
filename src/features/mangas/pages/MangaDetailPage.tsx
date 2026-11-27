@@ -19,6 +19,7 @@ import { useMangaChapters } from '../hooks/useMangaChapters';
 import { useMangas } from '../hooks/useMangas';
 import { usePlugins } from '../hooks/usePlugins';
 import { describeDisabled } from '../lib/connectorSwitch';
+import { formatVolume } from '../lib/formatVolume';
 import { deriveMangaStatus } from '../lib/mangaStatus';
 import { mangaCoverUrl } from '../services/coverUrls';
 import type { Chapter, MangaListItem } from '../services/types';
@@ -186,13 +187,18 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 				<ChaptersTable
 					query={chapters}
 					pendingChapterId={enqueueChapter.isPending ? enqueueChapter.variables : null}
+					replacingChapterId={replace.isPending ? replace.variables?.idChapter : null}
 					onEnqueue={(chapter) => enqueueChapter.mutate(chapter.idChapter)}
 					onReplace={openReplace}
 					onBlock={openBlock}
 				/>
 			</section>
 
-			<BlockedChaptersCard items={blocked.data ?? []} onUnblock={(id) => unblock.mutate(id)} />
+			<BlockedChaptersCard
+				items={blocked.data ?? []}
+				onUnblock={(id) => unblock.mutate(id)}
+				isUnblocking={unblock.isPending}
+			/>
 
 			<ChapterSourcesDrawer
 				open={replacing !== null}
@@ -207,7 +213,7 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 			<ConfirmDialog
 				open={pendingBlock !== null}
 				title='Apagar e bloquear'
-				message='O capítulo será apagado e esta fonte não o trará de novo.'
+				message={describeBlock(pendingBlock)}
 				onConfirm={confirmBlock}
 				onCancel={() => setPendingBlock(null)}
 			>
@@ -218,6 +224,15 @@ function MangaDetail({ manga }: { manga: MangaListItem }) {
 			</ConfirmDialog>
 		</div>
 	);
+}
+
+/**
+ * Confirmation text naming the chapter about to be deleted and blocked.
+ * @example describeBlock({ volume: '177.0000', name: 'Cap 177', ... }) // 'O capítulo 177 — Cap 177 será apagado e ...'
+ */
+function describeBlock(chapter: Chapter | null): string {
+	if (!chapter) return '';
+	return `O capítulo ${formatVolume(chapter.volume)} — ${chapter.name} será apagado e esta fonte não o trará de novo.`;
 }
 
 function SectionTitle({ id, children }: { id: string; children: string }) {
